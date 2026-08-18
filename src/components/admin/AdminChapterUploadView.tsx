@@ -176,17 +176,17 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
           {onBack && (
             <button
               onClick={onBack}
-              className="p-2 rounded-xl bg-white dark:bg-zinc-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-xl bg-white   border border-zinc-200   text-zinc-600  hover:bg-zinc-100 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-              <Upload className="w-6 h-6 text-zinc-900 dark:text-white" />
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900  flex items-center gap-2">
+              <Upload className="w-6 h-6 text-zinc-900 " />
               <span>Đăng tải chương mới (Up Chương)</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-zinc-500  mt-0.5">
               Soạn thảo và phát hành chương truyện mới kết nối trực tiếp đến giao diện độc giả.
             </p>
           </div>
@@ -198,8 +198,8 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
           onClick={() => setPreviewMode(!previewMode)}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
             previewMode
-              ? "bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-white"
-              : "bg-white dark:bg-zinc-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100"
+              ? "bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white text-white"
+              : "bg-white   border border-zinc-200   text-zinc-700  hover:bg-zinc-100"
           }`}
         >
           <Eye className="w-4 h-4" />
@@ -209,27 +209,27 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
 
       {previewMode ? (
         /* Live Reader Preview Box */
-        <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-lg max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
-          <div className="text-center pb-6 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800">
-            <span className="text-xs font-bold text-amber-600 uppercase tracking-widest">
+        <div className="p-6 sm:p-10 rounded-3xl bg-white   border border-zinc-200   shadow-lg max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
+          <div className="text-center pb-6 border-b border-zinc-200  ">
+            <span className="text-xs font-bold text-zinc-900 uppercase tracking-widest">
               {currentStory?.title}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
+            <h1 className="text-2xl sm:text-3xl font-black text-zinc-900  mt-1">
               {title || `Chương ${chapterNumber}`}
             </h1>
-            <p className="text-xs text-slate-400 mt-2 font-mono">
+            <p className="text-xs text-zinc-400 mt-2 font-mono">
               {wordCount} chữ • Bản xem trước quản trị
             </p>
           </div>
 
-          <div className="text-base sm:text-lg leading-relaxed text-slate-800 dark:text-slate-200 font-serif whitespace-pre-wrap space-y-4">
-            {content ? content : <p className="text-slate-400 italic">Chưa có nội dung văn bản...</p>}
+          <div className="text-base sm:text-lg leading-relaxed text-zinc-800  font-serif whitespace-pre-wrap space-y-4">
+            {content ? content : <p className="text-zinc-400 italic">Chưa có nội dung văn bản...</p>}
           </div>
 
-          <div className="pt-6 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex justify-center">
+          <div className="pt-6 border-t border-zinc-200   flex justify-center">
             <button
               onClick={() => setPreviewMode(false)}
-              className="px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 font-bold text-xs hover:bg-slate-200 text-slate-700 dark:text-slate-200"
+              className="px-6 py-2.5 rounded-xl bg-zinc-100   font-bold text-xs hover:bg-slate-200 text-zinc-700 "
             >
               ← Trở về chỉnh sửa
             </button>
@@ -241,10 +241,10 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
           {/* Main Column: Content Editor (2 cols) */}
           <div className="lg:col-span-2 space-y-5">
             {/* Chapter Title & Number */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white   border border-zinc-200/80   shadow-sm space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                     Số thứ tự chương
                   </label>
                   <input
@@ -252,13 +252,13 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                     min={1}
                     value={chapterNumber}
                     onChange={(e) => setChapterNumber(parseInt(e.target.value) || 1)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-bold text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-mono"
                     required
                   />
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                     Tiêu đề chương <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -266,19 +266,19 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ví dụ: Chương 10: Cơ duyên đột phá..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-semibold text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                     required
                   />
                 </div>
               </div>
 
               {/* Text Formatting Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200   text-xs">
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={handleFormatParagraphs}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-100   hover:bg-slate-200 text-zinc-700  font-semibold flex items-center gap-1 transition-colors"
                     title="Tự động giãn dòng các đoạn văn"
                   >
                     <AlignLeft className="w-3.5 h-3.5" />
@@ -288,7 +288,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                   <button
                     type="button"
                     onClick={handleInsertDivider}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-100   hover:bg-slate-200 text-zinc-700  font-semibold transition-colors"
                   >
                     + Dấu phân cách (* * *)
                   </button>
@@ -296,14 +296,14 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                   <button
                     type="button"
                     onClick={handleInsertSample}
-                    className="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-amber-600 dark:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white/20 font-semibold flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-100  text-zinc-900   hover:bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white/20 font-semibold flex items-center gap-1 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Chèn mẫu nhanh</span>
                   </button>
                 </div>
 
-                <span className="font-mono text-slate-500 font-medium">
+                <span className="font-mono text-zinc-500 font-medium">
                   {wordCount.toLocaleString()} từ
                 </span>
               </div>
@@ -315,7 +315,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Dán hoặc soạn thảo toàn bộ nội dung chương truyện tại đây..."
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/60 text-slate-900 dark:text-white text-sm font-sans leading-relaxed placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all resize-y min-h-[320px]"
+                  className="w-full p-4 rounded-xl border border-zinc-200   bg-zinc-50   text-zinc-900  text-sm font-sans leading-relaxed placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all resize-y min-h-[320px]"
                   required
                 />
               </div>
@@ -325,9 +325,9 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
           {/* Side Column: Target Story, Volume, Publish Settings (1 col) */}
           <div className="space-y-5">
             {/* Story Picker */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-zinc-900 dark:text-white" />
+            <div className="p-5 rounded-2xl bg-white   border border-zinc-200/80   shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-zinc-900  flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-zinc-900 " />
                 <span>Chọn truyện phát hành</span>
               </h3>
 
@@ -335,7 +335,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                 <select
                   value={selectedStoryId}
                   onChange={(e) => setSelectedStoryId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-bold text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 >
                   {stories.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -346,24 +346,24 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
               </div>
 
               {currentStory && (
-                <div className="flex gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-200 dark:border-zinc-800 items-center">
+                <div className="flex gap-3 p-3 rounded-xl bg-zinc-50   border border-zinc-200   items-center">
                   <img
                     src={currentStory.coverImage}
                     alt=""
                     className="w-12 h-16 object-cover rounded-lg shadow-sm flex-shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                    <p className="font-bold text-xs text-zinc-900  truncate">
                       {currentStory.title}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-zinc-500  mt-0.5">
                       {currentStory.volumes.length} quyển •{" "}
                       {currentStory.volumes.reduce((acc, v) => acc + v.chapters.length, 0)} chương hiện có
                     </p>
                     <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5 ${
                       currentStory.isActive !== false
                         ? "bg-emerald-500/10 text-emerald-600"
-                        : "bg-zinc-100 dark:bg-zinc-800 text-amber-600"
+                        : "bg-zinc-100  text-zinc-900"
                     }`}>
                       {currentStory.isActive !== false ? "Đang hiện" : "Tạm ẩn"}
                     </span>
@@ -373,16 +373,16 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
             </div>
 
             {/* Volume Picker & Quick Add */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+            <div className="p-5 rounded-2xl bg-white   border border-zinc-200/80   shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-zinc-900 dark:text-white" />
+                <h3 className="text-sm font-bold text-zinc-900  flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-zinc-900 " />
                   <span>Quyển / Tập</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowAddVolume(!showAddVolume)}
-                  className="text-xs font-bold text-amber-600 dark:text-zinc-700 dark:text-zinc-300 hover:underline flex items-center gap-1"
+                  className="text-xs font-bold text-zinc-900   hover:underline flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tạo quyển mới</span>
@@ -390,26 +390,26 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
               </div>
 
               {showAddVolume ? (
-                <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-amber-500/20 space-y-2">
+                <div className="p-3 rounded-xl bg-zinc-100  border border-amber-500/20 space-y-2">
                   <input
                     type="text"
                     value={newVolumeTitle}
                     onChange={(e) => setNewVolumeTitle(e.target.value)}
                     placeholder="Ví dụ: Quyển 2: Loạn Thế Tương Phùng..."
-                    className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-100 dark:bg-zinc-800 text-xs font-medium focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg border border-amber-300  bg-white   text-xs font-medium focus:outline-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={() => setShowAddVolume(false)}
-                      className="px-2.5 py-1 text-[11px] font-bold text-slate-600"
+                      className="px-2.5 py-1 text-[11px] font-bold text-zinc-600"
                     >
                       Huỷ
                     </button>
                     <button
                       type="button"
                       onClick={handleCreateNewVolume}
-                      className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-white rounded-lg text-[11px] font-bold shadow-sm"
+                      className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white text-white rounded-lg text-[11px] font-bold shadow-sm"
                     >
                       Lưu quyển
                     </button>
@@ -419,7 +419,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                 <select
                   value={selectedVolumeId}
                   onChange={(e) => setSelectedVolumeId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-medium text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 >
                   {currentStory?.volumes.map((vol) => (
                     <option key={vol.id} value={vol.id}>
@@ -431,8 +431,8 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
             </div>
 
             {/* Publishing Settings & Actions */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            <div className="p-5 rounded-2xl bg-white   border border-zinc-200/80   shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-zinc-900 ">
                 Trạng thái phát hành
               </h3>
 
@@ -441,7 +441,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                   type="button"
                   onClick={() => setIsActive(!isActive)}
                   className={`w-12 h-6.5 rounded-full transition-colors relative p-0.5 ${
-                    isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                    isActive ? "bg-emerald-500" : "bg-slate-300 "
                   }`}
                 >
                   <div
@@ -450,7 +450,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
                     }`}
                   />
                 </button>
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <span className="text-xs font-semibold text-zinc-700 ">
                   {isActive ? "🟢 Xuất bản ngay (Active)" : "⚪ Lưu nháp ẩn (Inactive)"}
                 </span>
               </div>
@@ -458,7 +458,7 @@ Chiếc bình nhỏ màu xanh lục bảo trong đan điền khẽ rung lên, m�
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-98 text-white font-bold text-sm shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white hover:bg-zinc-800 active:scale-98 text-white font-bold text-sm shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Upload className={`w-4 h-4 ${submitting ? "animate-bounce" : ""}`} />
                 <span>{submitting ? "Đang đăng chương..." : "Đăng chương ngay"}</span>

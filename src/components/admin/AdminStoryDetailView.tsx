@@ -108,7 +108,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
   if (loading || !story) {
     return (
-      <div className="py-20 text-center text-slate-400">
+      <div className="py-20 text-center text-zinc-400">
         <p className="text-sm">Đang tải thông tin truyện...</p>
       </div>
     );
@@ -123,22 +123,22 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-white dark:bg-zinc-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-xl bg-white   border border-zinc-200   text-zinc-600  hover:bg-zinc-100 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900  flex items-center gap-2">
               <span>{story.title}</span>
               <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
                 story.isActive !== false
                   ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-amber-600"
+                  : "bg-zinc-100  text-zinc-900"
               }`}>
                 {story.isActive !== false ? "Đang hiện" : "Tạm ẩn"}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-zinc-500  mt-0.5">
               Tác giả: {story.author} • {story.volumes.length} quyển • {totalChaptersCount} chương • {formatNumber(story.views)} lượt xem
             </p>
           </div>
@@ -146,7 +146,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
         <button
           onClick={() => onUploadChapter(story.id)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white hover:bg-zinc-800 active:scale-95 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all self-start sm:self-auto"
         >
           <Upload className="w-4 h-4" />
           <span>Up chương mới</span>
@@ -158,16 +158,16 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         {story.volumes.map((volume) => (
           <div
             key={volume.id}
-            className="bg-white dark:bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden"
+            className="bg-white   rounded-2xl border border-zinc-200/80   shadow-sm overflow-hidden"
           >
             {/* Volume Header */}
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/60 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+            <div className="px-5 py-3.5 bg-zinc-50   border-b border-zinc-200   flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-zinc-900 dark:text-white" />
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                <Layers className="w-4 h-4 text-zinc-900 " />
+                <h3 className="font-bold text-sm text-zinc-900 ">
                   {volume.title}
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-zinc-400 font-mono">
                   ({volume.chapters.length} chương)
                 </span>
               </div>
@@ -175,29 +175,29 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
             {/* Chapters Table */}
             {volume.chapters.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-xs">
+              <div className="py-8 text-center text-zinc-400 text-xs">
                 Quyển này chưa có chương nào. Hãy nhấn "Up chương mới" để thêm.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              <div className="divide-y divide-slate-100  text-xs">
                 {volume.chapters.map((chapter) => {
                   const isChapActive = chapter.isActive !== false;
 
                   return (
                     <div
                       key={chapter.id}
-                      className="p-4 hover:bg-slate-50/80 dark:hover:bg-zinc-100 dark:bg-zinc-800/40 transition-colors flex items-center justify-between gap-4"
+                      className="p-4 hover:bg-zinc-50/80 :bg-zinc-100  transition-colors flex items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center font-mono flex-shrink-0">
+                        <span className="w-8 h-8 rounded-lg bg-zinc-100   text-zinc-700  font-bold flex items-center justify-center font-mono flex-shrink-0">
                           {chapter.number}
                         </span>
 
                         <div className="min-w-0">
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                          <h4 className="font-bold text-sm text-zinc-900  truncate">
                             {chapter.title}
                           </h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          <p className="text-[11px] text-zinc-500  mt-0.5">
                             {chapter.wordCount.toLocaleString()} chữ • Cập nhật: {chapter.updatedAt}
                           </p>
                         </div>
@@ -212,7 +212,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                             onClick={() => handleToggleChapterStatus(chapter)}
                             title={isChapActive ? "Gạt để tạm ẩn chương" : "Gạt để hiện chương"}
                             className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                              isChapActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                              isChapActive ? "bg-emerald-500" : "bg-slate-300 "
                             }`}
                           >
                             <div
@@ -222,7 +222,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                             />
                           </button>
                           <span className={`text-[10px] font-bold hidden sm:inline ${
-                            isChapActive ? "text-emerald-600" : "text-slate-400"
+                            isChapActive ? "text-emerald-600" : "text-zinc-400"
                           }`}>
                             {isChapActive ? "Hiện" : "Ẩn"}
                           </span>
@@ -232,7 +232,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         <button
                           onClick={() => onReadChapterOnWeb(story.id, chapter.id)}
                           title="Đọc thử chương này trên giao diện độc giả"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
+                          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-amber-50 :bg-zinc-100  transition-colors"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
@@ -241,7 +241,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         <button
                           onClick={() => handleOpenEditChapter(chapter)}
                           title="Chỉnh sửa nội dung chương"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
+                          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 :text-white hover:bg-zinc-100 :bg-zinc-100  transition-colors"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
@@ -250,7 +250,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         <button
                           onClick={() => setDeleteChapterTarget(chapter)}
                           title="Xoá chương"
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 :bg-rose-950/40 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -266,15 +266,15 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
       {/* Edit Chapter Modal */}
       {editingChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white  backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white   rounded-3xl border border-zinc-200   shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
+            <div className="px-6 py-5 border-b border-zinc-200   flex items-center justify-between">
+              <h3 className="text-lg font-black text-zinc-900 ">
                 Chỉnh sửa chương
               </h3>
               <button
                 onClick={() => setEditingChapter(null)}
-                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center"
+                className="w-8 h-8 rounded-xl bg-zinc-100   hover:bg-slate-200 text-zinc-500 hover:text-zinc-900 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -283,51 +283,51 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
             <form onSubmit={handleSaveChapter} className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                     Số chương
                   </label>
                   <input
                     type="number"
                     value={editNumber}
                     onChange={(e) => setEditNumber(parseInt(e.target.value) || 1)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-bold"
                     required
                   />
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                     Tiêu đề chương
                   </label>
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-bold"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                   Nội dung chương
                 </label>
                 <textarea
                   rows={12}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm leading-relaxed"
+                  className="w-full p-4 rounded-xl border border-zinc-200   bg-zinc-50   text-sm leading-relaxed"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+              <div className="flex items-center justify-between pt-3 border-t border-zinc-200  ">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-zinc-700 ">
                   <input
                     type="checkbox"
                     checked={editActive}
                     onChange={(e) => setEditActive(e.target.checked)}
-                    className="rounded text-zinc-900 dark:text-white w-4 h-4"
+                    className="rounded text-zinc-900  w-4 h-4"
                   />
                   <span>Hiển thị trên Web Đọc (Active)</span>
                 </label>
@@ -336,14 +336,14 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingChapter(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100"
                   >
                     Huỷ
                   </button>
                   <button
                     type="submit"
                     disabled={savingChapter}
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 text-white shadow-sm"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white hover:bg-zinc-800 text-white shadow-sm"
                   >
                     {savingChapter ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
@@ -356,18 +356,18 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
       {/* Delete Chapter Modal */}
       {deleteChapterTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="font-black text-lg text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white  backdrop-blur-sm">
+          <div className="bg-white   rounded-3xl border border-zinc-200   shadow-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="font-black text-lg text-zinc-900 ">
               Xác nhận xoá chương?
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-500  leading-relaxed">
               Bạn có chắc chắn muốn xoá vĩnh viễn <strong>"{deleteChapterTarget.title}"</strong>? Thao tác này không thể hoàn tác.
             </p>
             <div className="pt-2 flex justify-end gap-2">
               <button
                 onClick={() => setDeleteChapterTarget(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100"
               >
                 Huỷ
               </button>

@@ -146,16 +146,16 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white  backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white   rounded-3xl border border-zinc-200   shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-          <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+        <div className="px-6 py-5 border-b border-zinc-200   flex items-center justify-between">
+          <h3 className="text-lg font-black text-zinc-900  flex items-center gap-2">
             <span>{isEditing ? "Chỉnh sửa thông tin truyện" : "Tạo truyện mới"}</span>
           </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-xl bg-zinc-100   hover:bg-slate-200 text-zinc-500 hover:text-zinc-900 :text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -166,7 +166,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
           {/* Title & Author */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                 Tên truyện <span className="text-rose-500">*</span>
               </label>
               <input
@@ -174,13 +174,13 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ví dụ: Phàm Nhân Tu Tiên..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-medium text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                 Tác giả
               </label>
               <input
@@ -188,14 +188,14 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Ví dụ: Vong Ngữ..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-medium text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               />
             </div>
           </div>
 
           {/* Cover Image & Presets */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold text-zinc-700  mb-1.5">
               Ảnh bìa truyện (URL hoặc chọn mẫu có sẵn)
             </label>
             <div className="flex gap-3 items-center">
@@ -204,12 +204,12 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="https://..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               />
               <img
                 src={coverImage}
                 alt="Preview"
-                className="w-10 h-13 object-cover rounded-lg border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 flex-shrink-0 bg-slate-100"
+                className="w-10 h-13 object-cover rounded-lg border border-zinc-200   flex-shrink-0 bg-zinc-100"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = PRESET_COVERS[0];
                 }}
@@ -237,7 +237,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
 
           {/* Genres (Multi Select) */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold text-zinc-700  mb-1.5">
               Thể loại truyện (Chọn một hoặc nhiều) <span className="text-rose-500">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
@@ -250,8 +250,8 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                     onClick={() => toggleGenre(g)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                       selected
-                        ? "bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-white shadow-sm"
-                        : "bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        ? "bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white text-white shadow-sm"
+                        : "bg-zinc-100   text-zinc-600  hover:bg-slate-200 :bg-slate-700"
                     }`}
                   >
                     {selected && <Check className="w-3 h-3" />}
@@ -265,13 +265,13 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
           {/* Status & Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                 Trạng thái tiến độ
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as StoryStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm font-medium text-zinc-900  focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               >
                 <option value="Đang ra">Đang ra</option>
                 <option value="Hoàn thành">Hoàn thành</option>
@@ -281,7 +281,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
 
             {/* Active / Inactive Switch */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-zinc-700  mb-1.5">
                 Hiển thị trên Web Đọc (Active)
               </label>
               <div className="flex items-center gap-3 pt-1">
@@ -289,7 +289,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                   type="button"
                   onClick={() => setIsActive(!isActive)}
                   className={`w-12 h-6.5 rounded-full transition-colors relative p-0.5 ${
-                    isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                    isActive ? "bg-emerald-500" : "bg-slate-300 "
                   }`}
                 >
                   <div
@@ -298,7 +298,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                     }`}
                   />
                 </button>
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <span className="text-xs font-semibold text-zinc-700 ">
                   {isActive ? "🟢 Đang hiển thị (Active)" : "⚪ Tạm ẩn khỏi User Web (Inactive)"}
                 </span>
               </div>
@@ -307,7 +307,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold text-zinc-700  mb-1.5">
               Giới thiệu / Tóm tắt nội dung truyện
             </label>
             <textarea
@@ -315,46 +315,46 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Nhập tóm tắt bối cảnh, nhân vật chính, điểm lôi cuốn..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all leading-relaxed"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200   bg-zinc-50   text-sm text-zinc-900  placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all leading-relaxed"
             />
           </div>
 
           {/* Badges Toggle */}
           <div className="flex items-center gap-4 pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-zinc-700 ">
               <input
                 type="checkbox"
                 checked={hot}
                 onChange={(e) => setHot(e.target.checked)}
-                className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
+                className="rounded text-zinc-900  focus:ring-amber-500 w-4 h-4"
               />
               <span>Gắn huy hiệu HOT 🔥</span>
             </label>
 
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-zinc-700 ">
               <input
                 type="checkbox"
                 checked={featured}
                 onChange={(e) => setFeatured(e.target.checked)}
-                className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
+                className="rounded text-zinc-900  focus:ring-amber-500 w-4 h-4"
               />
               <span>Nổi bật (Featured) ⭐</span>
             </label>
           </div>
 
           {/* Modal Footer */}
-          <div className="pt-4 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-zinc-200   flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-600  hover:bg-zinc-100 :bg-zinc-100  transition-colors"
             >
               Huỷ bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-95 text-white transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800  :bg-zinc-200  text-white hover:bg-zinc-800 active:scale-95 text-white transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
               {loading ? "Đang xử lý..." : isEditing ? "Lưu thay đổi" : "Tạo truyện"}
             </button>
