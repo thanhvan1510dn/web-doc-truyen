@@ -78,6 +78,7 @@ function sanitizeStory(story: any): Story | null {
 class StoryStorageService {
   private channel: BroadcastChannel | null = null;
   private listeners: Set<() => void> = new Set();
+  private bridgeIframe: HTMLIFrameElement | null = null;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -93,11 +94,86 @@ class StoryStorageService {
       }
 
       window.addEventListener("storage", (event) => {
-        if (event.key === STORAGE_KEY) {
+        if (event.key === STORAGE_KEY || event.key === BACKUP_KEY) {
           this.notifyListeners();
         }
       });
+
+      // Listen for Cross-Domain Sync messages
+      window.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "SYNC_STORIES_DATA" && Array.isArray(event.data.stories)) {
+          this.importStoriesFromBridge(event.data.stories);
+        }
+      });
+
+      // Auto-mount cross domain bridge
+      this.initCrossDomainBridge();
     }
+  }
+
+  private initCrossDomainBridge(): void {
+    if (typeof document === "undefined") return;
+
+    try {
+      const isUserWeb = window.location.hostname.includes("web-doc-truyen");
+      const targetOrigin = isUserWeb
+        ? "https://admin-web-doc-truyen.vercel.app/sync-bridge.html"
+        : "https://web-doc-truyen-theta.vercel.app/sync-bridge.html";
+
+      const iframe = document.createElement("iframe");
+      iframe.src = targetOrigin;
+      iframe.style.display = "none";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.setAttribute("aria-hidden", "true");
+
+      document.body.appendChild(iframe);
+      this.bridgeIframe = iframe;
+
+      const pingBridge = () => {
+        try {
+          if (this.bridgeIframe && this.bridgeIframe.contentWindow) {
+            this.bridgeIframe.contentWindow.postMessage({ type: "REQUEST_STORIES_DATA" }, "*");
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
+
+      iframe.onload = () => {
+        pingBridge();
+        setTimeout(pingBridge, 500);
+        setTimeout(pingBridge, 2000);
+      };
+
+      // Periodic ping
+      setInterval(pingBridge, 3000);
+    } catch (e) {
+      console.warn("Could not mount sync bridge iframe", e);
+    }
+  }
+
+  public importStoriesFromBridge(incomingStories: any[]): boolean {
+    if (!Array.isArray(incomingStories) || incomingStories.length === 0) return false;
+    try {
+      const sanitized = incomingStories.map(sanitizeStory).filter(Boolean) as Story[];
+      if (sanitized.length === 0) return false;
+
+      const localStr = localStorage.getItem(STORAGE_KEY);
+      const currentJson = localStr ? localStr : "[]";
+      const newJson = JSON.stringify(sanitized);
+
+      if (currentJson !== newJson) {
+        localStorage.setItem(STORAGE_KEY, newJson);
+        localStorage.setItem(BACKUP_KEY, newJson);
+        this.notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      console.warn("Error importing bridge stories", e);
+    }
+    return false;
   }
 
   public subscribe(listener: () => void): () => void {
@@ -121,6 +197,13 @@ class StoryStorageService {
     this.notifyListeners();
     if (this.channel) {
       this.channel.postMessage({ type: "STORIES_UPDATED", timestamp: Date.now() });
+    }
+    if (this.bridgeIframe && this.bridgeIframe.contentWindow) {
+      const stories = this.loadStoriesFromStorage();
+      this.bridgeIframe.contentWindow.postMessage({
+        type: "SYNC_STORIES_DATA",
+        stories: stories
+      }, "*");
     }
   }
 
@@ -589,4 +672,3 @@ class StoryStorageService {
 }
 
 export const storyStorage = new StoryStorageService();
-

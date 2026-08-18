@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Storage Sync Bridge</title>
+</head>
+<body style="display:none">
+  <script>
+    const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
+    const BACKUP_KEY = "web_doc_truyen_stories_backup";
+
+    function getStories() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(BACKUP_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn("Bridge read error", e);
+      }
+      return [];
+    }
+
+    function broadcastToParent() {
+      const stories = getStories();
+      if (stories && stories.length > 0) {
+        window.parent.postMessage({
+          type: "SYNC_STORIES_DATA",
+          stories: stories,
+          timestamp: Date.now()
+        }, "*");
+      }
+    }
+
+    window.addEventListener("message", function(event) {
+      if (event.data && (event.data.type === "REQUEST_STORIES_DATA" || event.data.type === "CHECK_HEALTH")) {
+        broadcastToParent();
+      }
+    });
+
+    window.addEventListener("storage", function(event) {
+      if (event.key === STORAGE_KEY || event.key === BACKUP_KEY) {
+        broadcastToParent();
+      }
+    });
+
+    broadcastToParent();
+    setTimeout(broadcastToParent, 500);
+    setTimeout(broadcastToParent, 1500);
+  </script>
+</body>
+</html>
