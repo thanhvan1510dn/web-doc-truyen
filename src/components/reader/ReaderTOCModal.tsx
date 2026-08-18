@@ -98,11 +98,8 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                   className="flex items-center justify-between p-3 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500 text-white">
-                      Q.{volume.number}
-                    </span>
                     <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-slate-100">
-                      {volume.title}
+                      {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
                   <button className="text-gray-400">

@@ -119,11 +119,8 @@ export const VolumeList: React.FC<VolumeListProps> = ({
                   className="flex items-center justify-between p-3 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
-                      Quyển {volume.number}:
-                    </span>
-                    <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-slate-100">
-                      {volume.title}
+                    <span className="font-bold text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+                      {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
 

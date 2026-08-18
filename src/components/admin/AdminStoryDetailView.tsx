@@ -392,11 +392,8 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                       className="p-3.5 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-6 h-6 rounded-lg bg-zinc-900 text-white font-bold text-xs flex items-center justify-center font-mono flex-shrink-0">
-                          {volume.number || vIdx + 1}
-                        </span>
                         <h4 className="font-bold text-xs sm:text-sm text-zinc-900 truncate">
-                          {volume.title}
+                          {volume.title || `Mục lục ${vIdx + 1}`}
                         </h4>
                       </div>
 
