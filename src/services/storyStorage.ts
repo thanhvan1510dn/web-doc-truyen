@@ -5,7 +5,6 @@ import { ParsedVolume } from "./documentParserService";
 const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
 const BACKUP_KEY = "web_doc_truyen_stories_backup";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
-const CLOUD_SYNC_URL = "https://api.restful-api.dev/objects/ff8081819ff5b11001a014b452944219";
 
 const ALL_STORAGE_KEYS = [
   STORAGE_KEY,
@@ -31,7 +30,7 @@ function sanitizeStory(story: any): Story | null {
               id: c.id || "chap_" + (cIdx + 1),
               number: typeof c.number === "number" ? c.number : cIdx + 1,
               title: c.title || "Chương " + (cIdx + 1),
-              wordCount: typeof c.wordCount === "number" ? c.wordCount : 0,
+              wordCount: typeof c.wordCount === "number" ? c.wordCount : (c.content ? c.content.trim().split(/\s+/).length : 0),
               updatedAt: c.updatedAt || new Date().toISOString(),
               createdAt: c.createdAt || new Date().toISOString(),
               volumeId: c.volumeId || v.id || "vol_" + (vIdx + 1),
@@ -98,20 +97,6 @@ class StoryStorageService {
           this.notifyListeners();
         }
       });
-
-      // Auto-recover data on startup
-      this.recoverAndInit();
-    }
-  }
-
-  private async recoverAndInit(): Promise<void> {
-    const localStories = this.loadStoriesFromStorage();
-    if (localStories.length > 0) {
-      // We have local stories, back them up and push to cloud
-      this.pushToCloud(localStories);
-    } else {
-      // Local is empty, try to fetch from cloud
-      await this.syncFromCloud();
     }
   }
 
@@ -187,63 +172,8 @@ class StoryStorageService {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
       localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitized));
       this.broadcastChange();
-      this.pushToCloud(sanitized);
     } catch (e) {
       console.error("Error writing localStorage", e);
-    }
-  }
-
-  public async syncFromCloud(): Promise<Story[]> {
-    if (typeof window === "undefined") return [];
-    try {
-      const localStories = this.loadStoriesFromStorage();
-
-      const res = await fetch(CLOUD_SYNC_URL, { cache: "no-store" });
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.data?.stories && Array.isArray(json.data.stories)) {
-          const cloudSanitized = json.data.stories.map(sanitizeStory).filter(Boolean) as Story[];
-          
-          // Safety rule: Never overwrite existing local data with invalid or empty cloud data
-          if (cloudSanitized.length > 0) {
-            const cloudTotalChaps = cloudSanitized.reduce((sum, s) => sum + s.volumes.reduce((vSum, v) => vSum + v.chapters.length, 0), 0);
-            const localTotalChaps = localStories.reduce((sum, s) => sum + s.volumes.reduce((vSum, v) => vSum + v.chapters.length, 0), 0);
-
-            if (cloudTotalChaps >= localTotalChaps || localStories.length === 0) {
-              if (JSON.stringify(cloudSanitized) !== JSON.stringify(localStories)) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudSanitized));
-                localStorage.setItem(BACKUP_KEY, JSON.stringify(cloudSanitized));
-                this.notifyListeners();
-              }
-              return cloudSanitized;
-            } else {
-              // Local has more data, update cloud with local!
-              this.pushToCloud(localStories);
-              return localStories;
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("Cloud sync warning:", err);
-    }
-    return this.loadStoriesFromStorage();
-  }
-
-  private async pushToCloud(stories: Story[]): Promise<void> {
-    if (typeof window === "undefined" || !Array.isArray(stories) || stories.length === 0) return;
-    try {
-      const sanitized = stories.map(sanitizeStory).filter(Boolean) as Story[];
-      await fetch(CLOUD_SYNC_URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "web_doc_truyen_stories_data",
-          data: { stories: sanitized }
-        })
-      });
-    } catch (err) {
-      console.warn("Cloud push warning:", err);
     }
   }
 

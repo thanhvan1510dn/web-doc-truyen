@@ -14,8 +14,7 @@ export const storyApi = {
    */
   async getStories(params: StoryFilterParams = {}): Promise<ApiResponse<Story[]>> {
     try {
-      await storyStorage.syncFromCloud();
-      const data = storyStorage.getStories(params);
+            const data = storyStorage.getStories(params);
       return {
         success: true,
         data,
