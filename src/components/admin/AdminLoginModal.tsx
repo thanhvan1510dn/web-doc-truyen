@@ -59,19 +59,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950/75 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 relative">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors z-10"
+          className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors z-10"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Top Header Banner */}
         <div className="pt-8 pb-4 px-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-amber-500/25 mx-auto mb-3.5">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-zinc-800 to-zinc-600 dark:from-zinc-200 dark:to-zinc-400 flex items-center justify-center text-white shadow-lg shadow-amber-500/25 mx-auto mb-3.5">
             <Lock className="w-7 h-7" />
           </div>
           <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -104,7 +104,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 setErrorMsg("");
               }}
               placeholder="admin"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               required
               autoFocus
             />
@@ -124,7 +124,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   setErrorMsg("");
                 }}
                 placeholder="Nhập mật khẩu..."
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 required
               />
               <button
@@ -144,11 +144,11 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
               />
               <span>Ghi nhớ phiên đăng nhập</span>
             </label>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+            <span className="text-[11px] text-amber-600 dark:text-zinc-700 dark:text-zinc-300 font-semibold">
               Bảo mật 1 chủ sở hữu
             </span>
           </div>
@@ -157,14 +157,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+            className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-98 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
           >
             <span>{loading ? "Đang xác thực..." : "Đăng nhập Super Admin"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
           {/* Demo Quick fill for owner */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 text-center">
             <button
               type="button"
               onClick={() => {
@@ -172,7 +172,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 setPassword("admin123");
                 setErrorMsg("");
               }}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-[11px] font-bold text-amber-600 dark:text-amber-400 transition-colors border border-amber-500/20"
+              className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white/20 text-[11px] font-bold text-amber-600 dark:text-zinc-700 dark:text-zinc-300 transition-colors border border-amber-500/20"
             >
               👑 Điền nhanh tài khoản Super Admin (admin / admin123)
             </button>

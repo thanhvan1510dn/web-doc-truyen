@@ -123,7 +123,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-zinc-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -133,7 +133,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
               <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
                 story.isActive !== false
                   ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-amber-500/10 text-amber-600"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-amber-600"
               }`}>
                 {story.isActive !== false ? "Đang hiện" : "Tạm ẩn"}
               </span>
@@ -146,7 +146,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
         <button
           onClick={() => onUploadChapter(story.id)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all self-start sm:self-auto"
         >
           <Upload className="w-4 h-4" />
           <span>Up chương mới</span>
@@ -158,12 +158,12 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         {story.volumes.map((volume) => (
           <div
             key={volume.id}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden"
+            className="bg-white dark:bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden"
           >
             {/* Volume Header */}
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="px-5 py-3.5 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/60 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-amber-500" />
+                <Layers className="w-4 h-4 text-zinc-900 dark:text-white" />
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white">
                   {volume.title}
                 </h3>
@@ -186,10 +186,10 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                   return (
                     <div
                       key={chapter.id}
-                      className="p-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors flex items-center justify-between gap-4"
+                      className="p-4 hover:bg-slate-50/80 dark:hover:bg-zinc-100 dark:bg-zinc-800/40 transition-colors flex items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center font-mono flex-shrink-0">
+                        <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center font-mono flex-shrink-0">
                           {chapter.number}
                         </span>
 
@@ -232,7 +232,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         <button
                           onClick={() => onReadChapterOnWeb(story.id, chapter.id)}
                           title="Đọc thử chương này trên giao diện độc giả"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
@@ -241,7 +241,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         <button
                           onClick={() => handleOpenEditChapter(chapter)}
                           title="Chỉnh sửa nội dung chương"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
@@ -266,15 +266,15 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
       {/* Edit Chapter Modal */}
       {editingChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
+            <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
                 Chỉnh sửa chương
               </h3>
               <button
                 onClick={() => setEditingChapter(null)}
-                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center"
+                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -290,7 +290,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                     type="number"
                     value={editNumber}
                     onChange={(e) => setEditNumber(parseInt(e.target.value) || 1)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold"
                     required
                   />
                 </div>
@@ -302,7 +302,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-bold"
                     required
                   />
                 </div>
@@ -316,18 +316,18 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                   rows={12}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm leading-relaxed"
+                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm leading-relaxed"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
                   <input
                     type="checkbox"
                     checked={editActive}
                     onChange={(e) => setEditActive(e.target.checked)}
-                    className="rounded text-amber-500 w-4 h-4"
+                    className="rounded text-zinc-900 dark:text-white w-4 h-4"
                   />
                   <span>Hiển thị trên Web Đọc (Active)</span>
                 </label>
@@ -343,7 +343,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                   <button
                     type="submit"
                     disabled={savingChapter}
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 text-white shadow-sm"
                   >
                     {savingChapter ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
@@ -356,8 +356,8 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
       {/* Delete Chapter Modal */}
       {deleteChapterTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 max-w-md w-full space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 max-w-md w-full space-y-4">
             <h3 className="font-black text-lg text-slate-900 dark:text-white">
               Xác nhận xoá chương?
             </h3>

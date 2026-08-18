@@ -146,16 +146,16 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-zinc-900/70 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-150 my-8">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
             <span>{isEditing ? "Chỉnh sửa thông tin truyện" : "Tạo truyện mới"}</span>
           </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -174,7 +174,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ví dụ: Phàm Nhân Tu Tiên..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 required
               />
             </div>
@@ -188,7 +188,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Ví dụ: Vong Ngữ..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               />
             </div>
           </div>
@@ -204,12 +204,12 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="https://..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               />
               <img
                 src={coverImage}
                 alt="Preview"
-                className="w-10 h-13 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0 bg-slate-100"
+                className="w-10 h-13 object-cover rounded-lg border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 flex-shrink-0 bg-slate-100"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = PRESET_COVERS[0];
                 }}
@@ -250,8 +250,8 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                     onClick={() => toggleGenre(g)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                       selected
-                        ? "bg-amber-500 text-white shadow-sm"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        ? "bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-white shadow-sm"
+                        : "bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                     }`}
                   >
                     {selected && <Check className="w-3 h-3" />}
@@ -271,7 +271,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as StoryStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               >
                 <option value="Đang ra">Đang ra</option>
                 <option value="Hoàn thành">Hoàn thành</option>
@@ -315,7 +315,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Nhập tóm tắt bối cảnh, nhân vật chính, điểm lôi cuốn..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all leading-relaxed"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800/80 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all leading-relaxed"
             />
           </div>
 
@@ -326,7 +326,7 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 type="checkbox"
                 checked={hot}
                 onChange={(e) => setHot(e.target.checked)}
-                className="rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
               />
               <span>Gắn huy hiệu HOT 🔥</span>
             </label>
@@ -336,25 +336,25 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
                 type="checkbox"
                 checked={featured}
                 onChange={(e) => setFeatured(e.target.checked)}
-                className="rounded text-amber-500 focus:ring-amber-500 w-4 h-4"
+                className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
               />
               <span>Nổi bật (Featured) ⭐</span>
             </label>
           </div>
 
           {/* Modal Footer */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-100 dark:bg-zinc-800 transition-colors"
             >
               Huỷ bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-95 text-white transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
               {loading ? "Đang xử lý..." : isEditing ? "Lưu thay đổi" : "Tạo truyện"}
             </button>

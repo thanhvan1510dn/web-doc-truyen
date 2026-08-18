@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  FileUp, CheckCircle2, Sparkles, RefreshCw, 
+  FileUp, CheckCircle2, RefreshCw, 
   ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check, Scissors
 } from "lucide-react";
 import { storyApi } from "../../api";
@@ -82,7 +82,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
         setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện / Hồi trích xuất từ ${file.name}`);
       }
 
-      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện / Hồi & ${result.totalChapters} chương!`);
+      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện & ${result.totalChapters} chương!`);
     } catch (err: any) {
       toast.error(err.message || "Không thể đọc tệp");
     } finally {
@@ -112,10 +112,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: updatedVolumes,
     });
     setEditingVolNumber(null);
-    toast.success("Đã cập nhật tên Vị Diện / Hồi!");
+    toast.success("Đã đổi tên Vị Diện / Hồi!");
   };
 
-  // Split new Volume starting at specific chapter
   const handleSplitVolumeAtChapter = (volNumber: number, chapNumber: number) => {
     if (!parseResult) return;
 
@@ -132,7 +131,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
     const movedChapters = sourceVol.chapters.slice(splitIdx);
 
     const newVolTitle = window.prompt(
-      "Nhập tên Vị Diện / Hồi mới cho các chương từ Chương #" + chapNumber + ":",
+      "Nhập tên Vị Diện / Hồi mới cho các chương từ #" + chapNumber + ":",
       "Vị Diện " + (parseResult.volumes.length + 1)
     );
 
@@ -156,7 +155,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       }
     });
 
-    // Re-index volume numbers
     newVolumes.forEach((v, idx) => {
       v.number = idx + 1;
     });
@@ -167,10 +165,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: newVolumes,
     });
 
-    toast.success(`Đã tách thành công Vị Diện mới: "${newVolTitle}"!`);
+    toast.success(`Đã tách thành công: "${newVolTitle}"!`);
   };
 
-  // Merge volume with previous volume
   const handleMergeWithPrevVolume = (volNumber: number) => {
     if (!parseResult || volNumber <= 1) return;
 
@@ -190,12 +187,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: remainingVolumes,
     });
 
-    toast.success(`Đã gộp Vị Diện ${volNumber} vào "${prevVol.title}"!`);
+    toast.success(`Đã gộp vào "${prevVol.title}"!`);
   };
 
   const handleConfirmImport = async () => {
     if (!parseResult || parseResult.volumes.length === 0) {
-      toast.error("Chưa có dữ liệu chương");
+      toast.error("Chưa có dữ liệu");
       return;
     }
 
@@ -216,17 +213,17 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             coverImage: newStoryCover,
             genres: [newStoryGenre],
             status: "Đang ra",
-            description: newStoryDesc.trim() || `Tác phẩm gồm ${parseResult.totalVolumes} Vị Diện / Hồi truyện.`,
+            description: newStoryDesc.trim() || `Tác phẩm gồm ${parseResult.totalVolumes} Vị Diện.`,
             isActive: true,
           },
           parseResult.volumes
         );
 
         if (res.success) {
-          toast.success(`Đã tạo truyện "${res.data.title}" thành công!`);
+          toast.success(`Đã lưu truyện "${res.data.title}" thành công!`);
           if (onSuccess) onSuccess(res.data.id);
         } else {
-          toast.error(res.error || "Không thể nhập truyện");
+          toast.error(res.error || "Không thể nạp truyện");
         }
       } else {
         if (!selectedStoryId) {
@@ -245,7 +242,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           toast.success("Đã nạp nội dung vào truyện thành công!");
           if (onSuccess) onSuccess(selectedStoryId);
         } else {
-          toast.error(res.error || "Không thể nhập dữ liệu");
+          toast.error(res.error || "Không thể nạp dữ liệu");
         }
       }
     } catch (err: any) {
@@ -256,15 +253,14 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Page Header */}
       <div>
-        <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-amber-500" />
-          <span>Tự Động Bóc Tách File (PDF, Word DOCX, TXT)</span>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          Tự Động Bóc Tách Tệp (PDF, Word, TXT)
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Hệ thống nhận diện Tabs tài liệu thành <strong>Vị Diện / Hồi truyện</strong> và cho phép bạn tách/sửa tên trực tiếp trước khi nạp.
+        <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          Hệ thống nhận diện Tabs tài liệu thành các <strong>Vị Diện / Hồi</strong> và các <strong>Chương nhỏ</strong>.
         </p>
       </div>
 
@@ -279,10 +275,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               handleFileChange(e.dataTransfer.files[0]);
             }
           }}
-          className={`p-8 sm:p-12 rounded-3xl border-2 border-dashed text-center cursor-pointer transition-all ${
+          className={`p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all ${
             isParsing
-              ? "border-amber-500 bg-amber-500/5"
-              : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-500 shadow-sm"
+              ? "border-zinc-500 bg-zinc-100/60 dark:bg-zinc-900/60"
+              : "border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 shadow-sm"
           }`}
         >
           <input
@@ -297,39 +293,30 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             }}
           />
 
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-3.5">
+          <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mx-auto mb-3.5">
             {isParsing ? (
-              <RefreshCw className="w-7 h-7 animate-spin text-amber-500" />
+              <RefreshCw className="w-6 h-6 animate-spin" />
             ) : (
-              <FileUp className="w-7 h-7" />
+              <FileUp className="w-6 h-6" />
             )}
           </div>
 
-          <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-            {isParsing ? "Đang đọc các Tabs tài liệu..." : "Kéo thả hoặc bấm để chọn tệp"}
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+            {isParsing ? "Đang xử lý tệp..." : "Kéo thả hoặc bấm để chọn tệp"}
           </h3>
-
-          <div className="flex justify-center gap-2 mt-2.5">
-            <span className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 text-[11px] font-bold">
-              PDF (Tabs / Bookmarks)
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-[11px] font-bold">
-              DOCX (Word Headings)
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[11px] font-bold">
-              TXT (Văn bản)
-            </span>
-          </div>
+          <p className="text-xs text-zinc-400 mt-1">
+            Hỗ trợ định dạng .PDF, .DOCX (Word), .TXT
+          </p>
 
           {isParsing && (
             <div className="mt-5 max-w-sm mx-auto space-y-1.5">
-              <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-amber-500 h-full rounded-full transition-all duration-300"
+                  className="bg-zinc-900 dark:bg-white h-full rounded-full transition-all duration-200"
                   style={{ width: `${parseProgress}%` }}
                 />
               </div>
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 font-mono">
+              <p className="text-xs font-medium text-zinc-500 font-mono">
                 {parseProgress}% • {parseStatus}
               </p>
             </div>
@@ -337,24 +324,20 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
         </div>
       )}
 
-      {/* Parse Result and Import Settings */}
+      {/* Parse Result & Setup Form */}
       {parseResult && (
         <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Result Banner */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Summary Top Bar */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-amber-500 flex-shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <div>
-                <h4 className="font-black text-sm text-slate-900 dark:text-white">
-                  Đã bóc tách: <span className="text-amber-600">{selectedFile?.name}</span>
+                <h4 className="font-semibold text-sm text-zinc-900 dark:text-white">
+                  {selectedFile?.name}
                 </h4>
-                <div className="flex flex-wrap gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-                  <span className="text-amber-600 font-bold">🏛️ {parseResult.totalVolumes} Vị Diện / Hồi</span>
-                  <span>•</span>
-                  <span className="text-indigo-600 dark:text-indigo-400">📄 {parseResult.totalChapters} Chương</span>
-                  <span>•</span>
-                  <span className="text-slate-400 font-mono">🔤 {parseResult.totalWords.toLocaleString()} chữ</span>
-                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  {parseResult.totalVolumes} Vị Diện • {parseResult.totalChapters} Chương • {parseResult.totalWords.toLocaleString()} từ
+                </p>
               </div>
             </div>
 
@@ -363,23 +346,23 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                 setParseResult(null);
                 setSelectedFile(null);
               }}
-              className="text-xs font-bold text-slate-500 hover:text-rose-500 flex items-center gap-1 self-start sm:self-auto"
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 self-start sm:self-auto"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Đổi file khác</span>
+              <span>Đổi tệp khác</span>
             </button>
           </div>
 
-          {/* Import Settings Form */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit text-xs font-bold">
+          {/* Import Mode Form */}
+          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+            <div className="flex items-center p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setTargetMode("new")}
-                className={`px-3.5 py-1.5 rounded-lg transition-all ${
+                className={`px-3 py-1.5 rounded-md transition-all ${
                   targetMode === "new"
-                    ? "bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
-                    : "text-slate-600 dark:text-slate-400"
+                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 Tạo truyện mới
@@ -387,10 +370,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               <button
                 type="button"
                 onClick={() => setTargetMode("existing")}
-                className={`px-3.5 py-1.5 rounded-lg transition-all ${
+                className={`px-3 py-1.5 rounded-md transition-all ${
                   targetMode === "existing"
-                    ? "bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
-                    : "text-slate-600 dark:text-slate-400"
+                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 Nạp vào truyện có sẵn ({stories.length})
@@ -398,22 +381,22 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             </div>
 
             {targetMode === "new" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Tên truyện
                   </label>
                   <input
                     type="text"
                     value={newStoryTitle}
                     onChange={(e) => setNewStoryTitle(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Tác giả
                   </label>
                   <input
@@ -421,18 +404,18 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                     value={newStoryAuthor}
                     onChange={(e) => setNewStoryAuthor(e.target.value)}
                     placeholder="Chưa rõ"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Thể loại
                   </label>
                   <select
                     value={newStoryGenre}
                     onChange={(e) => setNewStoryGenre(e.target.value as StoryGenre)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
                   >
                     <option value="Huyền Huyễn">Huyền Huyễn</option>
                     <option value="Tiên Hiệp">Tiên Hiệp</option>
@@ -444,37 +427,37 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                     Ảnh bìa (URL)
                   </label>
                   <input
                     type="text"
                     value={newStoryCover}
                     onChange={(e) => setNewStoryCover(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
                   />
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 <select
                   value={selectedStoryId}
                   onChange={(e) => setSelectedStoryId(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white"
                 >
                   {stories.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.title} ({s.volumes.length} quyển/vị diện)
+                      {s.title} ({s.volumes.length} quyển)
                     </option>
                   ))}
                 </select>
 
-                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={replaceExisting}
                     onChange={(e) => setReplaceExisting(e.target.checked)}
-                    className="rounded text-amber-500 w-4 h-4"
+                    className="rounded text-zinc-900 dark:text-white w-4 h-4"
                   />
                   <span>Ghi đè toàn bộ các quyển cũ của truyện này</span>
                 </label>
@@ -482,18 +465,18 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             )}
           </div>
 
-          {/* Volumes & Chapters Tree with Exact Tab Names & Inline Rename & Split Button */}
+          {/* Volumes & Chapters Tree */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+              <h4 className="font-bold text-sm text-zinc-900 dark:text-white">
                 Cấu trúc Vị Diện & Chương ({parseResult.volumes.length} Vị Diện)
               </h4>
-              <span className="text-[11px] text-slate-400">
-                (Sửa tên Vị Diện: bấm ✏️ • Tách Vị Diện mới tại chương bất kỳ: bấm ✂️)
+              <span className="text-[11px] text-zinc-400">
+                (Sửa tên: bấm ✏️ • Tách Vị Diện mới: bấm ✂️)
               </span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {parseResult.volumes.map((volume) => {
                 const isCollapsed = !!collapsedVolIds[volume.number];
                 const isEditingThis = editingVolNumber === volume.number;
@@ -501,11 +484,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                 return (
                   <div
                     key={volume.number}
-                    className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm"
+                    className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm"
                   >
-                    <div className="p-3.5 bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-between select-none text-xs">
+                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/60 flex items-center justify-between select-none text-xs">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
-                        <span className="w-6 h-6 rounded-lg bg-amber-500 text-white font-black flex items-center justify-center font-mono flex-shrink-0">
+                        <span className="w-5 h-5 rounded-md bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-[11px] flex items-center justify-center font-mono flex-shrink-0">
                           {volume.number}
                         </span>
 
@@ -515,18 +498,18 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                               type="text"
                               value={editingVolTitle}
                               onChange={(e) => setEditingVolTitle(e.target.value)}
-                              className="px-2.5 py-1 rounded-lg border border-amber-500 bg-white dark:bg-slate-800 text-xs font-bold w-full"
+                              className="px-2.5 py-1 rounded-md border border-zinc-400 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-xs font-semibold w-full"
                               autoFocus
                             />
                             <button
                               onClick={() => handleSaveVolTitle(volume.number)}
-                              className="p-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600"
+                              className="p-1 rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setEditingVolNumber(null)}
-                              className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                              className="p-1 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -535,7 +518,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                           <div className="flex items-center gap-2 min-w-0">
                             <span 
                               onClick={() => toggleVolumeCollapse(volume.number)}
-                              className="font-bold text-slate-900 dark:text-white text-sm truncate cursor-pointer hover:text-amber-600"
+                              className="font-semibold text-zinc-900 dark:text-white text-xs truncate cursor-pointer hover:underline"
                             >
                               {volume.title}
                             </span>
@@ -546,10 +529,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                                 setEditingVolNumber(volume.number);
                                 setEditingVolTitle(volume.title);
                               }}
-                              className="p-1 text-slate-400 hover:text-amber-600 rounded"
-                              title="Sửa tên Vị Diện này"
+                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded"
+                              title="Sửa tên"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-3 h-3" />
                             </button>
 
                             {volume.number > 1 && (
@@ -559,10 +542,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                                   e.stopPropagation();
                                   handleMergeWithPrevVolume(volume.number);
                                 }}
-                                className="px-2 py-0.5 text-[10px] text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 rounded font-semibold"
+                                className="px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-rose-500 bg-zinc-200/60 dark:bg-zinc-800 rounded font-medium"
                                 title="Gộp vào Vị Diện phía trước"
                               >
-                                Gộp lên trên
+                                Gộp lên
                               </button>
                             )}
                           </div>
@@ -571,51 +554,50 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
 
                       <div 
                         onClick={() => toggleVolumeCollapse(volume.number)}
-                        className="flex items-center gap-2 font-bold text-amber-700 dark:text-amber-300 font-mono cursor-pointer"
+                        className="flex items-center gap-2 font-mono text-zinc-500 cursor-pointer text-[11px]"
                       >
                         <span>{volume.chapters.length} chương</span>
-                        {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                        {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 
                     {!isCollapsed && (
-                      <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
                         {volume.chapters.map((chapter, idx) => (
                           <div
                             key={chapter.number}
-                            className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 group"
+                            className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <span className="text-slate-400 font-mono font-bold text-[11px]">
+                              <span className="text-zinc-400 font-mono text-[11px]">
                                 #{chapter.number}
                               </span>
-                              <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                              <span className="font-normal text-zinc-800 dark:text-zinc-200 truncate">
                                 {chapter.title}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="text-[11px] text-slate-400 font-mono">
+                              <span className="text-[11px] text-zinc-400 font-mono">
                                 {chapter.wordCount.toLocaleString()} từ
                               </span>
 
-                              {/* Split into new volume button */}
                               {idx > 0 && (
                                 <button
                                   type="button"
                                   onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
-                                  className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white font-bold text-[10px] flex items-center gap-1 transition-all"
+                                  className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 font-semibold text-[10px] flex items-center gap-1 transition-all"
                                   title="Tách các chương từ đây thành Vị Diện mới"
                                 >
                                   <Scissors className="w-3 h-3" />
-                                  <span>Tách Vị Diện mới</span>
+                                  <span>Tách Vị Diện</span>
                                 </button>
                               )}
 
                               <button
                                 type="button"
                                 onClick={() => setPreviewChapter(chapter)}
-                                className="p-1 rounded text-slate-400 hover:text-amber-500"
+                                className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                                 title="Xem nội dung"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -631,12 +613,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             </div>
           </div>
 
-          {/* Action CTA */}
+          {/* Action Button */}
           <div className="pt-2">
             <button
               onClick={handleConfirmImport}
               disabled={isSaving}
-              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>{isSaving ? "Đang lưu..." : `Xác nhận nạp ${parseResult.totalVolumes} Vị Diện & ${parseResult.totalChapters} Chương` }</span>
               <ArrowRight className="w-4 h-4" />
@@ -647,15 +629,15 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
 
       {/* Chapter Preview Modal */}
       {previewChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 w-full max-w-xl space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="font-bold text-sm">{previewChapter.title}</h4>
-              <button onClick={() => setPreviewChapter(null)} className="p-1 text-slate-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 w-full max-w-xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
+              <h4 className="font-bold text-sm text-zinc-900 dark:text-white">{previewChapter.title}</h4>
+              <button onClick={() => setPreviewChapter(null)} className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="max-h-80 overflow-y-auto font-serif text-xs leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300">
+            <div className="max-h-80 overflow-y-auto font-serif text-xs leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
               {previewChapter.content}
             </div>
           </div>
