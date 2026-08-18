@@ -1,3 +1,5 @@
+import { UserSyncModal } from "../common/UserSyncModal";
+import { DownloadCloud } from "lucide-react";
 import React, { useState } from 'react';
 import { BookOpen, Sun, Moon, Coffee, Sparkles, ShieldCheck } from 'lucide-react';
 import { ThemeMode } from '../../types/story';
@@ -18,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onThemeChange,
 }) => {
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -39,7 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     : 'bg-white/90 border-gray-200 text-gray-800';
 
   return (
-    <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${navClasses}`}>
+    <>
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${navClasses}`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Logo / Home Button */}
         <div 
@@ -61,6 +65,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
+          
+          {/* Sync Button */}
+          <button
+            onClick={() => setSyncModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 dark:text-amber-400 text-xs font-bold transition-all shadow-sm"
+            title="Nạp truyện từ Admin"
+          >
+            <DownloadCloud className="w-3.5 h-3.5" />
+            <span>Nạp truyện từ Admin</span>
+          </button>
+  
           {/* Admin Switcher Button */}
           {onNavigateAdmin && (
             <button
@@ -136,5 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
     </header>
+      <UserSyncModal isOpen={syncModalOpen} onClose={() => setSyncModalOpen(false)} onSuccess={() => window.location.reload()} />
+    </>
   );
 };

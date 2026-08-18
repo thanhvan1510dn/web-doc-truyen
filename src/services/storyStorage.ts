@@ -565,6 +565,28 @@ class StoryStorageService {
     this.saveStoriesToStorage(stories);
     return newStory;
   }
+
+  public exportStoriesJson(): string {
+    const stories = this.loadStoriesFromStorage();
+    return JSON.stringify(stories, null, 2);
+  }
+
+  public importStoriesJson(jsonString: string): boolean {
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (Array.isArray(parsed)) {
+        const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
+        if (sanitized.length > 0) {
+          this.saveStoriesToStorage(sanitized);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error("Import failed", e);
+    }
+    return false;
+  }
 }
 
 export const storyStorage = new StoryStorageService();
+
