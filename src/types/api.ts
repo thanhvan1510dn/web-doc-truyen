@@ -23,11 +23,19 @@ export interface StoryFilterParams {
 
 export interface CreateStoryDto {
   title: string;
+  hanVietTitle?: string;
   author: string;
+  originalStatus?: string;
+  editStatus?: string;
   coverImage?: string;
-  genres: StoryGenre[];
+  genres: string[];
+  editorBeta?: string;
+  coverCredit?: string;
+  convertSource?: string;
+  convertLink?: string;
   status: StoryStatus;
   description: string;
+  warning?: string;
   featured?: boolean;
   hot?: boolean;
   isActive?: boolean;
@@ -61,6 +69,9 @@ export interface TrackReadingPayload {
 }
 
 export interface TimeSeriesFilterParams {
-  range?: "24h" | "7d" | "30d" | "all";
+  period?: "day" | "week" | "month" | "year";
+  range?: "7d" | "30d" | "90d" | "all" | string;
   storyId?: string;
+  from?: string;
+  to?: string;
 }

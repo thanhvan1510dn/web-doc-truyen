@@ -14,6 +14,7 @@ export const storyApi = {
    */
   async getStories(params: StoryFilterParams = {}): Promise<ApiResponse<Story[]>> {
     try {
+      await storyStorage.syncFromCloud();
       const data = storyStorage.getStories(params);
       return {
         success: true,
@@ -112,7 +113,7 @@ export const storyApi = {
       const updated = storyStorage.updateStory(id, dto);
       return {
         success: true,
-        data: updated,
+        data: updated || (null as any),
         message: "Cập nhật thông tin truyện thành công",
       };
     } catch (error: any) {
@@ -132,8 +133,8 @@ export const storyApi = {
       const updated = storyStorage.toggleStoryActive(id);
       return {
         success: true,
-        data: updated,
-        message: updated.isActive ? "Đã kích hoạt hiển thị truyện" : "Đã tạm ẩn truyện khỏi người đọc",
+        data: updated as Story,
+        message: updated?.isActive ? "Đã kích hoạt hiển thị truyện" : "Đã tạm ẩn truyện khỏi người đọc",
       };
     } catch (error: any) {
       return {
@@ -172,7 +173,7 @@ export const storyApi = {
       const restored = storyStorage.restoreStory(id);
       return {
         success: true,
-        data: restored,
+        data: restored as Story,
         message: "Đã khôi phục truyện thành công",
       };
     } catch (error: any) {
@@ -192,7 +193,7 @@ export const storyApi = {
       const vol = storyStorage.addVolume(storyId, title);
       return {
         success: true,
-        data: vol,
+        data: vol as Volume,
         message: "Tạo quyển mới thành công",
       };
     } catch (error: any) {
@@ -218,7 +219,7 @@ export const storyApi = {
       const newChapter = storyStorage.createChapter(dto);
       return {
         success: true,
-        data: newChapter,
+        data: newChapter || (null as any),
         message: "Đăng chương mới thành công",
       };
     } catch (error: any) {
@@ -238,7 +239,7 @@ export const storyApi = {
       const updated = storyStorage.updateChapter(storyId, chapterId, dto);
       return {
         success: true,
-        data: updated,
+        data: (updated as Chapter),
         message: "Cập nhật chương thành công",
       };
     } catch (error: any) {
@@ -258,8 +259,8 @@ export const storyApi = {
       const updated = storyStorage.toggleChapterActive(storyId, chapterId);
       return {
         success: true,
-        data: updated,
-        message: updated.isActive ? "Đã hiển thị chương" : "Đã tạm ẩn chương",
+        data: updated as Chapter,
+        message: updated?.isActive ? "Đã hiển thị chương" : "Đã tạm ẩn chương",
       };
     } catch (error: any) {
       return {
@@ -305,7 +306,7 @@ export const storyApi = {
       const story = storyStorage.importParsedVolumes(storyId, parsedVolumes, replaceExisting);
       return {
         success: true,
-        data: story,
+        data: story || (null as any),
         message: `Đã nhập thành công ${parsedVolumes.length} Vị Diện và toàn bộ các chương từ PDF!`,
       };
     } catch (error: any) {

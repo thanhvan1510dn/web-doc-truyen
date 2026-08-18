@@ -56,7 +56,7 @@ export const analyticsApi = {
   async getTimeSeries(params: TimeSeriesFilterParams = {}): Promise<ApiResponse<TimeSeriesPoint[]>> {
     try {
       const range = params.range || "7d";
-      const data = analyticsService.getTimeSeries(range, params.storyId);
+      const data = analyticsService.getTimeSeries(range as any, params.storyId);
       return {
         success: true,
         data,
