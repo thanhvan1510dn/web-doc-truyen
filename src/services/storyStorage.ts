@@ -1,22 +1,22 @@
-import { Story, Chapter, Volume } from "../types/story";
+﻿import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 import { ParsedVolume } from "./documentParserService";
 import { MOCK_STORIES } from "../data/mockStories";
+import { db } from "./firebase";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc, 
+  onSnapshot, 
+  increment,
+  Unsubscribe
+} from "firebase/firestore";
 
 const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
 const BACKUP_KEY = "web_doc_truyen_stories_backup";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
-
-const ALL_STORAGE_KEYS = [
-  STORAGE_KEY,
-  BACKUP_KEY,
-  "web_doc_truyen_stories_clean_v3",
-  "web_doc_truyen_stories_clean_v2",
-  "web_doc_truyen_stories_clean_v1",
-  "web_doc_truyen_stories_v1",
-  "web_doc_truyen_stories",
-  "novels_storage_stories",
-];
 
 function sanitizeStory(story: any): Story | null {
   if (!story || typeof story !== "object" || !story.title) return null;
@@ -44,7 +44,7 @@ function sanitizeStory(story: any): Story | null {
     : [];
 
   return {
-    id: story.id || "story_" + Date.now(),
+    id: String(story.id || "story_" + Date.now()),
     title: String(story.title || "").trim(),
     hanVietTitle: story.hanVietTitle ? String(story.hanVietTitle).trim() : undefined,
     author: String(story.author || "Chưa rõ").trim(),
@@ -79,9 +79,12 @@ function sanitizeStory(story: any): Story | null {
 class StoryStorageService {
   private channel: BroadcastChannel | null = null;
   private listeners: Set<() => void> = new Set();
-  private bridgeIframe: HTMLIFrameElement | null = null;
+  private firestoreUnsub: Unsubscribe | null = null;
+  private cachedStories: Story[] = [];
 
   constructor() {
+    this.cachedStories = this.loadFromLocalStorage();
+
     if (typeof window !== "undefined") {
       try {
         this.channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
@@ -96,93 +99,97 @@ class StoryStorageService {
 
       window.addEventListener("storage", (event) => {
         if (event.key === STORAGE_KEY || event.key === BACKUP_KEY) {
+          this.cachedStories = this.loadFromLocalStorage();
           this.notifyListeners();
         }
       });
 
-      // Listen for Cross-Domain Sync messages
-      window.addEventListener("message", (event) => {
-        if (event.data && event.data.type === "SYNC_STORIES_DATA" && Array.isArray(event.data.stories)) {
-          this.importStoriesFromBridge(event.data.stories);
-        }
-      });
-
-      // Auto-mount cross domain bridge
-      this.initCrossDomainBridge();
+      this.initFirestoreSync();
     }
   }
 
-  private initCrossDomainBridge(): void {
-    if (typeof document === "undefined") return;
+  public destroy(): void {
+    if (this.firestoreUnsub) {
+      this.firestoreUnsub();
+      this.firestoreUnsub = null;
+    }
+  }
 
+  private initFirestoreSync(): void {
     try {
-      const isUserWeb = window.location.hostname.includes("web-doc-truyen") && !window.location.hostname.includes("admin");
-      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      
-      let targetOrigin = "";
-      if (isLocalhost) {
-        targetOrigin = window.location.port === "5173"
-          ? "http://localhost:5174/sync-bridge.html"
-          : "http://localhost:5173/sync-bridge.html";
-      } else {
-        targetOrigin = isUserWeb
-          ? "https://admin-web-doc-truyen.vercel.app/sync-bridge.html"
-          : "https://web-doc-truyen.vercel.app/sync-bridge.html";
-      }
+      const storiesCol = collection(db, "stories");
+      this.firestoreUnsub = onSnapshot(
+        storiesCol,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const remoteStories: Story[] = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              const sanitized = sanitizeStory({ ...data, id: docSnap.id });
+              if (sanitized) {
+                remoteStories.push(sanitized);
+              }
+            });
 
-      const iframe = document.createElement("iframe");
-      iframe.src = targetOrigin;
-      iframe.style.display = "none";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      iframe.setAttribute("aria-hidden", "true");
-
-      document.body.appendChild(iframe);
-      this.bridgeIframe = iframe;
-
-      const pingBridge = () => {
-        try {
-          if (this.bridgeIframe && this.bridgeIframe.contentWindow) {
-            this.bridgeIframe.contentWindow.postMessage({ type: "REQUEST_STORIES_DATA" }, "*");
+            this.cachedStories = remoteStories;
+            this.saveToLocalStorage(remoteStories);
+            this.notifyListeners();
+          } else if (snapshot.empty && this.cachedStories.length === 0) {
+            this.seedMockStoriesToFirestore();
           }
-        } catch (e) {
-          // ignore
+        },
+        (error) => {
+          console.warn("Firestore snapshot error, using offline local cache:", error);
         }
-      };
-
-      iframe.onload = () => {
-        pingBridge();
-        setTimeout(pingBridge, 500);
-        setTimeout(pingBridge, 2000);
-      };
-
-      // Periodic ping
-      setInterval(pingBridge, 3000);
-    } catch (e) {
-      console.warn("Could not mount sync bridge iframe", e);
+      );
+    } catch (err) {
+      console.warn("Could not start Firestore listener:", err);
     }
   }
 
-  public importStoriesFromBridge(incomingStories: any[]): boolean {
-    if (!Array.isArray(incomingStories)) return false;
+  private async seedMockStoriesToFirestore(): Promise<void> {
+    if (!Array.isArray(MOCK_STORIES) || MOCK_STORIES.length === 0) return;
     try {
-      const sanitized = incomingStories.map(sanitizeStory).filter(Boolean) as Story[];
-
-      const localStr = localStorage.getItem(STORAGE_KEY);
-      const currentJson = localStr ? localStr : "[]";
-      const newJson = JSON.stringify(sanitized);
-
-      if (currentJson !== newJson) {
-        localStorage.setItem(STORAGE_KEY, newJson);
-        localStorage.setItem(BACKUP_KEY, newJson);
-        this.notifyListeners();
-        return true;
+      for (const s of MOCK_STORIES) {
+        const sanitized = sanitizeStory(s);
+        if (sanitized) {
+          await setDoc(doc(db, "stories", sanitized.id), sanitized);
+        }
       }
     } catch (e) {
-      console.warn("Error importing bridge stories", e);
+      console.warn("Auto-seed error:", e);
     }
-    return false;
+  }
+
+  private loadFromLocalStorage(): Story[] {
+    if (typeof window === "undefined") return [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data !== null) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.map(sanitizeStory).filter(Boolean) as Story[];
+        }
+      }
+    } catch (e) {
+      console.warn("Error reading localStorage", e);
+    }
+
+    if (Array.isArray(MOCK_STORIES) && MOCK_STORIES.length > 0) {
+      return MOCK_STORIES.map(sanitizeStory).filter(Boolean) as Story[];
+    }
+    return [];
+  }
+
+  private saveToLocalStorage(stories: Story[]): void {
+    if (typeof window === "undefined") return;
+    try {
+      const json = JSON.stringify(stories);
+      localStorage.setItem(STORAGE_KEY, json);
+      localStorage.setItem(BACKUP_KEY, json);
+    } catch (e) {
+      console.warn("Error writing localStorage", e);
+    }
   }
 
   public subscribe(listener: () => void): () => void {
@@ -203,102 +210,32 @@ class StoryStorageService {
   }
 
   private broadcastChange(): void {
+    this.saveToLocalStorage(this.cachedStories);
     this.notifyListeners();
     if (this.channel) {
       this.channel.postMessage({ type: "STORIES_UPDATED", timestamp: Date.now() });
     }
-    if (this.bridgeIframe && this.bridgeIframe.contentWindow) {
-      const stories = this.loadStoriesFromStorage();
-      this.bridgeIframe.contentWindow.postMessage({
-        type: "SYNC_STORIES_DATA",
-        stories: stories
-      }, "*");
-    }
   }
 
-  private loadStoriesFromStorage(): Story[] {
-    if (typeof window === "undefined") return [];
-
-    // Try current key first
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data !== null) {
-        const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) {
-          const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
-          return sanitized;
-        }
-      }
-    } catch (e) {
-      console.warn("Error reading main STORAGE_KEY", e);
-    }
-
-    // Auto-recovery fallback from any previous keys
-    for (const key of ALL_STORAGE_KEYS) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw !== null) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-            return sanitized;
-          }
-        }
-      } catch (e) {
-        // continue
-      }
-    }
-
-    // Default initial seed from MOCK_STORIES only if storage was never set
-    if (Array.isArray(MOCK_STORIES) && MOCK_STORIES.length > 0) {
-      const sanitizedMock = MOCK_STORIES.map(sanitizeStory).filter(Boolean) as Story[];
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedMock));
-        localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitizedMock));
-      } catch (e) {
-        // ignore
-      }
-      return sanitizedMock;
-    }
-
-    return [];
-  }
-
-  private saveStoriesToStorage(stories: Story[]): void {
-    if (typeof window === "undefined") return;
-    try {
-      const sanitized = stories.map(sanitizeStory).filter(Boolean) as Story[];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-      localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitized));
-      this.broadcastChange();
-    } catch (e) {
-      console.error("Error writing localStorage", e);
-    }
-  }
+  // --- CRUD METHODS (Realtime Cloud Firestore + Instant Optimistic Cache) ---
 
   public getStories(params: StoryFilterParams = {}): Story[] {
-    let stories = this.loadStoriesFromStorage();
+    let stories = [...this.cachedStories];
 
-    // Soft delete filter
     stories = stories.filter((s) => !s.isDeleted);
 
-    // Filter inactive if not explicitly requested
     if (!params.includeInactive) {
       stories = stories.filter((s) => s.isActive !== false);
     }
 
-    // Status filter
     if (params.status && params.status !== "Tất cả") {
       stories = stories.filter((s) => s.status === params.status);
     }
 
-    // Genre filter
     if (params.genre && params.genre !== "Tất cả") {
       stories = stories.filter((s) => s.genres.includes(params.genre as any));
     }
 
-    // Search query
     if (params.search && params.search.trim()) {
       const q = params.search.toLowerCase().trim();
       stories = stories.filter(
@@ -309,7 +246,6 @@ class StoryStorageService {
       );
     }
 
-    // Sorting
     if (params.sortBy) {
       const order = params.order === "asc" ? 1 : -1;
       stories.sort((a, b) => {
@@ -327,15 +263,13 @@ class StoryStorageService {
   }
 
   public getStoryById(id: string, includeInactive = false): Story | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === id && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === id && !s.isDeleted);
     if (!story) return null;
     if (!includeInactive && story.isActive === false) return null;
     return story;
   }
 
   public createStory(dto: CreateStoryDto): Story {
-    const stories = this.loadStoriesFromStorage();
     const now = new Date().toISOString();
     const newStory: Story = {
       id: "story_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
@@ -372,53 +306,71 @@ class StoryStorageService {
       featured: dto.featured || false,
     };
 
-    stories.unshift(newStory);
-    this.saveStoriesToStorage(stories);
+    this.cachedStories.unshift(newStory);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", newStory.id), newStory).catch((err) =>
+      console.error("Firestore create error:", err)
+    );
+
     return newStory;
   }
 
   public updateStory(id: string, dto: UpdateStoryDto): Story | null {
-    const stories = this.loadStoriesFromStorage();
-    const index = stories.findIndex((s) => s.id === id && !s.isDeleted);
+    const index = this.cachedStories.findIndex((s) => s.id === id && !s.isDeleted);
     if (index === -1) return null;
 
-    const current = stories[index];
+    const current = this.cachedStories[index];
     const updated: Story = {
       ...current,
       ...dto,
       updatedAt: new Date().toISOString(),
     };
 
-    stories[index] = updated;
-    this.saveStoriesToStorage(stories);
+    this.cachedStories[index] = updated;
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", id), updated).catch((err) =>
+      console.error("Firestore update error:", err)
+    );
+
     return updated;
   }
 
-  public deleteStory(id: string, soft = true): boolean {
-    const stories = this.loadStoriesFromStorage();
-    const index = stories.findIndex((s) => s.id === id);
+  public deleteStory(id: string, soft = false): boolean {
+    const index = this.cachedStories.findIndex((s) => s.id === id);
     if (index === -1) return false;
 
     if (soft) {
-      stories[index].isDeleted = true;
-      stories[index].deletedAt = new Date().toISOString();
+      this.cachedStories[index].isDeleted = true;
+      this.cachedStories[index].deletedAt = new Date().toISOString();
+      setDoc(doc(db, "stories", id), this.cachedStories[index]).catch((err) =>
+        console.error("Firestore soft delete error:", err)
+      );
     } else {
-      stories.splice(index, 1);
+      this.cachedStories.splice(index, 1);
+      deleteDoc(doc(db, "stories", id)).catch((err) =>
+        console.error("Firestore delete error:", err)
+      );
     }
 
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
     return true;
   }
 
   public restoreStory(id: string): Story | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === id);
+    const story = this.cachedStories.find((s) => s.id === id);
     if (!story) return null;
 
     story.isDeleted = false;
     story.deletedAt = undefined;
     story.updatedAt = new Date().toISOString();
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", id), story).catch((err) =>
+      console.error("Firestore restore error:", err)
+    );
+
     return story;
   }
 
@@ -427,19 +379,22 @@ class StoryStorageService {
   }
 
   public toggleStoryActive(id: string): Story | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === id);
+    const story = this.cachedStories.find((s) => s.id === id);
     if (!story) return null;
 
     story.isActive = !story.isActive;
     story.updatedAt = new Date().toISOString();
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", id), story).catch((err) =>
+      console.error("Firestore toggle status error:", err)
+    );
+
     return story;
   }
 
   public addVolume(storyId: string, title: string, number?: number): Volume | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return null;
 
     const newVolume: Volume = {
@@ -451,7 +406,12 @@ class StoryStorageService {
 
     story.volumes.push(newVolume);
     story.updatedAt = new Date().toISOString();
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+      console.error("Firestore addVolume error:", err)
+    );
+
     return newVolume;
   }
 
@@ -462,8 +422,7 @@ class StoryStorageService {
   }
 
   public addChapter(storyId: string, dto: CreateChapterDto): Chapter | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return null;
 
     let targetVol = story.volumes.find((v) => v.id === dto.volumeId || v.title === dto.volumeTitle);
@@ -493,13 +452,17 @@ class StoryStorageService {
 
     targetVol.chapters.push(newChapter);
     story.updatedAt = now;
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+      console.error("Firestore addChapter error:", err)
+    );
+
     return newChapter;
   }
 
   public updateChapter(storyId: string, chapterId: string, dto: UpdateChapterDto): Chapter | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return null;
 
     for (const vol of story.volumes) {
@@ -514,7 +477,12 @@ class StoryStorageService {
         };
         vol.chapters[chIndex] = updated;
         story.updatedAt = new Date().toISOString();
-        this.saveStoriesToStorage(stories);
+        this.broadcastChange();
+
+        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+          console.error("Firestore updateChapter error:", err)
+        );
+
         return updated;
       }
     }
@@ -522,8 +490,7 @@ class StoryStorageService {
   }
 
   public deleteChapter(storyId: string, chapterId: string): boolean {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return false;
 
     for (const vol of story.volumes) {
@@ -531,7 +498,12 @@ class StoryStorageService {
       if (idx !== -1) {
         vol.chapters.splice(idx, 1);
         story.updatedAt = new Date().toISOString();
-        this.saveStoriesToStorage(stories);
+        this.broadcastChange();
+
+        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+          console.error("Firestore deleteChapter error:", err)
+        );
+
         return true;
       }
     }
@@ -543,8 +515,7 @@ class StoryStorageService {
   }
 
   public toggleChapterActive(storyId: string, chapterId: string): Chapter | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return null;
 
     for (const vol of story.volumes) {
@@ -552,7 +523,12 @@ class StoryStorageService {
       if (ch) {
         ch.isActive = !ch.isActive;
         story.updatedAt = new Date().toISOString();
-        this.saveStoriesToStorage(stories);
+        this.broadcastChange();
+
+        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+          console.error("Firestore toggleChapter error:", err)
+        );
+
         return ch;
       }
     }
@@ -560,17 +536,19 @@ class StoryStorageService {
   }
 
   public incrementStoryViews(storyId: string, _arg2?: any): void {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId);
+    const story = this.cachedStories.find((s) => s.id === storyId);
     if (story) {
       story.views = (story.views || 0) + 1;
-      this.saveStoriesToStorage(stories);
+      this.broadcastChange();
+
+      updateDoc(doc(db, "stories", storyId), {
+        views: increment(1),
+      }).catch((err) => console.warn("Firestore incrementViews error:", err));
     }
   }
 
   public importParsedVolumes(storyId: string, parsedVolumes: ParsedVolume[], replaceExisting = true): Story | null {
-    const stories = this.loadStoriesFromStorage();
-    const story = stories.find((s) => s.id === storyId && !s.isDeleted);
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return null;
 
     const now = new Date().toISOString();
@@ -602,7 +580,12 @@ class StoryStorageService {
     }
 
     story.updatedAt = now;
-    this.saveStoriesToStorage(stories);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+      console.error("Firestore importParsedVolumes error:", err)
+    );
+
     return story;
   }
 
@@ -616,7 +599,6 @@ class StoryStorageService {
     },
     parsedVolumes: ParsedVolume[]
   ): Story {
-    const stories = this.loadStoriesFromStorage();
     const now = new Date().toISOString();
     const storyId = "story_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
 
@@ -661,14 +643,18 @@ class StoryStorageService {
       featured: false,
     };
 
-    stories.unshift(newStory);
-    this.saveStoriesToStorage(stories);
+    this.cachedStories.unshift(newStory);
+    this.broadcastChange();
+
+    setDoc(doc(db, "stories", storyId), newStory).catch((err) =>
+      console.error("Firestore importAsNewStory error:", err)
+    );
+
     return newStory;
   }
 
   public exportStoriesJson(): string {
-    const stories = this.loadStoriesFromStorage();
-    return JSON.stringify(stories, null, 2);
+    return JSON.stringify(this.cachedStories, null, 2);
   }
 
   public importStoriesJson(jsonString: string): boolean {
@@ -677,7 +663,11 @@ class StoryStorageService {
       if (Array.isArray(parsed)) {
         const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
         if (sanitized.length > 0) {
-          this.saveStoriesToStorage(sanitized);
+          this.cachedStories = sanitized;
+          this.broadcastChange();
+          for (const s of sanitized) {
+            setDoc(doc(db, "stories", s.id), s).catch(console.error);
+          }
           return true;
         }
       }
