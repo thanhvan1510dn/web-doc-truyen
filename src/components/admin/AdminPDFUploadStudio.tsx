@@ -79,10 +79,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       setParseResult(result);
       if (result.detectedTitle) {
         setNewStoryTitle(result.detectedTitle);
-        setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện / Hồi trích xuất từ ${file.name}`);
+        setNewStoryDesc("Tác phẩm gồm " + result.totalVolumes + " Mục lục trích xuất từ " + file.name);
       }
 
-      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện & ${result.totalChapters} chương!`);
+      toast.success("Đã nhận diện: " + result.totalVolumes + " Mục lục & " + result.totalChapters + " chương!");
     } catch (err: any) {
       toast.error(err.message || "Không thể đọc tệp");
     } finally {
@@ -112,7 +112,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: updatedVolumes,
     });
     setEditingVolNumber(null);
-    toast.success("Đã đổi tên Vị Diện / Hồi!");
+    toast.success("Đã đổi tên Mục lục!");
   };
 
   const handleSplitVolumeAtChapter = (volNumber: number, chapNumber: number) => {
@@ -123,7 +123,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
 
     const splitIdx = sourceVol.chapters.findIndex((c) => c.number === chapNumber);
     if (splitIdx <= 0) {
-      toast.error("Không thể tách ở đầu Vị Diện");
+      toast.error("Không thể tách ở đầu Mục lục");
       return;
     }
 
@@ -131,8 +131,8 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
     const movedChapters = sourceVol.chapters.slice(splitIdx);
 
     const newVolTitle = window.prompt(
-      "Nhập tên Vị Diện / Hồi mới cho các chương từ #" + chapNumber + ":",
-      "Vị Diện " + (parseResult.volumes.length + 1)
+      "Nhập tên Mục lục mới cho các chương từ #" + chapNumber + ":",
+      "Mục lục " + (parseResult.volumes.length + 1)
     );
 
     if (!newVolTitle || !newVolTitle.trim()) return;
@@ -165,7 +165,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: newVolumes,
     });
 
-    toast.success(`Đã tách thành công: "${newVolTitle}"!`);
+    toast.success("Đã tách thành công: " + newVolTitle);
   };
 
   const handleMergeWithPrevVolume = (volNumber: number) => {
@@ -187,12 +187,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       volumes: remainingVolumes,
     });
 
-    toast.success(`Đã gộp vào "${prevVol.title}"!`);
+    toast.success("Đã gộp vào " + prevVol.title);
   };
 
   const handleConfirmImport = async () => {
     if (!parseResult || parseResult.volumes.length === 0) {
-      toast.error("Chưa có dữ liệu");
+      toast.error("Chưa có dữ liệu chương");
       return;
     }
 
@@ -213,14 +213,14 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             coverImage: newStoryCover,
             genres: [newStoryGenre],
             status: "Đang ra",
-            description: newStoryDesc.trim() || `Tác phẩm gồm ${parseResult.totalVolumes} Vị Diện.`,
+            description: newStoryDesc.trim() || ("Tác phẩm gồm " + parseResult.totalVolumes + " Mục lục."),
             isActive: true,
           },
           parseResult.volumes
         );
 
         if (res.success) {
-          toast.success(`Đã lưu truyện "${res.data.title}" thành công!`);
+          toast.success("Đã lưu truyện " + res.data.title + " thành công!");
           if (onSuccess) onSuccess(res.data.id);
         } else {
           toast.error(res.error || "Không thể nạp truyện");
@@ -257,10 +257,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       {/* Page Header */}
       <div>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-          Tự Động Bóc Tách Tệp (PDF, Word, TXT)
+          Tự Động Bóc Tách Mục Lục & Chương (PDF, Word, TXT)
         </h2>
         <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Hệ thống nhận diện Tabs tài liệu thành các <strong>Vị Diện / Hồi</strong> và các <strong>Chương nhỏ</strong>.
+          Hệ thống nhận diện các <strong>Tab lớn thành Tên Mục Lục</strong> và các <strong>Tab nhỏ thành Chương</strong> thuộc Mục lục tương ứng.
         </p>
       </div>
 
@@ -275,11 +275,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               handleFileChange(e.dataTransfer.files[0]);
             }
           }}
-          className={`p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all ${
+          className={"p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all " + (
             isParsing
               ? "border-zinc-500 bg-zinc-100/60 dark:bg-zinc-900/60"
               : "border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 shadow-sm"
-          }`}
+          )}
         >
           <input
             ref={fileInputRef}
@@ -302,10 +302,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           </div>
 
           <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-            {isParsing ? "Đang xử lý tệp..." : "Kéo thả hoặc bấm để chọn tệp"}
+            {isParsing ? "Đang đọc các Tabs tài liệu..." : "Kéo thả hoặc bấm để chọn tệp"}
           </h3>
           <p className="text-xs text-zinc-400 mt-1">
-            Hỗ trợ định dạng .PDF, .DOCX (Word), .TXT
+            Hỗ trợ định dạng .PDF (Bookmarks/Tabs), .DOCX (Word Headings), .TXT
           </p>
 
           {isParsing && (
@@ -313,7 +313,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div
                   className="bg-zinc-900 dark:bg-white h-full rounded-full transition-all duration-200"
-                  style={{ width: `${parseProgress}%` }}
+                  style={{ width: parseProgress + "%" }}
                 />
               </div>
               <p className="text-xs font-medium text-zinc-500 font-mono">
@@ -336,7 +336,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                   {selectedFile?.name}
                 </h4>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  {parseResult.totalVolumes} Vị Diện • {parseResult.totalChapters} Chương • {parseResult.totalWords.toLocaleString()} từ
+                  {parseResult.totalVolumes} Mục lục • {parseResult.totalChapters} Chương • {parseResult.totalWords.toLocaleString()} từ
                 </p>
               </div>
             </div>
@@ -359,22 +359,22 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               <button
                 type="button"
                 onClick={() => setTargetMode("new")}
-                className={`px-3 py-1.5 rounded-md transition-all ${
+                className={"px-3 py-1.5 rounded-md transition-all " + (
                   targetMode === "new"
                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                }`}
+                )}
               >
                 Tạo truyện mới
               </button>
               <button
                 type="button"
                 onClick={() => setTargetMode("existing")}
-                className={`px-3 py-1.5 rounded-md transition-all ${
+                className={"px-3 py-1.5 rounded-md transition-all " + (
                   targetMode === "existing"
                     ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                }`}
+                )}
               >
                 Nạp vào truyện có sẵn ({stories.length})
               </button>
@@ -447,7 +447,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                 >
                   {stories.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.title} ({s.volumes.length} quyển)
+                      {s.title} ({s.volumes.length} mục lục)
                     </option>
                   ))}
                 </select>
@@ -459,7 +459,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                     onChange={(e) => setReplaceExisting(e.target.checked)}
                     className="rounded text-zinc-900 dark:text-white w-4 h-4"
                   />
-                  <span>Ghi đè toàn bộ các quyển cũ của truyện này</span>
+                  <span>Ghi đè toàn bộ các mục lục cũ của truyện này</span>
                 </label>
               </div>
             )}
@@ -469,10 +469,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-sm text-zinc-900 dark:text-white">
-                Cấu trúc Vị Diện & Chương ({parseResult.volumes.length} Vị Diện)
+                Danh sách Mục Lục & Chương ({parseResult.volumes.length} Mục lục)
               </h4>
               <span className="text-[11px] text-zinc-400">
-                (Sửa tên: bấm ✏️ • Tách Vị Diện mới: bấm ✂️)
+                (Sửa tên: bấm ✏️ • Tách Mục lục mới: bấm ✂️)
               </span>
             </div>
 
@@ -530,7 +530,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                                 setEditingVolTitle(volume.title);
                               }}
                               className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded"
-                              title="Sửa tên"
+                              title="Sửa tên mục lục"
                             >
                               <Edit3 className="w-3 h-3" />
                             </button>
@@ -543,7 +543,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                                   handleMergeWithPrevVolume(volume.number);
                                 }}
                                 className="px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-rose-500 bg-zinc-200/60 dark:bg-zinc-800 rounded font-medium"
-                                title="Gộp vào Vị Diện phía trước"
+                                title="Gộp vào mục lục phía trước"
                               >
                                 Gộp lên
                               </button>
@@ -565,7 +565,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                       <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
                         {volume.chapters.map((chapter, idx) => (
                           <div
-                            key={chapter.number}
+                            key={chapter.number + "-" + idx}
                             className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
                           >
                             <div className="flex items-center gap-2 truncate">
@@ -587,10 +587,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                                   type="button"
                                   onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
                                   className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 font-semibold text-[10px] flex items-center gap-1 transition-all"
-                                  title="Tách các chương từ đây thành Vị Diện mới"
+                                  title="Tách các chương từ đây thành Mục lục mới"
                                 >
                                   <Scissors className="w-3 h-3" />
-                                  <span>Tách Vị Diện</span>
+                                  <span>Tách Mục Lục</span>
                                 </button>
                               )}
 
@@ -620,7 +620,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
               disabled={isSaving}
               className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>{isSaving ? "Đang lưu..." : `Xác nhận nạp ${parseResult.totalVolumes} Vị Diện & ${parseResult.totalChapters} Chương` }</span>
+              <span>{isSaving ? "Đang lưu..." : ("Xác nhận nạp " + parseResult.totalVolumes + " Mục lục & " + parseResult.totalChapters + " Chương")}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
