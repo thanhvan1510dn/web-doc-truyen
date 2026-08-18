@@ -8,7 +8,7 @@ export interface Chapter {
   volumeId: string;
   volumeTitle: string;
   content: string;
-  isActive?: boolean; // true = visible, false = inactive/draft
+  isActive?: boolean;
 }
 
 export interface Volume {
@@ -20,66 +20,87 @@ export interface Volume {
 }
 
 export type StoryGenre = 
-  | 'Tất cả'
-  | 'Tiên Hiệp'
-  | 'Kiếm Hiệp'
-  | 'Huyền Huyễn'
-  | 'Đô Thị'
-  | 'Khoa Huyễn'
-  | 'Võng Du'
-  | 'Trinh Thám'
-  | 'Ngôn Tình'
-  | 'Lịch Sử'
-  | 'Hài Hước'
-  | 'Hệ Thống'
-  | 'Dị Giới';
+  | "Tất cả"
+  | "Tiên Hiệp"
+  | "Kiếm Hiệp"
+  | "Huyền Huyễn"
+  | "Đô Thị"
+  | "Khoa Huyễn"
+  | "Võng Du"
+  | "Trinh Thám"
+  | "Ngôn Tình"
+  | "Lịch Sử"
+  | "Hài Hước"
+  | "Hệ Thống"
+  | "Dị Giới"
+  | string;
 
-export type StoryStatus = 'Đang ra' | 'Hoàn thành' | 'Tạm dừng';
+export type StoryStatus = "Đang ra" | "Hoàn thành" | "Tạm dừng";
 
 export interface Story {
   id: string;
   title: string;
+  hanVietTitle?: string;
   author: string;
-  coverImage: string;
-  genres: StoryGenre[];
+  originalStatus?: string;
+  editStatus?: string;
   status: StoryStatus;
-  rating: number; // 0 - 5
+  genres: string[];
+  editorBeta?: string;
+  coverCredit?: string;
+  coverImage: string;
+  convertSource?: string;
+  convertLink?: string;
+  description: string;
+  warning?: string;
+  rating: number;
   ratingCount: number;
   views: number;
   favorites: number;
-  description: string;
   updatedAt: string;
   createdAt?: string;
   volumes: Volume[];
   featured?: boolean;
   hot?: boolean;
-  isActive?: boolean; // true = visible on user web, false = inactive
+  isActive?: boolean;
   isDeleted?: boolean;
   deletedAt?: string;
 }
 
-export type ThemeMode = 'light' | 'dark' | 'sepia' | 'midnight';
-export type FontFamily = 'sans' | 'serif' | 'lora' | 'mono';
-export type LineHeight = 'tight' | 'normal' | 'relaxed' | 'loose';
-export type ReaderWidth = 'narrow' | 'medium' | 'wide' | 'full';
-export type TextAlign = 'left' | 'justify';
+export interface StoryFilter {
+  genre?: string;
+  status?: string;
+  search?: string;
+  sortBy?: "latest" | "views" | "rating" | "chapters";
+  page?: number;
+  limit?: number;
+  includeInactive?: boolean;
+}
+
+export type ThemeMode = "light" | "sepia" | "dark" | "midnight";
+export type FontFamily = "serif" | "sans" | "lora" | "mono" | "jetbrains";
+export type LineHeight = "tight" | "normal" | "relaxed" | "loose";
+export type ReaderWidth = "narrow" | "medium" | "normal" | "wide" | "full";
 
 export interface ReaderSettings {
-  fontSize: number; // 14 -> 32
+  fontSize: number;
   fontFamily: FontFamily;
   lineHeight: LineHeight;
-  readerWidth: ReaderWidth;
-  textAlign: TextAlign;
   theme: ThemeMode;
-  autoScrollSpeed: number; // 0 = off, 1-5 = speed
+  readerWidth: ReaderWidth;
+  textAlign?: "left" | "justify";
+  paragraphSpacing?: number;
+  keepAwake?: boolean;
+  autoScrollSpeed?: number;
 }
 
 export interface ReadingProgress {
   storyId: string;
   chapterId: string;
-  chapterNumber: number;
-  chapterTitle: string;
-  volumeTitle: string;
-  percent: number;
+  chapterTitle?: string;
+  volumeTitle?: string;
+  chapterNumber?: number;
+  scrollPosition?: number;
+  scrollPercent?: number;
   updatedAt: number;
 }

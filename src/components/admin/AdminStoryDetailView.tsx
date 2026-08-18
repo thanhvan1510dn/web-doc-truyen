@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { 
   ArrowLeft, Upload, Edit, Trash2, Layers, Eye, X, FileUp, 
-  BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle
+  BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Info
 } from "lucide-react";
 import { Chapter, Story } from "../../types/story";
 import { storyApi } from "../../api";
-import { formatNumber } from "../../utils/format";
 import { useToast } from "../common/Toast";
 import { AdminPDFUploadStudio } from "./AdminPDFUploadStudio";
 import { AdminChapterUploadView } from "./AdminChapterUploadView";
+import { AdminStoryModal } from "./AdminStoryModal";
 
 interface AdminStoryDetailViewProps {
   storyId: string;
@@ -26,8 +26,11 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   const toast = useToast();
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState<"chapters" | "pdf-upload" | "manual-upload">(initialTab);
+  const [activeSubTab, setActiveSubTab] = useState<"chapters" | "pdf-upload" | "manual-upload" | "info">(initialTab);
   const [collapsedVolIds, setCollapsedVolIds] = useState<Record<string, boolean>>({});
+
+  // Edit Story Modal state
+  const [isEditStoryModalOpen, setIsEditStoryModalOpen] = useState(false);
 
   // Chapter Preview Modal
   const [previewChapter, setPreviewChapter] = useState<Chapter | null>(null);
@@ -149,7 +152,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab("chapters")}
-            className={"px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
               activeSubTab === "chapters"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -161,8 +164,21 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveSubTab("info")}
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+              activeSubTab === "info"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-900"
+            )}
+          >
+            <Info className="w-3.5 h-3.5" />
+            <span>Thông tin truyện</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSubTab("pdf-upload")}
-            className={"px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
               activeSubTab === "pdf-upload"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -175,7 +191,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab("manual-upload")}
-            className={"px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
               activeSubTab === "manual-upload"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
@@ -188,38 +204,118 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
       </div>
 
       {/* Story Summary Card */}
-      <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm flex flex-col sm:flex-row gap-4 items-start">
+      <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm flex flex-col sm:flex-row gap-5 items-start">
         <img
           src={story.coverImage}
           alt={story.title}
-          className="w-16 h-24 object-cover rounded-xl shadow-sm bg-zinc-100 flex-shrink-0"
+          className="w-20 h-28 object-cover rounded-xl shadow-sm bg-zinc-100 flex-shrink-0"
         />
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-bold text-zinc-900">
-              {story.title}
-            </h2>
-            {story.hot && (
-              <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-white text-[10px] font-bold">
-                HOT
-              </span>
-            )}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-zinc-900">
+                {story.title}
+              </h2>
+              {story.hot && (
+                <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-white text-[10px] font-bold">
+                  HOT
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsEditStoryModalOpen(true)}
+              className="px-3 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-xs font-semibold text-zinc-700 flex items-center gap-1 shadow-sm"
+            >
+              <Edit className="w-3.5 h-3.5 text-zinc-500" />
+              <span>Sửa thông tin</span>
+            </button>
           </div>
-          <p className="text-xs text-zinc-500">
-            Tác giả: <span className="text-zinc-700 font-semibold">{story.author}</span> • Thể loại:{" "}
-            <span className="text-zinc-700 font-medium">{story.genres.join(", ")}</span>
-          </p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 font-mono pt-1">
-            <span>🏛️ {story.volumes.length} Mục lục</span>
-            <span>•</span>
-            <span>📄 {totalChaptersCount} Chương</span>
-            <span>•</span>
-            <span>👁️ {formatNumber(story.views)} lượt xem</span>
+
+          {story.hanVietTitle && (
+            <p className="text-xs text-zinc-500">
+              Tên Hán Việt: <span className="text-zinc-700 italic">{story.hanVietTitle}</span>
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-xs text-zinc-600">
+            <p>Tác giả: <span className="font-semibold text-zinc-900">{story.author}</span></p>
+            {story.originalStatus && <p>Bản gốc: <span className="font-medium text-zinc-900">{story.originalStatus}</span></p>}
+            {story.editStatus && <p>Bản edit: <span className="font-medium text-zinc-900">{story.editStatus}</span></p>}
+            {story.editorBeta && <p className="col-span-full">Editor + Beta: <span className="font-medium text-zinc-900">{story.editorBeta}</span></p>}
+          </div>
+
+          <div className="flex flex-wrap gap-1 pt-1">
+            {story.genres.map((g) => (
+              <span key={g} className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[11px] font-medium">
+                {g}
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Content Area Based on Active SubTab */}
+      {activeSubTab === "info" && (
+        <div className="p-6 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+            <h3 className="font-bold text-sm text-zinc-900">Chi tiết Thông tin Tác phẩm & Văn án</h3>
+            <button
+              type="button"
+              onClick={() => setIsEditStoryModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold shadow-sm"
+            >
+              Chỉnh sửa thông tin
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase">Tên Hán Việt</span>
+              <p className="font-medium text-zinc-800">{story.hanVietTitle || "Chưa cập nhật"}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase">Người làm bìa (Designer)</span>
+              <p className="font-medium text-zinc-800">{story.coverCredit || "Chưa rõ"}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase">Editor + Beta</span>
+              <p className="font-medium text-zinc-800">{story.editorBeta || "Chưa cập nhật"}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase">Nguồn convert</span>
+              <p className="font-medium text-zinc-800">
+                {story.convertSource || "Chưa có"} {story.convertLink && (
+                  <a href={story.convertLink} target="_blank" rel="noreferrer" className="text-zinc-500 underline ml-1 hover:text-zinc-900">
+                    (Mở link)
+                  </a>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Van an */}
+          <div className="space-y-1.5 pt-2">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-500">Văn án tác phẩm</h4>
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 text-xs font-serif leading-relaxed text-zinc-800 whitespace-pre-wrap">
+              {story.description || "Chưa có văn án."}
+            </div>
+          </div>
+
+          {/* Warning */}
+          {story.warning && (
+            <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-amber-900 space-y-1">
+              <span className="font-bold uppercase tracking-wider text-[11px] text-amber-800">Warning (Cảnh báo trước khi đọc):</span>
+              <p className="leading-relaxed">{story.warning}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeSubTab === "pdf-upload" && (
         <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm">
           <AdminPDFUploadStudio
@@ -423,6 +519,19 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Story Modal */}
+      {isEditStoryModalOpen && (
+        <AdminStoryModal
+          isOpen={isEditStoryModalOpen}
+          storyToEdit={story}
+          onClose={() => setIsEditStoryModalOpen(false)}
+          onSuccess={() => {
+            setIsEditStoryModalOpen(false);
+            loadStory();
+          }}
+        />
       )}
 
       {/* Edit Chapter Modal */}
