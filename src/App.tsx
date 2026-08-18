@@ -10,6 +10,7 @@ import { AdminLayout, AdminTab } from "./components/admin/AdminLayout";
 import { AdminAnalyticsView } from "./components/admin/AdminAnalyticsView";
 import { AdminStoryListView } from "./components/admin/AdminStoryListView";
 import { AdminChapterUploadView } from "./components/admin/AdminChapterUploadView";
+import { AdminPDFUploadStudio } from "./components/admin/AdminPDFUploadStudio";
 import { AdminStoryDetailView } from "./components/admin/AdminStoryDetailView";
 import { AdminLoginModal } from "./components/admin/AdminLoginModal";
 import { authApi, storyApi } from "./api";
@@ -174,7 +175,16 @@ export const AppContent: React.FC = () => {
             />
           )}
 
-          {adminTab === "upload" && (
+          {adminTab === "pdf-upload" && (
+          <AdminPDFUploadStudio
+            onSuccess={(storyId) => {
+              setAdminSelectedStoryId(storyId);
+              setAdminTab("story-details");
+            }}
+          />
+        )}
+
+        {adminTab === "upload" && (
             <AdminChapterUploadView
               initialStoryId={adminSelectedStoryId}
               onBack={() => setAdminTab("stories")}

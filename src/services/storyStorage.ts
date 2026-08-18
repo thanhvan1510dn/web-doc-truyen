@@ -409,6 +409,69 @@ class StoryStorageService {
     }
   }
 
+  
+  public importParsedVolumes(
+    storyId: string,
+    parsedVolumes: Array<{
+      number: number;
+      title: string;
+      chapters: Array<{ number: number; title: string; content: string; wordCount: number }>;
+    }>,
+    replaceExisting = false
+  ): Story {
+    const stories = this.loadStoriesFromStorage();
+    const story = stories.find((s) => s.id === storyId);
+    if (!story) throw new Error("Story not found");
+
+    const nowStr = new Date().toISOString();
+    const dateOnly = nowStr.split("T")[0];
+
+    const newVolumes: Volume[] = parsedVolumes.map((pv, vIdx) => {
+      const volId = `${storyId}-vol-${pv.number || vIdx + 1}-${Date.now().toString().slice(-4)}`;
+      const chapters: Chapter[] = pv.chapters.map((pc, cIdx) => ({
+        id: `${storyId}-c${pc.number || cIdx + 1}-${Date.now().toString().slice(-4)}-${cIdx}`,
+        number: pc.number || cIdx + 1,
+        title: pc.title || `Chương ${pc.number || cIdx + 1}`,
+        wordCount: pc.wordCount || pc.content.trim().split(/\s+/).filter(Boolean).length,
+        updatedAt: dateOnly,
+        createdAt: nowStr,
+        volumeId: volId,
+        volumeTitle: pv.title,
+        content: pc.content,
+        isActive: true,
+      }));
+
+      return {
+        id: volId,
+        number: pv.number || vIdx + 1,
+        title: pv.title || `Quyển ${vIdx + 1}`,
+        chapters,
+      };
+    });
+
+    if (replaceExisting || story.volumes.length === 0 || (story.volumes.length === 1 && story.volumes[0].chapters.length === 0)) {
+      story.volumes = newVolumes;
+    } else {
+      story.volumes.push(...newVolumes);
+    }
+
+    story.updatedAt = dateOnly;
+    this.saveStoriesToStorage(stories);
+    return story;
+  }
+
+  public importAsNewStory(
+    dto: CreateStoryDto,
+    parsedVolumes: Array<{
+      number: number;
+      title: string;
+      chapters: Array<{ number: number; title: string; content: string; wordCount: number }>;
+    }>
+  ): Story {
+    const createdStory = this.createStory(dto);
+    return this.importParsedVolumes(createdStory.id, parsedVolumes, true);
+  }
+
   public resetToDefault(): void {
     const seeded = seedInitialStories();
     this.saveStoriesToStorage(seeded);
