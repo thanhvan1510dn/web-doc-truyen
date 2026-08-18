@@ -1,7 +1,7 @@
 import { ReadingEvent, TimeSeriesPoint, DashboardStats, StoryAnalyticsSummary } from "../types/analytics";
 import { storyStorage } from "./storyStorage";
 
-const ANALYTICS_STORAGE_KEY = "web_doc_truyen_analytics_events_v3";
+const ANALYTICS_STORAGE_KEY = "web_doc_truyen_analytics_clean_v4";
 const SESSION_ID_KEY = "web_doc_truyen_reader_session_id";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_analytics_channel";
 

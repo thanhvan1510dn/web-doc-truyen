@@ -2,7 +2,7 @@ import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 
 
-const STORAGE_KEY = "web_doc_truyen_stories_v3";
+const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
 
 // Clean fresh system: No demo data

@@ -58,7 +58,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     },
         {
       id: "pdf-upload",
-      label: "Tự động tách PDF",
+      label: "Tự động tách File (PDF/DOCX/TXT)",
       icon: <FileUp className="w-4 h-4 text-amber-500" />,
       badge: "Auto",
     },
