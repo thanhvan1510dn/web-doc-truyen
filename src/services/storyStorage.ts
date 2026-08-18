@@ -3,11 +3,77 @@ import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, Sto
 import { ParsedVolume } from "./documentParserService";
 
 const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
+const BACKUP_KEY = "web_doc_truyen_stories_backup";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
 const CLOUD_SYNC_URL = "https://api.restful-api.dev/objects/ff8081819ff5b11001a014b452944219";
 
-function seedInitialStories(): Story[] {
-  return [];
+const ALL_STORAGE_KEYS = [
+  STORAGE_KEY,
+  BACKUP_KEY,
+  "web_doc_truyen_stories_clean_v3",
+  "web_doc_truyen_stories_clean_v2",
+  "web_doc_truyen_stories_clean_v1",
+  "web_doc_truyen_stories_v1",
+  "web_doc_truyen_stories",
+  "novels_storage_stories",
+];
+
+function sanitizeStory(story: any): Story | null {
+  if (!story || typeof story !== "object" || !story.title) return null;
+
+  const volumes: Volume[] = Array.isArray(story.volumes)
+    ? story.volumes.map((v: any, vIdx: number) => ({
+        id: v.id || "vol_" + (vIdx + 1),
+        number: typeof v.number === "number" ? v.number : vIdx + 1,
+        title: v.title || "Mục lục " + (vIdx + 1),
+        chapters: Array.isArray(v.chapters)
+          ? v.chapters.map((c: any, cIdx: number) => ({
+              id: c.id || "chap_" + (cIdx + 1),
+              number: typeof c.number === "number" ? c.number : cIdx + 1,
+              title: c.title || "Chương " + (cIdx + 1),
+              wordCount: typeof c.wordCount === "number" ? c.wordCount : 0,
+              updatedAt: c.updatedAt || new Date().toISOString(),
+              createdAt: c.createdAt || new Date().toISOString(),
+              volumeId: c.volumeId || v.id || "vol_" + (vIdx + 1),
+              volumeTitle: c.volumeTitle || v.title || "Mục lục " + (vIdx + 1),
+              content: typeof c.content === "string" ? c.content : "",
+              isActive: c.isActive !== false,
+            }))
+          : [],
+      }))
+    : [];
+
+  return {
+    id: story.id || "story_" + Date.now(),
+    title: String(story.title || "").trim(),
+    hanVietTitle: story.hanVietTitle ? String(story.hanVietTitle).trim() : undefined,
+    author: String(story.author || "Chưa rõ").trim(),
+    originalStatus: story.originalStatus,
+    editStatus: story.editStatus,
+    status: story.status || "Đang ra",
+    genres: Array.isArray(story.genres) ? story.genres : ["Huyền Huyễn"],
+    editorBeta: story.editorBeta,
+    coverCredit: story.coverCredit,
+    coverImage:
+      story.coverImage ||
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
+    convertSource: story.convertSource,
+    convertLink: story.convertLink,
+    description: typeof story.description === "string" ? story.description : "",
+    warning: story.warning,
+    rating: typeof story.rating === "number" ? story.rating : 5.0,
+    ratingCount: typeof story.ratingCount === "number" ? story.ratingCount : 1,
+    views: typeof story.views === "number" ? story.views : 0,
+    favorites: typeof story.favorites === "number" ? story.favorites : 0,
+    updatedAt: story.updatedAt || new Date().toISOString(),
+    createdAt: story.createdAt || new Date().toISOString(),
+    volumes,
+    featured: !!story.featured,
+    hot: !!story.hot,
+    isActive: story.isActive !== false,
+    isDeleted: !!story.isDeleted,
+    deletedAt: story.deletedAt,
+  };
 }
 
 class StoryStorageService {
@@ -33,10 +99,19 @@ class StoryStorageService {
         }
       });
 
-      this.syncFromCloud();
-      setInterval(() => {
-        this.syncFromCloud();
-      }, 10000);
+      // Auto-recover data on startup
+      this.recoverAndInit();
+    }
+  }
+
+  private async recoverAndInit(): Promise<void> {
+    const localStories = this.loadStoriesFromStorage();
+    if (localStories.length > 0) {
+      // We have local stories, back them up and push to cloud
+      this.pushToCloud(localStories);
+    } else {
+      // Local is empty, try to fetch from cloud
+      await this.syncFromCloud();
     }
   }
 
@@ -65,27 +140,54 @@ class StoryStorageService {
   }
 
   private loadStoriesFromStorage(): Story[] {
-    if (typeof window === "undefined") return seedInitialStories();
+    if (typeof window === "undefined") return [];
+
+    // Try current key first
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) {
-        const seeded = seedInitialStories();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-        return seeded;
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
+          if (sanitized.length > 0) {
+            return sanitized;
+          }
+        }
       }
-      return JSON.parse(data) as Story[];
     } catch (e) {
-      console.error("Error reading localStorage", e);
-      return seedInitialStories();
+      console.warn("Error reading main STORAGE_KEY", e);
     }
+
+    // Auto-recovery fallback from any previous keys
+    for (const key of ALL_STORAGE_KEYS) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
+            if (sanitized.length > 0) {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+              return sanitized;
+            }
+          }
+        }
+      } catch (e) {
+        // continue
+      }
+    }
+
+    return [];
   }
 
   private saveStoriesToStorage(stories: Story[]): void {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stories));
+      const sanitized = stories.map(sanitizeStory).filter(Boolean) as Story[];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+      localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitized));
       this.broadcastChange();
-      this.pushToCloud(stories);
+      this.pushToCloud(sanitized);
     } catch (e) {
       console.error("Error writing localStorage", e);
     }
@@ -94,36 +196,50 @@ class StoryStorageService {
   public async syncFromCloud(): Promise<Story[]> {
     if (typeof window === "undefined") return [];
     try {
+      const localStories = this.loadStoriesFromStorage();
+
       const res = await fetch(CLOUD_SYNC_URL, { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         if (json?.data?.stories && Array.isArray(json.data.stories)) {
-          const cloudStories: Story[] = json.data.stories;
-          const localStr = localStorage.getItem(STORAGE_KEY);
-          const localStories: Story[] = localStr ? JSON.parse(localStr) : [];
+          const cloudSanitized = json.data.stories.map(sanitizeStory).filter(Boolean) as Story[];
           
-          if (JSON.stringify(cloudStories) !== JSON.stringify(localStories)) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudStories));
-            this.notifyListeners();
+          // Safety rule: Never overwrite existing local data with invalid or empty cloud data
+          if (cloudSanitized.length > 0) {
+            const cloudTotalChaps = cloudSanitized.reduce((sum, s) => sum + s.volumes.reduce((vSum, v) => vSum + v.chapters.length, 0), 0);
+            const localTotalChaps = localStories.reduce((sum, s) => sum + s.volumes.reduce((vSum, v) => vSum + v.chapters.length, 0), 0);
+
+            if (cloudTotalChaps >= localTotalChaps || localStories.length === 0) {
+              if (JSON.stringify(cloudSanitized) !== JSON.stringify(localStories)) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudSanitized));
+                localStorage.setItem(BACKUP_KEY, JSON.stringify(cloudSanitized));
+                this.notifyListeners();
+              }
+              return cloudSanitized;
+            } else {
+              // Local has more data, update cloud with local!
+              this.pushToCloud(localStories);
+              return localStories;
+            }
           }
-          return cloudStories;
         }
       }
     } catch (err) {
       console.warn("Cloud sync warning:", err);
     }
-    return [];
+    return this.loadStoriesFromStorage();
   }
 
   private async pushToCloud(stories: Story[]): Promise<void> {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !Array.isArray(stories) || stories.length === 0) return;
     try {
+      const sanitized = stories.map(sanitizeStory).filter(Boolean) as Story[];
       await fetch(CLOUD_SYNC_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "web_doc_truyen_stories_data",
-          data: { stories }
+          data: { stories: sanitized }
         })
       });
     } catch (err) {
@@ -434,7 +550,6 @@ class StoryStorageService {
         id: volumeId,
         number: pv.number || vIdx + 1,
         title: pv.title,
-        
         chapters: pv.chapters.map((ch, cIdx) => ({
           id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
           number: ch.number || cIdx + 1,
@@ -481,7 +596,6 @@ class StoryStorageService {
         id: volumeId,
         number: pv.number || vIdx + 1,
         title: pv.title,
-        
         chapters: pv.chapters.map((ch, cIdx) => ({
           id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
           number: ch.number || cIdx + 1,
