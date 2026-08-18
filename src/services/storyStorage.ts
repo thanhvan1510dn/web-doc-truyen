@@ -18,6 +18,11 @@ const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
 const BACKUP_KEY = "web_doc_truyen_stories_backup";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
 
+function toFirestoreData(data: any): any {
+  if (data === undefined) return null;
+  return JSON.parse(JSON.stringify(data));
+}
+
 function sanitizeStory(story: any): Story | null {
   if (!story || typeof story !== "object" || !story.title) return null;
 
@@ -153,7 +158,7 @@ class StoryStorageService {
       for (const s of MOCK_STORIES) {
         const sanitized = sanitizeStory(s);
         if (sanitized) {
-          await setDoc(doc(db, "stories", sanitized.id), sanitized);
+          await setDoc(doc(db, "stories", sanitized.id), toFirestoreData(sanitized));
         }
       }
     } catch (e) {
@@ -309,7 +314,7 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", newStory.id), newStory).catch((err) =>
+    setDoc(doc(db, "stories", newStory.id), toFirestoreData(newStory)).catch((err) =>
       console.error("Firestore create error:", err)
     );
 
@@ -330,7 +335,7 @@ class StoryStorageService {
     this.cachedStories[index] = updated;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), updated).catch((err) =>
+    setDoc(doc(db, "stories", id), toFirestoreData(updated)).catch((err) =>
       console.error("Firestore update error:", err)
     );
 
@@ -344,7 +349,7 @@ class StoryStorageService {
     if (soft) {
       this.cachedStories[index].isDeleted = true;
       this.cachedStories[index].deletedAt = new Date().toISOString();
-      setDoc(doc(db, "stories", id), this.cachedStories[index]).catch((err) =>
+      setDoc(doc(db, "stories", id), toFirestoreData(this.cachedStories[index])).catch((err) =>
         console.error("Firestore soft delete error:", err)
       );
     } else {
@@ -367,7 +372,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), story).catch((err) =>
+    setDoc(doc(db, "stories", id), toFirestoreData(story)).catch((err) =>
       console.error("Firestore restore error:", err)
     );
 
@@ -386,7 +391,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), story).catch((err) =>
+    setDoc(doc(db, "stories", id), toFirestoreData(story)).catch((err) =>
       console.error("Firestore toggle status error:", err)
     );
 
@@ -408,7 +413,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
       console.error("Firestore addVolume error:", err)
     );
 
@@ -454,7 +459,7 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
       console.error("Firestore addChapter error:", err)
     );
 
@@ -479,7 +484,7 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
           console.error("Firestore updateChapter error:", err)
         );
 
@@ -500,7 +505,7 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
           console.error("Firestore deleteChapter error:", err)
         );
 
@@ -525,7 +530,7 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), story).catch((err) =>
+        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
           console.error("Firestore toggleChapter error:", err)
         );
 
@@ -582,7 +587,7 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), story).catch((err) =>
+    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
       console.error("Firestore importParsedVolumes error:", err)
     );
 
@@ -646,7 +651,7 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), newStory).catch((err) =>
+    setDoc(doc(db, "stories", storyId), toFirestoreData(newStory)).catch((err) =>
       console.error("Firestore importAsNewStory error:", err)
     );
 
@@ -666,7 +671,7 @@ class StoryStorageService {
           this.cachedStories = sanitized;
           this.broadcastChange();
           for (const s of sanitized) {
-            setDoc(doc(db, "stories", s.id), s).catch(console.error);
+            setDoc(doc(db, "stories", s.id), toFirestoreData(s)).catch(console.error);
           }
           return true;
         }

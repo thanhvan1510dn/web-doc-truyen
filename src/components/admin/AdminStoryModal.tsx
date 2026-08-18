@@ -404,14 +404,19 @@ export const AdminStoryModal: React.FC<AdminStoryModalProps> = ({
 
           {/* Section 4: Văn án (Description) */}
           <div className="space-y-1 pt-1">
-            <label className="block text-xs font-semibold text-zinc-700">
-              Văn án (Tóm tắt / Giới thiệu nội dung truyện)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-zinc-700">
+                Văn án (Tóm tắt / Giới thiệu nội dung truyện)
+              </label>
+              <span className="text-[10px] text-amber-600 font-medium">
+                Hỗ trợ gán link: https://... hoặc [Tên link](https://...)
+              </span>
+            </div>
             <textarea
               rows={5}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ninh Thư chết đi, lại may mắn trở thành nhiệm vụ giả, có nghĩa vụ phải nghịch tập thay những pháo hôi với cuộc đời bi đát..."
+              placeholder="Nhập văn án tác phẩm... Bạn có thể dán đường link https://... hoặc cú pháp [Tên link](https://...) để người đọc bấm vào."
               className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 bg-zinc-50 text-xs font-serif leading-relaxed text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-400"
             />
           </div>

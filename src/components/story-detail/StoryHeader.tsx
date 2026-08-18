@@ -9,6 +9,62 @@ interface StoryHeaderProps {
   onStartReading: (chapterId: string) => void;
 }
 
+function renderLinkedText(text: string) {
+  if (!text) return null;
+  // Match [link text](url) or standalone https?://...
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+)/g;
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      elements.push(text.substring(lastIndex, match.index));
+    }
+
+    if (match[1] && match[2]) {
+      const linkText = match[1];
+      const linkUrl = match[2];
+      elements.push(
+        <a
+          key={match.index}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-amber-600 dark:text-amber-400 underline font-semibold hover:text-amber-700 dark:hover:text-amber-300 inline-flex items-center gap-0.5 mx-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{linkText}</span>
+          <ExternalLink className="w-3 h-3 inline" />
+        </a>
+      );
+    } else if (match[3]) {
+      const plainUrl = match[3];
+      elements.push(
+        <a
+          key={match.index}
+          href={plainUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-amber-600 dark:text-amber-400 underline font-medium hover:text-amber-700 dark:hover:text-amber-300 break-all inline-flex items-center gap-0.5 mx-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{plainUrl}</span>
+          <ExternalLink className="w-3 h-3 inline flex-shrink-0" />
+        </a>
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    elements.push(text.substring(lastIndex));
+  }
+
+  return elements;
+}
+
 export const StoryHeader: React.FC<StoryHeaderProps> = ({
   story,
   onBack,
@@ -141,7 +197,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             Văn án tác phẩm
           </h3>
           <div className="text-xs sm:text-sm font-serif leading-relaxed text-gray-700 dark:text-slate-300 whitespace-pre-wrap">
-            {story.description}
+            {renderLinkedText(story.description)}
           </div>
         </div>
       )}
