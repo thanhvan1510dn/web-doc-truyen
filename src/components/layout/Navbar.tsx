@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BookOpen, Sun, Moon, Coffee, Sparkles, ShieldCheck } from "lucide-react";
+import { BookOpen, Sun, Moon, Coffee, Sparkles, LogIn } from "lucide-react";
 import { ThemeMode } from "../../types/story";
 
 interface NavbarProps {
@@ -62,15 +62,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          {/* Admin Switcher Button */}
+          {/* Login Button */}
           {onNavigateAdmin && (
             <button
               onClick={onNavigateAdmin}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 dark:text-amber-400 text-xs font-bold transition-all shadow-sm"
-              title="Mở Trang Quản Trị Truyện"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 hover:bg-gray-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 text-xs font-semibold transition-all shadow-sm"
+              title="Đăng nhập"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Quản Trị</span>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
             </button>
           )}
 

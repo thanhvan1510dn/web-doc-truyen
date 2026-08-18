@@ -17,8 +17,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onLoginSuccess,
 }) => {
   const toast = useToast();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      setErrorMsg("Vui lòng nhập tài khoản Super Admin");
+      setErrorMsg("Vui lòng nhập tài khoản");
       return;
     }
     if (!password) {
@@ -49,7 +49,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setLoading(false);
 
     if (res.success) {
-      toast.success("Đăng nhập Super Admin thành công!");
+      toast.success("Đăng nhập thành công!");
       onLoginSuccess();
       onClose();
     } else {
@@ -59,26 +59,26 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 relative">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors z-10"
+          className="absolute right-4 top-4 w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors z-10"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Top Header Banner */}
-        <div className="pt-8 pb-4 px-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-zinc-800 to-zinc-600 dark:from-zinc-200 dark:to-zinc-400 flex items-center justify-center text-white shadow-lg shadow-amber-500/25 mx-auto mb-3.5">
-            <Lock className="w-7 h-7" />
+        <div className="pt-8 pb-3 px-6 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center shadow-md mx-auto mb-3">
+            <Lock className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-            Đăng Nhập Super Admin
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+            Đăng Nhập Quản Trị
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
-            Khu vực dành riêng cho Chủ sở hữu hệ thống Quản trị Web Đọc Truyện.
+            Hệ thống quản lý nội dung & phân quyền
           </p>
         </div>
 
@@ -93,8 +93,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
           {/* Username Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Tài khoản Super Admin
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Tài khoản
             </label>
             <input
               type="text"
@@ -103,8 +103,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 setUsername(e.target.value);
                 setErrorMsg("");
               }}
-              placeholder="admin"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              placeholder="Nhập tài khoản..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
               required
               autoFocus
             />
@@ -112,8 +112,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
           {/* Password Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Mật khẩu truy cập
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Mật khẩu
             </label>
             <div className="relative">
               <input
@@ -124,7 +124,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   setErrorMsg("");
                 }}
                 placeholder="Nhập mật khẩu..."
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-100 dark:bg-zinc-800 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
                 required
               />
               <button
@@ -137,7 +137,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             </div>
           </div>
 
-          {/* Remember me & Helper */}
+          {/* Remember me */}
           <div className="flex items-center justify-between text-xs pt-1">
             <label className="flex items-center gap-2 text-slate-600 dark:text-slate-400 cursor-pointer select-none font-medium">
               <input
@@ -146,37 +146,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded text-zinc-900 dark:text-white focus:ring-amber-500 w-4 h-4"
               />
-              <span>Ghi nhớ phiên đăng nhập</span>
+              <span>Ghi nhớ đăng nhập</span>
             </label>
-            <span className="text-[11px] text-amber-600 dark:text-zinc-700 dark:text-zinc-300 font-semibold">
-              Bảo mật 1 chủ sở hữu
-            </span>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white hover:bg-amber-600 active:scale-98 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+            className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-3"
           >
-            <span>{loading ? "Đang xác thực..." : "Đăng nhập Super Admin"}</span>
+            <span>{loading ? "Đang xác thực..." : "Đăng nhập"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
-
-          {/* Demo Quick fill for owner */}
-          <div className="pt-3 border-t border-slate-100 dark:border-zinc-200 dark:border-zinc-800 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setUsername("admin");
-                setPassword("admin123");
-                setErrorMsg("");
-              }}
-              className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white/20 text-[11px] font-bold text-amber-600 dark:text-zinc-700 dark:text-zinc-300 transition-colors border border-amber-500/20"
-            >
-              👑 Điền nhanh tài khoản Super Admin (admin / admin123)
-            </button>
-          </div>
         </form>
       </div>
     </div>
