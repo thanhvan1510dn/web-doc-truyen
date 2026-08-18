@@ -9,10 +9,11 @@ import { documentParserService, DocumentParseResult, ParsedVolume } from "../../
 import { useToast } from "../common/Toast";
 
 interface AdminPDFUploadStudioProps {
+  storyId?: string;
   onSuccess?: (storyId: string) => void;
 }
 
-export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSuccess }) => {
+export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ storyId, onSuccess }) => {
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,8 +25,8 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
   const [parseResult, setParseResult] = useState<DocumentParseResult | null>(null);
 
   // Target Mode: "new" | "existing"
-  const [targetMode, setTargetMode] = useState<"new" | "existing">("new");
-  const [selectedStoryId, setSelectedStoryId] = useState<string>("");
+  const [targetMode, setTargetMode] = useState<"new" | "existing">(storyId ? "existing" : "new");
+  const [selectedStoryId, setSelectedStoryId] = useState<string>(storyId || "");
   const [replaceExisting, setReplaceExisting] = useState(true);
 
   // New Story Form

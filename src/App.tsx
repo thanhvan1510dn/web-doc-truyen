@@ -9,8 +9,6 @@ import { ToastProvider } from "./components/common/Toast";
 import { AdminLayout, AdminTab } from "./components/admin/AdminLayout";
 import { AdminAnalyticsView } from "./components/admin/AdminAnalyticsView";
 import { AdminStoryListView } from "./components/admin/AdminStoryListView";
-import { AdminChapterUploadView } from "./components/admin/AdminChapterUploadView";
-import { AdminPDFUploadStudio } from "./components/admin/AdminPDFUploadStudio";
 import { AdminStoryDetailView } from "./components/admin/AdminStoryDetailView";
 import { AdminLoginModal } from "./components/admin/AdminLoginModal";
 import { authApi, storyApi } from "./api";
@@ -38,6 +36,7 @@ export const AppContent: React.FC = () => {
   // Admin Views: "dashboard" | "stories" | "upload" | "story-details"
   const [adminTab, setAdminTab] = useState<AdminTab>("dashboard");
   const [adminSelectedStoryId, setAdminSelectedStoryId] = useState<string>("");
+  const [adminDetailInitialTab, setAdminDetailInitialTab] = useState<"chapters" | "pdf-upload" | "manual-upload">("chapters");
 
   // Stories list for user web (only active stories)
   const [stories, setStories] = useState<Story[]>([]);
@@ -163,10 +162,12 @@ export const AppContent: React.FC = () => {
             <AdminStoryListView
               onSelectStoryForUpload={(storyId) => {
                 setAdminSelectedStoryId(storyId);
-                setAdminTab("upload");
+                setAdminDetailInitialTab("pdf-upload");
+                setAdminTab("story-details");
               }}
               onSelectStoryForDetails={(storyId) => {
                 setAdminSelectedStoryId(storyId);
+                setAdminDetailInitialTab("chapters");
                 setAdminTab("story-details");
               }}
               onPreviewOnUserWeb={(storyId) => {
@@ -175,34 +176,11 @@ export const AppContent: React.FC = () => {
             />
           )}
 
-          {adminTab === "pdf-upload" && (
-          <AdminPDFUploadStudio
-            onSuccess={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("story-details");
-            }}
-          />
-        )}
-
-        {adminTab === "upload" && (
-            <AdminChapterUploadView
-              initialStoryId={adminSelectedStoryId}
-              onBack={() => setAdminTab("stories")}
-              onSuccess={(storyId) => {
-                setAdminSelectedStoryId(storyId);
-                setAdminTab("story-details");
-              }}
-            />
-          )}
-
           {adminTab === "story-details" && (
             <AdminStoryDetailView
               storyId={adminSelectedStoryId || stories[0]?.id || ""}
+              initialTab={adminDetailInitialTab}
               onBack={() => setAdminTab("stories")}
-              onUploadChapter={(storyId) => {
-                setAdminSelectedStoryId(storyId);
-                setAdminTab("upload");
-              }}
               onReadChapterOnWeb={(storyId, chapterId) => {
                 handleOpenUserWeb(storyId, chapterId);
               }}

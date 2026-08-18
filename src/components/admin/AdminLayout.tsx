@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { 
-  BarChart3, BookOpen, Upload, ExternalLink, Menu, X, 
-  ChevronRight, LogOut, FileUp
+  BarChart3, BookOpen, ExternalLink, Menu, X, 
+  ChevronRight, LogOut
 } from "lucide-react";
 import { authApi } from "../../api";
 import { useToast } from "../common/Toast";
 
-export type AdminTab = "dashboard" | "stories" | "upload" | "pdf-upload" | "story-details" | "settings";
+export type AdminTab = "dashboard" | "stories" | "story-details";
 
 interface AdminLayoutProps {
   activeTab: AdminTab;
@@ -54,16 +54,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       id: "stories",
       label: "Quản lý truyện",
       icon: <BookOpen className="w-4 h-4" />,
-    },
-    {
-      id: "pdf-upload",
-      label: "Tự động tách file",
-      icon: <FileUp className="w-4 h-4" />,
-    },
-    {
-      id: "upload",
-      label: "Đăng chương mới",
-      icon: <Upload className="w-4 h-4" />,
     },
   ];
 
