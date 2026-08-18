@@ -165,10 +165,9 @@ class StoryStorageService {
   }
 
   public importStoriesFromBridge(incomingStories: any[]): boolean {
-    if (!Array.isArray(incomingStories) || incomingStories.length === 0) return false;
+    if (!Array.isArray(incomingStories)) return false;
     try {
       const sanitized = incomingStories.map(sanitizeStory).filter(Boolean) as Story[];
-      if (sanitized.length === 0) return false;
 
       const localStr = localStorage.getItem(STORAGE_KEY);
       const currentJson = localStr ? localStr : "[]";
@@ -223,13 +222,11 @@ class StoryStorageService {
     // Try current key first
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
+      if (data !== null) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
-          if (sanitized.length > 0) {
-            return sanitized;
-          }
+          return sanitized;
         }
       }
     } catch (e) {
@@ -240,14 +237,12 @@ class StoryStorageService {
     for (const key of ALL_STORAGE_KEYS) {
       try {
         const raw = localStorage.getItem(key);
-        if (raw) {
+        if (raw !== null) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             const sanitized = parsed.map(sanitizeStory).filter(Boolean) as Story[];
-            if (sanitized.length > 0) {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-              return sanitized;
-            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+            return sanitized;
           }
         }
       } catch (e) {
@@ -255,18 +250,16 @@ class StoryStorageService {
       }
     }
 
-    // Default seed from MOCK_STORIES if storage is empty
+    // Default initial seed from MOCK_STORIES only if storage was never set
     if (Array.isArray(MOCK_STORIES) && MOCK_STORIES.length > 0) {
       const sanitizedMock = MOCK_STORIES.map(sanitizeStory).filter(Boolean) as Story[];
-      if (sanitizedMock.length > 0) {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedMock));
-          localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitizedMock));
-        } catch (e) {
-          // ignore
-        }
-        return sanitizedMock;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedMock));
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitizedMock));
+      } catch (e) {
+        // ignore
       }
+      return sanitizedMock;
     }
 
     return [];

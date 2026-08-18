@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -8,23 +8,31 @@
   <script>
     const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
     const BACKUP_KEY = "web_doc_truyen_stories_backup";
+    const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
+
+    let channel = null;
+    try {
+      channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+    } catch (e) {
+      console.warn("BroadcastChannel not supported in bridge", e);
+    }
 
     function getStories() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(BACKUP_KEY);
-        if (raw) {
+        if (raw !== null) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) return parsed;
         }
       } catch (e) {
         console.warn("Bridge read error", e);
       }
-      return [];
+      return null;
     }
 
     function broadcastToParent() {
       const stories = getStories();
-      if (stories && stories.length > 0) {
+      if (stories !== null) {
         window.parent.postMessage({
           type: "SYNC_STORIES_DATA",
           stories: stories,
@@ -33,21 +41,41 @@
       }
     }
 
+    // Listen for messages from parent window
     window.addEventListener("message", function(event) {
-      if (event.data && (event.data.type === "REQUEST_STORIES_DATA" || event.data.type === "CHECK_HEALTH")) {
+      if (!event.data) return;
+
+      if (event.data.type === "REQUEST_STORIES_DATA" || event.data.type === "CHECK_HEALTH") {
         broadcastToParent();
+      } else if (event.data.type === "SYNC_STORIES_DATA" && Array.isArray(event.data.stories)) {
+        try {
+          const newJson = JSON.stringify(event.data.stories);
+          const current = localStorage.getItem(STORAGE_KEY);
+          if (current !== newJson) {
+            localStorage.setItem(STORAGE_KEY, newJson);
+            localStorage.setItem(BACKUP_KEY, newJson);
+            if (channel) {
+              channel.postMessage({ type: "STORIES_UPDATED", timestamp: Date.now() });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to write incoming stories to bridge storage", e);
+        }
       }
     });
 
+    // Listen for storage events in this origin
     window.addEventListener("storage", function(event) {
       if (event.key === STORAGE_KEY || event.key === BACKUP_KEY) {
         broadcastToParent();
       }
     });
 
+    // Initial broadcast
     broadcastToParent();
-    setTimeout(broadcastToParent, 500);
-    setTimeout(broadcastToParent, 1500);
+    setTimeout(broadcastToParent, 300);
+    setTimeout(broadcastToParent, 1000);
+    setTimeout(broadcastToParent, 2500);
   </script>
 </body>
 </html>
