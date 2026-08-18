@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, Sparkles, RefreshCw, 
-  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check
+  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check, Scissors
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
-import { documentParserService, DocumentParseResult } from "../../services/documentParserService";
+import { documentParserService, DocumentParseResult, ParsedVolume } from "../../services/documentParserService";
 import { useToast } from "../common/Toast";
 
 interface AdminPDFUploadStudioProps {
@@ -79,10 +79,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       setParseResult(result);
       if (result.detectedTitle) {
         setNewStoryTitle(result.detectedTitle);
-        setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện / Hồi truyện trích xuất từ ${file.name}`);
+        setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện / Hồi trích xuất từ ${file.name}`);
       }
 
-      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện / Hồi & ${result.totalChapters} chương từ các Tab!`);
+      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện / Hồi & ${result.totalChapters} chương!`);
     } catch (err: any) {
       toast.error(err.message || "Không thể đọc tệp");
     } finally {
@@ -113,6 +113,84 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
     });
     setEditingVolNumber(null);
     toast.success("Đã cập nhật tên Vị Diện / Hồi!");
+  };
+
+  // Split new Volume starting at specific chapter
+  const handleSplitVolumeAtChapter = (volNumber: number, chapNumber: number) => {
+    if (!parseResult) return;
+
+    const sourceVol = parseResult.volumes.find((v) => v.number === volNumber);
+    if (!sourceVol) return;
+
+    const splitIdx = sourceVol.chapters.findIndex((c) => c.number === chapNumber);
+    if (splitIdx <= 0) {
+      toast.error("Không thể tách ở đầu Vị Diện");
+      return;
+    }
+
+    const keptChapters = sourceVol.chapters.slice(0, splitIdx);
+    const movedChapters = sourceVol.chapters.slice(splitIdx);
+
+    const newVolTitle = window.prompt(
+      "Nhập tên Vị Diện / Hồi mới cho các chương từ Chương #" + chapNumber + ":",
+      "Vị Diện " + (parseResult.volumes.length + 1)
+    );
+
+    if (!newVolTitle || !newVolTitle.trim()) return;
+
+    const newVol: ParsedVolume = {
+      number: volNumber + 1,
+      title: newVolTitle.trim(),
+      chapters: movedChapters,
+    };
+
+    const newVolumes: ParsedVolume[] = [];
+    parseResult.volumes.forEach((v) => {
+      if (v.number < volNumber) {
+        newVolumes.push(v);
+      } else if (v.number === volNumber) {
+        newVolumes.push({ ...v, chapters: keptChapters });
+        newVolumes.push(newVol);
+      } else {
+        newVolumes.push({ ...v, number: v.number + 1 });
+      }
+    });
+
+    // Re-index volume numbers
+    newVolumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
+
+    setParseResult({
+      ...parseResult,
+      totalVolumes: newVolumes.length,
+      volumes: newVolumes,
+    });
+
+    toast.success(`Đã tách thành công Vị Diện mới: "${newVolTitle}"!`);
+  };
+
+  // Merge volume with previous volume
+  const handleMergeWithPrevVolume = (volNumber: number) => {
+    if (!parseResult || volNumber <= 1) return;
+
+    const prevVol = parseResult.volumes.find((v) => v.number === volNumber - 1);
+    const currVol = parseResult.volumes.find((v) => v.number === volNumber);
+    if (!prevVol || !currVol) return;
+
+    prevVol.chapters.push(...currVol.chapters);
+
+    const remainingVolumes = parseResult.volumes
+      .filter((v) => v.number !== volNumber)
+      .map((v, idx) => ({ ...v, number: idx + 1 }));
+
+    setParseResult({
+      ...parseResult,
+      totalVolumes: remainingVolumes.length,
+      volumes: remainingVolumes,
+    });
+
+    toast.success(`Đã gộp Vị Diện ${volNumber} vào "${prevVol.title}"!`);
   };
 
   const handleConfirmImport = async () => {
@@ -186,7 +264,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           <span>Tự Động Bóc Tách File (PDF, Word DOCX, TXT)</span>
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Tên của các <strong>Document Tabs</strong> được nhận diện trực tiếp thành tên của <strong>Vị Diện / Hồi truyện</strong>, tab con là các <strong>Chương nhỏ</strong>.
+          Hệ thống nhận diện Tabs tài liệu thành <strong>Vị Diện / Hồi truyện</strong> và cho phép bạn tách/sửa tên trực tiếp trước khi nạp.
         </p>
       </div>
 
@@ -231,13 +309,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             {isParsing ? "Đang đọc các Tabs tài liệu..." : "Kéo thả hoặc bấm để chọn tệp"}
           </h3>
 
-          {/* Formats Badges */}
           <div className="flex justify-center gap-2 mt-2.5">
             <span className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 text-[11px] font-bold">
               PDF (Tabs / Bookmarks)
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-[11px] font-bold">
-              DOCX (Word)
+              DOCX (Word Headings)
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[11px] font-bold">
               TXT (Văn bản)
@@ -405,14 +482,14 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             )}
           </div>
 
-          {/* Volumes & Chapters Tree with Exact Tab Names & Inline Rename */}
+          {/* Volumes & Chapters Tree with Exact Tab Names & Inline Rename & Split Button */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                Danh sách Vị Diện / Hồi truyện từ Tabs ({parseResult.volumes.length} Vị Diện)
+                Cấu trúc Vị Diện & Chương ({parseResult.volumes.length} Vị Diện)
               </h4>
               <span className="text-[11px] text-slate-400">
-                (Click vào icon bút để sửa lại tên tab nếu muốn)
+                (Sửa tên Vị Diện: bấm ✏️ • Tách Vị Diện mới tại chương bất kỳ: bấm ✂️)
               </span>
             </div>
 
@@ -474,6 +551,20 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
+
+                            {volume.number > 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMergeWithPrevVolume(volume.number);
+                                }}
+                                className="px-2 py-0.5 text-[10px] text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 rounded font-semibold"
+                                title="Gộp vào Vị Diện phía trước"
+                              >
+                                Gộp lên trên
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -489,10 +580,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
 
                     {!isCollapsed && (
                       <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                        {volume.chapters.map((chapter) => (
+                        {volume.chapters.map((chapter, idx) => (
                           <div
                             key={chapter.number}
-                            className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                            className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 group"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <span className="text-slate-400 font-mono font-bold text-[11px]">
@@ -507,6 +598,20 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                               <span className="text-[11px] text-slate-400 font-mono">
                                 {chapter.wordCount.toLocaleString()} từ
                               </span>
+
+                              {/* Split into new volume button */}
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
+                                  className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white font-bold text-[10px] flex items-center gap-1 transition-all"
+                                  title="Tách các chương từ đây thành Vị Diện mới"
+                                >
+                                  <Scissors className="w-3 h-3" />
+                                  <span>Tách Vị Diện mới</span>
+                                </button>
+                              )}
+
                               <button
                                 type="button"
                                 onClick={() => setPreviewChapter(chapter)}

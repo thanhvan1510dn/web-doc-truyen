@@ -103,7 +103,7 @@ export class DocumentParserService {
 
     // Nếu file PDF hoàn toàn không có Bookmark, mới dùng bộ quét cấu trúc dòng tiêu đề nghiêm ngặt
     if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
-      volumes = this.parseStrictDocumentText(pageTexts.join("\n\n"));
+      volumes = this.parseComprehensiveText(pageTexts.join("\n\n"));
     }
 
     return this.finalizeResult("pdf", file.name, volumes, onProgress);
@@ -119,12 +119,29 @@ export class DocumentParserService {
     onProgress?.(20, "Đang đọc tệp DOCX...");
     const arrayBuffer = await file.arrayBuffer();
 
-    onProgress?.(50, "Đang trích xuất nội dung...");
-    const result = await mammoth.extractRawText({ arrayBuffer });
-    const fullText = result.value || "";
+    onProgress?.(50, "Đang trích xuất Heading và Tabs...");
+    const options = {
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='heading 3'] => h3:fresh",
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='title'] => h1:fresh",
+      ]
+    };
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer }, options);
+    const html = htmlResult.value || "";
 
     onProgress?.(80, "Đang phân tích cấu trúc Vị Diện & Chương...");
-    const volumes = this.parseStrictDocumentText(fullText);
+    let volumes = this.parseFromWordHtml(html);
+
+    if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
+      const rawText = await mammoth.extractRawText({ arrayBuffer });
+      volumes = this.parseComprehensiveText(rawText.value || "");
+    }
 
     return this.finalizeResult("docx", file.name, volumes, onProgress);
   }
@@ -140,7 +157,7 @@ export class DocumentParserService {
     const fullText = await file.text();
 
     onProgress?.(70, "Đang phân tích cấu trúc Vị Diện & Chương...");
-    const volumes = this.parseStrictDocumentText(fullText);
+    const volumes = this.parseComprehensiveText(fullText);
 
     return this.finalizeResult("txt", file.name, volumes, onProgress);
   }
@@ -372,15 +389,81 @@ export class DocumentParserService {
    * Parse Structured Text NGHIÊM NGẶT (khi không có PDF bookmark):
    * Chỉ nhận dòng ngắn làm Vị Diện, TUYỆT ĐỐI KHÔNG match câu văn bản như "Thế giới này...", "Phần thưởng..."
    */
-  private parseStrictDocumentText(fullText: string): ParsedVolume[] {
+
+
+  /**
+   * Split chapters strictly by chapter headings
+   */
+  
+  private parseFromWordHtml(html: string): ParsedVolume[] {
     const volumes: ParsedVolume[] = [];
+    const h1Regex = /<h1[^>]*>([\s\S]*?)<\/h1>/gi;
+    const h1Matches = [...html.matchAll(h1Regex)];
 
-    // Regex nghiêm ngặt cho dòng tiêu đề Vị Diện / Hồi:
-    // Phải là một dòng riêng biệt, độ dài <= 60 ký tự, bắt đầu bằng Vị Diện / Hồi / Quyển / Tập / Arc hoặc #
-    // TUYỆT ĐỐI loại trừ các từ như "Phần thưởng", "Phần quà", "Thế giới này", "Thế giới đó"
-    const volumeHeadingRegex = /(?:^|\n)[ \t]*(?:#[ \t]+|(?:Vị [Dd]iện|Vi [Dd]ien|Hồi|Hoi|Quyển|Quyen|Tập|Tap|Arc)[ \t]+([0-9IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s\-_:]{1,50}))[ \t]*(?:\n|$)/gi;
+    if (h1Matches.length > 0) {
+      for (let i = 0; i < h1Matches.length; i++) {
+        const match = h1Matches[i];
+        const nextMatch = h1Matches[i + 1];
+        const startIndex = (match.index || 0) + match[0].length;
+        const endIndex = nextMatch ? nextMatch.index : html.length;
 
-    const volumeMatches = [...fullText.matchAll(volumeHeadingRegex)];
+        const volTitle = match[1].replace(/<[^>]+>/g, "").trim();
+        const sectionHtml = html.slice(startIndex, endIndex);
+        const chapters = this.extractChaptersFromHtml(sectionHtml);
+
+        volumes.push({
+          number: i + 1,
+          title: volTitle || ("Vị Diện " + (i + 1)),
+          chapters,
+        });
+      }
+    } else {
+      const chapters = this.extractChaptersFromHtml(html);
+      volumes.push({
+        number: 1,
+        title: "Vị Diện / Hồi 1",
+        chapters,
+      });
+    }
+    return volumes;
+  }
+
+  private extractChaptersFromHtml(html: string): ParsedChapter[] {
+    const chapters: ParsedChapter[] = [];
+    const chapHeadingRegex = /(?:<h2[^>]*>([\s\S]*?)<\/h2>|<p[^>]*>[ \t]*(?:Chương|Chuong|Chapter)[ \t]+(\d+)[^<]*<\/p>)/gi;
+    const matches = [...html.matchAll(chapHeadingRegex)];
+    const cleanText = (str: string) => str.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+
+    if (matches.length === 0) {
+      const raw = cleanText(html);
+      return this.splitChaptersStrict(raw);
+    }
+
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const nextMatch = matches[i + 1];
+      const startIndex = (match.index || 0) + match[0].length;
+      const endIndex = nextMatch ? nextMatch.index : html.length;
+
+      const titleRaw = cleanText(match[0]);
+      const contentRaw = cleanText(html.slice(startIndex, endIndex));
+      const chapNumMatch = titleRaw.match(/(?:chương|chuong|chapter)\s*(\d+)/i);
+      const chapNum = chapNumMatch ? parseInt(chapNumMatch[1], 10) : i + 1;
+
+      chapters.push({
+        number: chapNum,
+        title: titleRaw,
+        content: contentRaw,
+        wordCount: contentRaw.split(/\s+/).filter(Boolean).length,
+      });
+    }
+    return chapters;
+  }
+
+  private parseComprehensiveText(fullText: string): ParsedVolume[] {
+    const volumes: ParsedVolume[] = [];
+    const volumeLineRegex = /(?:^|\n)[ \t]*(?:#[ \t]+|【[ \t]*|===[ \t]*|---[ \t]*|(?:Vị [Dd]iện|Vi [Dd]ien|Hồi|Hoi|Quyển|Quyen|Tập|Tap|Arc)[ \t]+)([0-9IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s\-_:]{1,60})[ \t]*(?:】|===|---|:|\n|$)/gi;
+    const volumeMatches = [...fullText.matchAll(volumeLineRegex)];
 
     if (volumeMatches.length > 1) {
       for (let i = 0; i < volumeMatches.length; i++) {
@@ -389,9 +472,8 @@ export class DocumentParserService {
         const startIndex = (match.index || 0) + match[0].length;
         const endIndex = nextMatch ? nextMatch.index : fullText.length;
 
-        const volTitle = match[0].replace(/^[\r\n#\s]+|[\r\n\s]+$/g, "").trim();
+        const volTitle = match[0].replace(/^[\r\n#【=—\-\s]+|[\r\n】=—\-\s]+$/g, "").trim();
         const volText = fullText.slice(startIndex, endIndex);
-
         const chapters = this.splitChaptersStrict(volText);
 
         volumes.push({
@@ -408,13 +490,9 @@ export class DocumentParserService {
         chapters,
       });
     }
-
     return volumes;
   }
 
-  /**
-   * Split chapters strictly by chapter headings
-   */
   private splitChaptersStrict(text: string): ParsedChapter[] {
     const chapters: ParsedChapter[] = [];
 
