@@ -1,7 +1,7 @@
 import { ReadingEvent, TimeSeriesPoint, DashboardStats, StoryAnalyticsSummary } from "../types/analytics";
 import { storyStorage } from "./storyStorage";
 
-const ANALYTICS_STORAGE_KEY = "web_doc_truyen_analytics_events_v2";
+const ANALYTICS_STORAGE_KEY = "web_doc_truyen_analytics_events_v3";
 const SESSION_ID_KEY = "web_doc_truyen_reader_session_id";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_analytics_channel";
 
@@ -15,53 +15,9 @@ function getOrCreateSessionId(): string {
   return sessionId;
 }
 
-// Generate realistic initial seed events for past 30 days
+// Clean fresh system: No demo events
 function seedInitialAnalyticsEvents(): ReadingEvent[] {
-  const events: ReadingEvent[] = [];
-  const now = new Date();
-  const baseStories = [
-    { id: "pham-nhan-tu-tien", title: "Phàm Nhân Tu Tiên", chapters: [1, 2, 3] },
-    { id: "muc-than-ky", title: "Mục Thần Ký", chapters: [1, 2, 3] },
-    { id: "quy-bi-chi-chu", title: "Quỷ Bí Chi Chủ", chapters: [1, 2, 3] },
-    { id: "dau-pha-thuong-khung", title: "Đấu Phá Thương Khung", chapters: [1, 2, 3] },
-  ];
-
-  // Distribute ~1,200 events across the last 30 days
-  for (let d = 29; d >= 0; d--) {
-    const dayDate = new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
-    // More events on recent days and weekend
-    const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
-    const baseCount = isWeekend ? 65 : 40;
-    const dayEventsCount = Math.floor(baseCount + Math.random() * 25);
-
-    for (let i = 0; i < dayEventsCount; i++) {
-      const hour = Math.floor(Math.random() * 24);
-      const minute = Math.floor(Math.random() * 60);
-      const eventTime = new Date(dayDate);
-      eventTime.setHours(hour, minute, Math.floor(Math.random() * 60));
-
-      const story = baseStories[Math.floor(Math.random() * baseStories.length)];
-      const chapNum = story.chapters[Math.floor(Math.random() * story.chapters.length)];
-      const readerNum = Math.floor(Math.random() * 35) + 1;
-      const device: "desktop" | "mobile" | "tablet" = Math.random() > 0.4 ? "mobile" : "desktop";
-
-      events.push({
-        id: `evt-${dayDate.getTime()}-${i}`,
-        storyId: story.id,
-        storyTitle: story.title,
-        chapterId: `${story.id}-c${chapNum}`,
-        chapterNumber: chapNum,
-        chapterTitle: `Chương ${chapNum}`,
-        timestamp: eventTime.toISOString(),
-        readerSessionId: `reader_sim_${readerNum}`,
-        timeSpentSeconds: Math.floor(60 + Math.random() * 400),
-        deviceType: device,
-        percentRead: Math.floor(70 + Math.random() * 30),
-      });
-    }
-  }
-
-  return events;
+  return [];
 }
 
 class AnalyticsService {

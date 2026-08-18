@@ -11,7 +11,8 @@ import { AdminAnalyticsView } from "./components/admin/AdminAnalyticsView";
 import { AdminStoryListView } from "./components/admin/AdminStoryListView";
 import { AdminChapterUploadView } from "./components/admin/AdminChapterUploadView";
 import { AdminStoryDetailView } from "./components/admin/AdminStoryDetailView";
-import { storyApi } from "./api";
+import { AdminLoginModal } from "./components/admin/AdminLoginModal";
+import { authApi, storyApi } from "./api";
 
 const DEFAULT_SETTINGS: ReaderSettings = {
   fontSize: 18,
@@ -26,6 +27,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
 export const AppContent: React.FC = () => {
   // Mode: "user" or "admin"
   const [appMode, setAppMode] = useState<"user" | "admin">("user");
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   // User Views: "home" | "story-detail" | "reader"
   const [userView, setUserView] = useState<"home" | "story-detail" | "reader">("home");
@@ -103,11 +105,15 @@ export const AppContent: React.FC = () => {
     setReaderSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
-  // Switch to Admin
+  // Request to open Admin (checks authentication first)
   const handleOpenAdmin = (tab: AdminTab = "dashboard") => {
     setAdminTab(tab);
-    setAppMode("admin");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (authApi.isAuthenticated()) {
+      setAppMode("admin");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setLoginModalOpen(true);
+    }
   };
 
   // Switch to User Web
@@ -126,65 +132,74 @@ export const AppContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Handle Logout from Admin
+  const handleAdminLogout = () => {
+    setAppMode("user");
+    setUserView("home");
+  };
+
   // Render Admin Portal
   if (appMode === "admin") {
     return (
-      <AdminLayout
-        activeTab={adminTab}
-        onTabChange={(tab) => setAdminTab(tab)}
-        onNavigateToUserWeb={() => handleOpenUserWeb()}
-      >
-        {adminTab === "dashboard" && (
-          <AdminAnalyticsView
-            onSelectStory={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("story-details");
-            }}
-            onNavigateTab={(tab) => setAdminTab(tab as AdminTab)}
-          />
-        )}
+      <>
+        <AdminLayout
+          activeTab={adminTab}
+          onTabChange={(tab) => setAdminTab(tab)}
+          onNavigateToUserWeb={() => handleOpenUserWeb()}
+          onLogout={handleAdminLogout}
+        >
+          {adminTab === "dashboard" && (
+            <AdminAnalyticsView
+              onSelectStory={(storyId) => {
+                setAdminSelectedStoryId(storyId);
+                setAdminTab("story-details");
+              }}
+              onNavigateTab={(tab) => setAdminTab(tab as AdminTab)}
+            />
+          )}
 
-        {adminTab === "stories" && (
-          <AdminStoryListView
-            onSelectStoryForUpload={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("upload");
-            }}
-            onSelectStoryForDetails={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("story-details");
-            }}
-            onPreviewOnUserWeb={(storyId) => {
-              handleOpenUserWeb(storyId);
-            }}
-          />
-        )}
+          {adminTab === "stories" && (
+            <AdminStoryListView
+              onSelectStoryForUpload={(storyId) => {
+                setAdminSelectedStoryId(storyId);
+                setAdminTab("upload");
+              }}
+              onSelectStoryForDetails={(storyId) => {
+                setAdminSelectedStoryId(storyId);
+                setAdminTab("story-details");
+              }}
+              onPreviewOnUserWeb={(storyId) => {
+                handleOpenUserWeb(storyId);
+              }}
+            />
+          )}
 
-        {adminTab === "upload" && (
-          <AdminChapterUploadView
-            initialStoryId={adminSelectedStoryId}
-            onBack={() => setAdminTab("stories")}
-            onSuccess={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("story-details");
-            }}
-          />
-        )}
+          {adminTab === "upload" && (
+            <AdminChapterUploadView
+              initialStoryId={adminSelectedStoryId}
+              onBack={() => setAdminTab("stories")}
+              onSuccess={(storyId) => {
+                setAdminSelectedStoryId(storyId);
+                setAdminTab("story-details");
+              }}
+            />
+          )}
 
-        {adminTab === "story-details" && (
-          <AdminStoryDetailView
-            storyId={adminSelectedStoryId || stories[0]?.id || ""}
-            onBack={() => setAdminTab("stories")}
-            onUploadChapter={(storyId) => {
-              setAdminSelectedStoryId(storyId);
-              setAdminTab("upload");
-            }}
-            onReadChapterOnWeb={(storyId, chapterId) => {
-              handleOpenUserWeb(storyId, chapterId);
-            }}
-          />
-        )}
-      </AdminLayout>
+          {adminTab === "story-details" && (
+            <AdminStoryDetailView
+              storyId={adminSelectedStoryId || stories[0]?.id || ""}
+              onBack={() => setAdminTab("stories")}
+              onUploadChapter={(storyId) => {
+                setAdminSelectedStoryId(storyId);
+                setAdminTab("upload");
+              }}
+              onReadChapterOnWeb={(storyId, chapterId) => {
+                handleOpenUserWeb(storyId, chapterId);
+              }}
+            />
+          )}
+        </AdminLayout>
+      </>
     );
   }
 
@@ -241,6 +256,16 @@ export const AppContent: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setAppMode("admin");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
     </div>
   );
 };

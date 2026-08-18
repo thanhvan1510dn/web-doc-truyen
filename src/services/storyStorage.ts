@@ -1,26 +1,13 @@
 import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
-import { MOCK_STORIES } from "../data/mockStories";
 
-const STORAGE_KEY = "web_doc_truyen_stories_v2";
+
+const STORAGE_KEY = "web_doc_truyen_stories_v3";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
 
-// Prepare initial data from MOCK_STORIES
+// Clean fresh system: No demo data
 function seedInitialStories(): Story[] {
-  return MOCK_STORIES.map((s) => ({
-    ...s,
-    isActive: s.isActive ?? true,
-    isDeleted: false,
-    createdAt: s.createdAt || "2026-08-01T00:00:00.000Z",
-    volumes: s.volumes.map((v) => ({
-      ...v,
-      chapters: v.chapters.map((c) => ({
-        ...c,
-        isActive: c.isActive ?? true,
-        createdAt: c.createdAt || "2026-08-01T00:00:00.000Z",
-      })),
-    })),
-  }));
+  return [];
 }
 
 class StoryStorageService {

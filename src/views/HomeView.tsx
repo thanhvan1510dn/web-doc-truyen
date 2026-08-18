@@ -56,10 +56,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
 
       {/* Simple Vertical List of Stories */}
-      {filteredStories.length === 0 ? (
+      {stories.length === 0 ? (
+        <div className="py-20 text-center text-gray-400 dark:text-slate-500 bg-white dark:bg-slate-800/40 rounded-2xl border border-gray-100 dark:border-slate-800 p-8 space-y-2">
+          <BookOpen className="w-12 h-12 mx-auto text-gray-300 dark:text-slate-600 opacity-50 mb-2" />
+          <h3 className="font-bold text-base text-gray-700 dark:text-slate-300">
+            Hệ thống trống (Fresh System)
+          </h3>
+          <p className="text-xs text-gray-400 dark:text-slate-500 max-w-md mx-auto leading-relaxed">
+            Toàn bộ dữ liệu demo đã được xóa sạch. Hệ thống sẵn sàng để bạn thêm truyện mới.
+          </p>
+        </div>
+      ) : filteredStories.length === 0 ? (
         <div className="py-16 text-center text-gray-400 dark:text-slate-500 bg-white dark:bg-slate-800/40 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
           <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Không tìm thấy truyện nào phù hợp</p>
+          <p className="text-sm">Không tìm thấy truyện nào khớp với "{searchQuery}"</p>
         </div>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
