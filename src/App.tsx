@@ -59,6 +59,21 @@ export const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
+    // Parse URL query parameters if navigated from Admin (e.g. ?story=...&chapter=...)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const storyParam = params.get("story");
+      const chapterParam = params.get("chapter");
+      if (storyParam && chapterParam) {
+        setActiveStoryId(storyParam);
+        setActiveChapterId(chapterParam);
+        setUserView("reader");
+      } else if (storyParam) {
+        setActiveStoryId(storyParam);
+        setUserView("story-detail");
+      }
+    }
+
     loadUserStories();
     const unsub = storyApi.subscribe(() => {
       loadUserStories();
