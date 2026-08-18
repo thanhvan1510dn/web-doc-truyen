@@ -1,6 +1,7 @@
 import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 import { ParsedVolume } from "./documentParserService";
+import { MOCK_STORIES } from "../data/mockStories";
 
 const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
 const BACKUP_KEY = "web_doc_truyen_stories_backup";
@@ -115,10 +116,19 @@ class StoryStorageService {
     if (typeof document === "undefined") return;
 
     try {
-      const isUserWeb = window.location.hostname.includes("web-doc-truyen");
-      const targetOrigin = isUserWeb
-        ? "https://admin-web-doc-truyen.vercel.app/sync-bridge.html"
-        : "https://web-doc-truyen-theta.vercel.app/sync-bridge.html";
+      const isUserWeb = window.location.hostname.includes("web-doc-truyen") && !window.location.hostname.includes("admin");
+      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      
+      let targetOrigin = "";
+      if (isLocalhost) {
+        targetOrigin = window.location.port === "5173"
+          ? "http://localhost:5174/sync-bridge.html"
+          : "http://localhost:5173/sync-bridge.html";
+      } else {
+        targetOrigin = isUserWeb
+          ? "https://admin-web-doc-truyen.vercel.app/sync-bridge.html"
+          : "https://web-doc-truyen.vercel.app/sync-bridge.html";
+      }
 
       const iframe = document.createElement("iframe");
       iframe.src = targetOrigin;
@@ -242,6 +252,20 @@ class StoryStorageService {
         }
       } catch (e) {
         // continue
+      }
+    }
+
+    // Default seed from MOCK_STORIES if storage is empty
+    if (Array.isArray(MOCK_STORIES) && MOCK_STORIES.length > 0) {
+      const sanitizedMock = MOCK_STORIES.map(sanitizeStory).filter(Boolean) as Story[];
+      if (sanitizedMock.length > 0) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedMock));
+          localStorage.setItem(BACKUP_KEY, JSON.stringify(sanitizedMock));
+        } catch (e) {
+          // ignore
+        }
+        return sanitizedMock;
       }
     }
 
