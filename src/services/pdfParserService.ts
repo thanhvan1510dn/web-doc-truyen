@@ -30,6 +30,9 @@ export interface DocumentParseResult {
 }
 
 export class DocumentParserService {
+  /**
+   * Universal file parser for PDF, DOCX, and TXT
+   */
   public async parseFile(
     file: File,
     onProgress?: (progress: number, status: string) => void
@@ -47,6 +50,9 @@ export class DocumentParserService {
     }
   }
 
+  /**
+   * 1. PDF Parser
+   */
   private async parsePDF(
     file: File,
     onProgress?: (progress: number, status: string) => void
@@ -63,7 +69,7 @@ export class DocumentParserService {
     const pdfDoc = await loadingTask.promise;
     const numPages = pdfDoc.numPages;
 
-    onProgress?.(25, "PDF gồm " + numPages + " trang. Đang đọc Document Tabs / Bookmarks...");
+    onProgress?.(25, "PDF gồm " + numPages + " trang. Đang trích xuất văn bản...");
 
     let outline: any[] | null = null;
     try {
@@ -92,58 +98,176 @@ export class DocumentParserService {
       volumes = this.parseFromPDFBookmarks(resolvedOutline, pageTexts, numPages);
     }
 
+    if (volumes.length === 0 || (volumes.length === 1 && volumes[0].chapters.length > 50)) {
+      const parsedFromText = this.parseDocumentLines(pageTexts.join("\n"));
+      if (parsedFromText.length > 1) {
+        volumes = parsedFromText;
+      }
+    }
+
     if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
-      volumes = this.parseStructuredText(pageTexts.join("\n\n"));
+      volumes = this.parseDocumentLines(pageTexts.join("\n"));
     }
 
     return this.finalizeResult("pdf", file.name, volumes, onProgress);
   }
 
+  /**
+   * 2. DOCX Parser (Word & Google Docs exported DOCX)
+   */
   private async parseDOCX(
     file: File,
     onProgress?: (progress: number, status: string) => void
   ): Promise<DocumentParseResult> {
-    onProgress?.(20, "Đang đọc tệp DOCX...");
+    onProgress?.(20, "Đang đọc tệp Word DOCX...");
     const arrayBuffer = await file.arrayBuffer();
 
-    onProgress?.(50, "Đang trích xuất cấu trúc văn bản...");
-    const options = {
-      styleMap: [
-        "p[style-name='Heading 1'] => h1:fresh",
-        "p[style-name='heading 1'] => h1:fresh",
-        "p[style-name='Heading 2'] => h2:fresh",
-        "p[style-name='heading 2'] => h2:fresh",
-        "p[style-name='Heading 3'] => h3:fresh",
-        "p[style-name='heading 3'] => h3:fresh",
-        "p[style-name='Title'] => h1:fresh",
-        "p[style-name='title'] => h1:fresh",
-      ]
-    };
-    const htmlResult = await mammoth.convertToHtml({ arrayBuffer }, options);
-    const html = htmlResult.value || "";
+    onProgress?.(50, "Đang trích xuất nội dung và Document Tabs...");
+    const rawResult = await mammoth.extractRawText({ arrayBuffer });
+    const fullText = rawResult.value || "";
 
-    onProgress?.(80, "Đang ánh xạ Headings thành Mục lục & Chương...");
-    let volumes = this.parseFromWordHtml(html);
+    onProgress?.(80, "Đang ánh xạ Tabs lớn thành Mục lục & Tabs nhỏ thành Chương...");
+    let volumes = this.parseDocumentLines(fullText);
 
     if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
-      const rawText = await mammoth.extractRawText({ arrayBuffer });
-      volumes = this.parseStructuredText(rawText.value || "");
+      const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+      const plainText = (htmlResult.value || "").replace(/<[^>]+>/g, "\n");
+      volumes = this.parseDocumentLines(plainText);
     }
 
     return this.finalizeResult("docx", file.name, volumes, onProgress);
   }
 
+  /**
+   * 3. TXT Parser
+   */
   private async parseTXT(
     file: File,
     onProgress?: (progress: number, status: string) => void
   ): Promise<DocumentParseResult> {
-    onProgress?.(20, "Đang đọc tệp TXT...");
+    onProgress?.(20, "Đang đọc tệp văn bản TXT...");
     const fullText = await file.text();
 
     onProgress?.(70, "Đang phân tích cấu trúc Mục lục & Chương...");
-    const volumes = this.parseStructuredText(fullText);
+    const volumes = this.parseDocumentLines(fullText);
 
     return this.finalizeResult("txt", file.name, volumes, onProgress);
+  }
+
+  /**
+   * Universal Line-by-Line Document Parser
+   */
+  public parseDocumentLines(rawText: string): ParsedVolume[] {
+    const lines = rawText.split(/\r?\n/);
+    const volumes: ParsedVolume[] = [];
+
+    let currentVolume: ParsedVolume | null = null;
+    let currentChapter: ParsedChapter | null = null;
+    let currentChapterLines: string[] = [];
+
+    const flushChapter = () => {
+      if (currentChapter) {
+        currentChapter.content = currentChapterLines.join("\n").trim();
+        currentChapter.wordCount = currentChapter.content.split(/\s+/).filter(Boolean).length;
+        if (currentVolume) {
+          currentVolume.chapters.push(currentChapter);
+        }
+        currentChapter = null;
+        currentChapterLines = [];
+      }
+    };
+
+    const isMajorTab = (line: string): string | null => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.length > 120) return null;
+
+      // Pattern 1: (2376-2378) or (2379-2416) Realm title
+      const rangeMatch = trimmed.match(/^\s*\(?\s*(\d+)\s*[-–—]\s*(\d+)\s*\)?\s*(.*)$/i);
+      if (rangeMatch) {
+        if (!trimmed.toLowerCase().startsWith("chương") && !trimmed.toLowerCase().startsWith("chuong")) {
+          return trimmed.replace(/^[\(\[]/, "(").replace(/[\)\]]$/, ")");
+        }
+      }
+
+      // Pattern 2: [Mục lục...] or === Mục lục ===
+      const bracketMatch = trimmed.match(/^【([^】]+)】$/) || trimmed.match(/^===\s*([^=]+)\s*===$/) || trimmed.match(/^\[([^\]]+)\]$/);
+      if (bracketMatch && !bracketMatch[1].toLowerCase().includes("chương")) {
+        return bracketMatch[1].trim();
+      }
+
+      // Pattern 3: Muc luc 1, Quyển 1, Vị diện 1
+      const sectionMatch = trimmed.match(/^(?:Mục lục|Muc luc|Quyển|Quyen|Tập|Tap|Phần|Phan|Vị [Dd]iện|Vi [Dd]ien|Arc)\s+(\d+|[IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s]{1,40})[:\-\._\s]?(.*)$/i);
+      if (sectionMatch) {
+        return trimmed;
+      }
+
+      // Pattern 4: Markdown # Heading
+      if (trimmed.startsWith("# ") && !trimmed.toLowerCase().includes("chương")) {
+        return trimmed.replace(/^#\s+/, "").trim();
+      }
+
+      return null;
+    };
+
+    const isChapterHeading = (line: string): { number: number; title: string } | null => {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+
+      const match = trimmed.match(/^(?:##\s+)?(?:Chương|Chuong|Chapter|Tiết|Tiet)\s*(\d+)(?:[ \t]*[:\-\._][ \t]*(.*))?$/i);
+      if (match) {
+        return {
+          number: parseInt(match[1], 10),
+          title: trimmed.replace(/^##\s+/, "").trim(),
+        };
+      }
+      return null;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const majorTabTitle = isMajorTab(line);
+      const chapInfo = isChapterHeading(line);
+
+      if (majorTabTitle) {
+        flushChapter();
+        currentVolume = {
+          number: volumes.length + 1,
+          title: majorTabTitle,
+          chapters: [],
+        };
+        volumes.push(currentVolume);
+      } else if (chapInfo) {
+        flushChapter();
+        if (!currentVolume) {
+          currentVolume = {
+            number: volumes.length + 1,
+            title: "Mục lục 1",
+            chapters: [],
+          };
+          volumes.push(currentVolume);
+        }
+        currentChapter = {
+          number: chapInfo.number,
+          title: chapInfo.title,
+          content: "",
+          wordCount: 0,
+        };
+        currentChapterLines = [];
+      } else {
+        if (currentChapter) {
+          currentChapterLines.push(line);
+        }
+      }
+    }
+
+    flushChapter();
+
+    const validVolumes = volumes.filter((v) => v.chapters.length > 0);
+    validVolumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
+
+    return validVolumes;
   }
 
   private async resolveOutlineDestinations(
@@ -241,15 +365,16 @@ export class DocumentParserService {
           });
         }
 
-        volumes.push({
-          number: pIdx + 1,
-          title: parentTitle,
-          chapters,
-        });
+        if (chapters.length > 0) {
+          volumes.push({
+            number: volumes.length + 1,
+            title: parentTitle,
+            chapters,
+          });
+        }
       });
     } else {
       let currentVolume: ParsedVolume | null = null;
-      let volIndex = 0;
 
       for (let i = 0; i < outline.length; i++) {
         const item = outline[i];
@@ -260,17 +385,15 @@ export class DocumentParserService {
             volumes.push(currentVolume);
           }
 
-          volIndex++;
           currentVolume = {
-            number: volIndex,
+            number: volumes.length + 1,
             title: item.title.trim(),
             chapters: [],
           };
         } else {
           if (!currentVolume) {
-            volIndex++;
             currentVolume = {
-              number: volIndex,
+              number: volumes.length + 1,
               title: "Mục lục 1",
               chapters: [],
             };
@@ -308,156 +431,11 @@ export class DocumentParserService {
       }
     }
 
-    return volumes;
-  }
-
-  private parseFromWordHtml(html: string): ParsedVolume[] {
-    const volumes: ParsedVolume[] = [];
-    const h1Regex = /<h1[^>]*>([\s\S]*?)<\/h1>/gi;
-    const h1Matches = [...html.matchAll(h1Regex)];
-
-    if (h1Matches.length > 0) {
-      for (let i = 0; i < h1Matches.length; i++) {
-        const match = h1Matches[i];
-        const nextMatch = h1Matches[i + 1];
-        const startIndex = (match.index || 0) + match[0].length;
-        const endIndex = nextMatch ? nextMatch.index : html.length;
-
-        const volTitle = match[1].replace(/<[^>]+>/g, "").trim();
-        const sectionHtml = html.slice(startIndex, endIndex);
-
-        const chapters = this.extractChaptersFromHtml(sectionHtml);
-
-        volumes.push({
-          number: i + 1,
-          title: volTitle || ("Mục lục " + (i + 1)),
-          chapters,
-        });
-      }
-    } else {
-      const chapters = this.extractChaptersFromHtml(html);
-      volumes.push({
-        number: 1,
-        title: "Mục lục 1",
-        chapters,
-      });
-    }
+    volumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
 
     return volumes;
-  }
-
-  private extractChaptersFromHtml(html: string): ParsedChapter[] {
-    const chapters: ParsedChapter[] = [];
-    const chapHeadingRegex = /(?:<h2[^>]*>([\s\S]*?)<\/h2>|<p[^>]*>[ \t]*(?:Chương|Chuong|Chapter)[ \t]+(\d+)[^<]*<\/p>)/gi;
-    const matches = [...html.matchAll(chapHeadingRegex)];
-
-    const cleanText = (str: string) => str.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-
-    if (matches.length === 0) {
-      const raw = cleanText(html);
-      return this.splitChaptersStrict(raw);
-    }
-
-    for (let i = 0; i < matches.length; i++) {
-      const match = matches[i];
-      const nextMatch = matches[i + 1];
-      const startIndex = (match.index || 0) + match[0].length;
-      const endIndex = nextMatch ? nextMatch.index : html.length;
-
-      const titleRaw = cleanText(match[0]);
-      const contentRaw = cleanText(html.slice(startIndex, endIndex));
-      const chapNumMatch = titleRaw.match(/(?:chương|chuong|chapter)\s*(\d+)/i);
-      const chapNum = chapNumMatch ? parseInt(chapNumMatch[1], 10) : i + 1;
-
-      chapters.push({
-        number: chapNum,
-        title: titleRaw,
-        content: contentRaw,
-        wordCount: contentRaw.split(/\s+/).filter(Boolean).length,
-      });
-    }
-
-    return chapters;
-  }
-
-  private parseStructuredText(fullText: string): ParsedVolume[] {
-    const volumes: ParsedVolume[] = [];
-    const parentSectionRegex = /(?:^|\n)[ \t]*(?:#[ \t]+|【[ \t]*|===[ \t]*|\([ \t]*\d+[ \t]*[-–—][ \t]*\d+[ \t]*\)|(?:Mục lục|Muc luc|Quyển|Quyen|Tập|Tap|Phần|Phan|Hồi|Hoi|Arc|Vị [Dd]iện)[ \t]+\d+[:\-\._\s]?)[^\r\n]{0,80}(?:】|===|\n|$)/gi;
-
-    const matches = [...fullText.matchAll(parentSectionRegex)];
-
-    if (matches.length > 1) {
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        const nextMatch = matches[i + 1];
-        const startIndex = (match.index || 0) + match[0].length;
-        const endIndex = nextMatch ? nextMatch.index : fullText.length;
-
-        const volTitle = match[0].replace(/^[\r\n#【=—\-\s]+|[\r\n】=—\-\s]+$/g, "").trim();
-        const volText = fullText.slice(startIndex, endIndex);
-
-        const chapters = this.splitChaptersStrict(volText);
-
-        volumes.push({
-          number: i + 1,
-          title: volTitle,
-          chapters,
-        });
-      }
-    } else {
-      const chapters = this.splitChaptersStrict(fullText);
-      volumes.push({
-        number: 1,
-        title: "Mục lục 1",
-        chapters,
-      });
-    }
-
-    return volumes;
-  }
-
-  private splitChaptersStrict(text: string): ParsedChapter[] {
-    const chapters: ParsedChapter[] = [];
-    const chapterHeadingRegex = /(?:^|\n)[ \t]*(?:##[ \t]+|(?:Chương|Chuong|Chapter|Tiết|Tiet)[ \t]+(\d+)(?:[ \t]*[:\-\._][ \t]*([^\r\n]{1,80}))?)[ \t]*(?:\n|$)/gi;
-
-    const matches = [...text.matchAll(chapterHeadingRegex)];
-
-    if (matches.length === 0) {
-      const words = text.split(/\s+/).filter(Boolean);
-      const chunkSize = 2500;
-      const numChunks = Math.max(1, Math.ceil(words.length / chunkSize));
-
-      for (let i = 0; i < numChunks; i++) {
-        const chunkWords = words.slice(i * chunkSize, (i + 1) * chunkSize);
-        chapters.push({
-          number: i + 1,
-          title: "Chương " + (i + 1),
-          content: chunkWords.join(" "),
-          wordCount: chunkWords.length,
-        });
-      }
-      return chapters;
-    }
-
-    for (let i = 0; i < matches.length; i++) {
-      const match = matches[i];
-      const nextMatch = matches[i + 1];
-      const startIndex = (match.index || 0) + match[0].length;
-      const endIndex = nextMatch ? nextMatch.index : text.length;
-
-      const chapNumber = parseInt(match[1], 10) || (i + 1);
-      const chapTitle = match[0].replace(/^[\r\n#\s]+|[\r\n\s]+$/g, "").trim();
-      const chapContent = text.slice(startIndex, endIndex).trim();
-
-      chapters.push({
-        number: chapNumber,
-        title: chapTitle,
-        content: chapContent,
-        wordCount: chapContent.split(/\s+/).filter(Boolean).length,
-      });
-    }
-
-    return chapters;
   }
 
   private extractTextBetweenPages(
