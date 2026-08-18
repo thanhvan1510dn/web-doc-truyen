@@ -52,7 +52,7 @@ export class DocumentParserService {
   }
 
   /**
-   * 1. PDF Parser (Extracts Tabs / Outline / Bookmarks)
+   * 1. PDF Parser (Extracts Tabs / Outline / Bookmarks as Realm/Volume names)
    */
   private async parsePDF(
     file: File,
@@ -70,7 +70,7 @@ export class DocumentParserService {
     const pdfDoc = await loadingTask.promise;
     const numPages = pdfDoc.numPages;
 
-    onProgress?.(25, `PDF gồm ${numPages} trang. Đang trích xuất Tabs / Bookmarks...`);
+    onProgress?.(25, `PDF gồm ${numPages} trang. Đang trích xuất Document Tabs / Bookmarks...`);
 
     let outline: any[] | null = null;
     try {
@@ -90,7 +90,7 @@ export class DocumentParserService {
       onProgress?.(percent, `Đang xử lý trang ${pageNum}/${numPages}...`);
     }
 
-    onProgress?.(80, "Đang bóc tách Vị Diện và Chương...");
+    onProgress?.(80, "Đang ánh xạ Tabs tài liệu thành Vị Diện / Hồi truyện...");
 
     let volumes: ParsedVolume[] = [];
 
@@ -107,7 +107,7 @@ export class DocumentParserService {
   }
 
   /**
-   * 2. DOCX Parser (Word documents)
+   * 2. DOCX Parser (Word documents with Headings / Tabs)
    */
   private async parseDOCX(
     file: File,
@@ -116,43 +116,42 @@ export class DocumentParserService {
     onProgress?.(15, "Đang đọc tệp DOCX...");
     const arrayBuffer = await file.arrayBuffer();
 
-    onProgress?.(45, "Đang trích xuất cấu trúc văn bản...");
+    onProgress?.(45, "Đang trích xuất nội dung và tab đầu mục...");
     const result = await mammoth.extractRawText({ arrayBuffer });
     const fullText = result.value || "";
 
-    onProgress?.(75, "Đang bóc tách Vị Diện & Chương...");
+    onProgress?.(75, "Đang ánh xạ đầu mục thành Vị Diện / Hồi truyện...");
     const volumes = this.parseStructuredText(fullText);
 
     return this.finalizeResult("docx", file.name, volumes, onProgress);
   }
 
   /**
-   * 3. TXT Parser (Plain text with Tabs / Headings)
+   * 3. TXT Parser (Plain text with Tabs / Markdown Headings)
    */
   private async parseTXT(
     file: File,
     onProgress?: (progress: number, status: string) => void
   ): Promise<DocumentParseResult> {
-    onProgress?.(20, "Đang đọc tệp văn bản TXT...");
+    onProgress?.(20, "Đang đọc tệp TXT...");
     const fullText = await file.text();
 
-    onProgress?.(60, "Đang bóc tách Vị Diện & Chương từ định dạng...");
+    onProgress?.(60, "Đang trích xuất các tab đầu mục...");
     const volumes = this.parseStructuredText(fullText);
 
     return this.finalizeResult("txt", file.name, volumes, onProgress);
   }
 
   /**
-   * Common Structure Parser for Text / DOCX / TXT:
-   * Splits into:
-   * 1. Vị Diện (Volume / Realm): Vị Diện, Quyển, Tập, Phần, Arc, Thế Giới, # Heading 1
-   * 2. Chương nhỏ (Chapter): Chương, Hồi, Tiết, Chapter, ## Heading 2
+   * Parse Structured Text where:
+   * - Major Heading / Tab = Tên Vị Diện / Hồi truyện (chính xác theo text trong tab)
+   * - Sub Heading / Tab = Tên Chương nhỏ
    */
   private parseStructuredText(fullText: string): ParsedVolume[] {
     const volumes: ParsedVolume[] = [];
 
-    // Volume header regex
-    const volumeRegex = /(?:^|\n{1,2})(?:#\s+|(?:Vị Diện|Vi Dien|Quyển|Quyen|Tập|Tap|Phần|Phan|Arc|Thế Giới|The Gioi)\s+([0-9IVXLCDM]+|[A-ZÀ-Ỵa-zà-ỹ\s]+)(?:[:\-\.]\s*([^\n\r]+))?)/gi;
+    // Volume / Realm / Arc header pattern
+    const volumeRegex = /(?:^|\n{1,2})(?:#\s+|(?:Vị Diện|Vi Dien|Hồi|Hoi|Quyển|Quyen|Tập|Tap|Phần|Phan|Arc|Thế Giới|The Gioi)\s+([0-9IVXLCDM]+|[A-ZÀ-Ỵa-zà-ỹ\s]+)(?:[:\-\.]\s*([^\n\r]+))?)/gi;
 
     const volumeMatches = [...fullText.matchAll(volumeRegex)];
 
@@ -163,7 +162,8 @@ export class DocumentParserService {
         const startIndex = match.index || 0;
         const endIndex = nextMatch ? nextMatch.index : fullText.length;
 
-        const volTitle = match[0].replace(/^#+\s*/, "").trim();
+        // Dùng chính xác tên tab/đầu mục từ tài liệu
+        const volTitle = match[0].replace(/^[\r\n#\s]+/, "").trim();
         const volText = fullText.slice(startIndex, endIndex);
 
         const chapters = this.splitChaptersFromText(volText);
@@ -175,11 +175,11 @@ export class DocumentParserService {
         });
       }
     } else {
-      // Single Volume with chapters
+      // Single Volume
       const chapters = this.splitChaptersFromText(fullText);
       volumes.push({
         number: 1,
-        title: "Vị Diện 1: Toàn Bộ Diễn Biến",
+        title: "Vị Diện / Hồi 1",
         chapters,
       });
     }
@@ -188,11 +188,11 @@ export class DocumentParserService {
   }
 
   /**
-   * Split chapter segments from a volume
+   * Split chapter segments
    */
   private splitChaptersFromText(text: string): ParsedChapter[] {
     const chapters: ParsedChapter[] = [];
-    const chapterRegex = /(?:^|\n{1,2})(?:##\s+|(?:Chương|Chuong|Hồi|Hoi|Tiết|Tiet|Chapter)\s+(\d+)(?:[:\-\.]\s*([^\n\r]+))?)/gi;
+    const chapterRegex = /(?:^|\n{1,2})(?:##\s+|(?:Chương|Chuong|Tiết|Tiet|Chapter)\s+(\d+)(?:[:\-\.]\s*([^\n\r]+))?)/gi;
     const matches = [...text.matchAll(chapterRegex)];
 
     if (matches.length === 0) {
@@ -219,7 +219,7 @@ export class DocumentParserService {
       const endIndex = nextMatch ? nextMatch.index : text.length;
 
       const chapNumber = parseInt(match[1] || match[0].replace(/\D/g, ""), 10) || i + 1;
-      const chapTitle = match[0].replace(/^#+\s*/, "").trim();
+      const chapTitle = match[0].replace(/^[\r\n#\s]+/, "").trim();
       const chapContent = text.slice(startIndex, endIndex).trim();
 
       chapters.push({
@@ -234,7 +234,7 @@ export class DocumentParserService {
   }
 
   /**
-   * Finalize and calculate numbers and totals
+   * Finalize and calculate totals
    */
   private finalizeResult(
     fileType: "pdf" | "docx" | "txt",
@@ -296,6 +296,9 @@ export class DocumentParserService {
     return results;
   }
 
+  /**
+   * Map PDF document tabs directly to Realm / Volume titles
+   */
   private parseFromOutlineTree(
     outline: any[],
     pageTexts: string[],
@@ -306,7 +309,8 @@ export class DocumentParserService {
 
     if (hasNestedChildren) {
       outline.forEach((volItem, vIdx) => {
-        const volTitle = volItem.title || `Vị Diện ${vIdx + 1}`;
+        // Tên của document tab chính xác là tên của Vị Diện / Hồi truyện
+        const volTitle = (volItem.title || "").trim() || `Vị Diện ${vIdx + 1}`;
         const chapters: ParsedChapter[] = [];
 
         if (volItem.items && volItem.items.length > 0) {
@@ -320,10 +324,12 @@ export class DocumentParserService {
             }
 
             const chapterContent = this.extractTextBetweenPages(pageTexts, startPage, endPage);
+            // Tên của child tab chính xác là tên của chương nhỏ
+            const chapTitle = (chapItem.title || "").trim() || `Chương ${cIdx + 1}`;
 
             chapters.push({
               number: cIdx + 1,
-              title: chapItem.title || `Chương ${cIdx + 1}`,
+              title: chapTitle,
               content: chapterContent,
               wordCount: 0,
               pageStart: startPage + 1,
@@ -340,11 +346,11 @@ export class DocumentParserService {
     } else {
       let currentVol: ParsedVolume = {
         number: 1,
-        title: "Vị Diện 1: Khởi Đầu",
+        title: "Vị Diện / Hồi 1",
         chapters: [],
       };
 
-      const volumeKeywords = /^(?:Vị Diện|Vi Dien|Quyển|Quyen|Tập|Tap|Phần|Phan|Arc|Thế Giới|The Gioi|Cõi)/i;
+      const volumeKeywords = /^(?:Vị Diện|Vi Dien|Hồi|Hoi|Quyển|Quyen|Tập|Tap|Phần|Phan|Arc|Thế Giới|The Gioi|Cõi)/i;
 
       outline.forEach((item, idx) => {
         const isVolumeHeading = volumeKeywords.test(item.title);
@@ -355,7 +361,7 @@ export class DocumentParserService {
           }
           currentVol = {
             number: volumes.length + 1,
-            title: item.title,
+            title: item.title.trim(), // Tên tab chính là tên vị diện/hồi truyện
             chapters: [],
           };
         } else {
@@ -369,7 +375,7 @@ export class DocumentParserService {
 
           currentVol.chapters.push({
             number: currentVol.chapters.length + 1,
-            title: item.title,
+            title: item.title.trim(),
             content: chapterContent,
             wordCount: 0,
             pageStart: startPage + 1,
@@ -411,6 +417,5 @@ export class DocumentParserService {
 }
 
 export const documentParserService = new DocumentParserService();
-// Alias for backward compatibility
 export const pdfParserService = documentParserService;
 export type PDFParseResult = DocumentParseResult;

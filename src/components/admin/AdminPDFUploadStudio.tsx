@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, Sparkles, RefreshCw, 
-  ChevronDown, ChevronUp, Eye, ArrowRight, X
+  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
@@ -39,6 +39,8 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
 
   const [previewChapter, setPreviewChapter] = useState<{ title: string; content: string; wordCount: number } | null>(null);
   const [collapsedVolIds, setCollapsedVolIds] = useState<Record<number, boolean>>({});
+  const [editingVolNumber, setEditingVolNumber] = useState<number | null>(null);
+  const [editingVolTitle, setEditingVolTitle] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   const loadStories = async () => {
@@ -77,10 +79,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       setParseResult(result);
       if (result.detectedTitle) {
         setNewStoryTitle(result.detectedTitle);
-        setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện và ${result.totalChapters} chương trích xuất từ ${file.name}`);
+        setNewStoryDesc(`Tác phẩm gồm ${result.totalVolumes} Vị Diện / Hồi truyện trích xuất từ ${file.name}`);
       }
 
-      toast.success(`Đã bóc tách: ${result.totalVolumes} Vị Diện & ${result.totalChapters} chương!`);
+      toast.success(`Đã nhận diện: ${result.totalVolumes} Vị Diện / Hồi & ${result.totalChapters} chương từ các Tab!`);
     } catch (err: any) {
       toast.error(err.message || "Không thể đọc tệp");
     } finally {
@@ -93,6 +95,24 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
       ...prev,
       [volNumber]: !prev[volNumber],
     }));
+  };
+
+  const handleSaveVolTitle = (volNumber: number) => {
+    if (!parseResult || !editingVolTitle.trim()) {
+      setEditingVolNumber(null);
+      return;
+    }
+
+    const updatedVolumes = parseResult.volumes.map((v) =>
+      v.number === volNumber ? { ...v, title: editingVolTitle.trim() } : v
+    );
+
+    setParseResult({
+      ...parseResult,
+      volumes: updatedVolumes,
+    });
+    setEditingVolNumber(null);
+    toast.success("Đã cập nhật tên Vị Diện / Hồi!");
   };
 
   const handleConfirmImport = async () => {
@@ -118,7 +138,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             coverImage: newStoryCover,
             genres: [newStoryGenre],
             status: "Đang ra",
-            description: newStoryDesc.trim() || `Gồm ${parseResult.totalVolumes} Vị Diện.`,
+            description: newStoryDesc.trim() || `Tác phẩm gồm ${parseResult.totalVolumes} Vị Diện / Hồi truyện.`,
             isActive: true,
           },
           parseResult.volumes
@@ -166,7 +186,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           <span>Tự Động Bóc Tách File (PDF, Word DOCX, TXT)</span>
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Tự động chia đầu mục lớn thành <strong>Diễn biến các Vị Diện (Quyển)</strong> và các tab con thành <strong>Chương nhỏ</strong>.
+          Tên của các <strong>Document Tabs</strong> được nhận diện trực tiếp thành tên của <strong>Vị Diện / Hồi truyện</strong>, tab con là các <strong>Chương nhỏ</strong>.
         </p>
       </div>
 
@@ -208,13 +228,13 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
           </div>
 
           <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-            {isParsing ? "Đang xử lý tệp..." : "Kéo thả hoặc bấm để chọn tệp"}
+            {isParsing ? "Đang đọc các Tabs tài liệu..." : "Kéo thả hoặc bấm để chọn tệp"}
           </h3>
 
           {/* Formats Badges */}
           <div className="flex justify-center gap-2 mt-2.5">
             <span className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 text-[11px] font-bold">
-              PDF (Tabs / Outline)
+              PDF (Tabs / Bookmarks)
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-[11px] font-bold">
               DOCX (Word)
@@ -252,11 +272,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                   Đã bóc tách: <span className="text-amber-600">{selectedFile?.name}</span>
                 </h4>
                 <div className="flex flex-wrap gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-                  <span className="text-amber-600">{parseResult.totalVolumes} Vị Diện</span>
+                  <span className="text-amber-600 font-bold">🏛️ {parseResult.totalVolumes} Vị Diện / Hồi</span>
                   <span>•</span>
-                  <span className="text-indigo-600 dark:text-indigo-400">{parseResult.totalChapters} Chương</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">📄 {parseResult.totalChapters} Chương</span>
                   <span>•</span>
-                  <span className="text-slate-400 font-mono">{parseResult.totalWords.toLocaleString()} chữ</span>
+                  <span className="text-slate-400 font-mono">🔤 {parseResult.totalWords.toLocaleString()} chữ</span>
                 </div>
               </div>
             </div>
@@ -367,7 +387,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
                 >
                   {stories.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.title} ({s.volumes.length} quyển)
+                      {s.title} ({s.volumes.length} quyển/vị diện)
                     </option>
                   ))}
                 </select>
@@ -385,35 +405,83 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ onSu
             )}
           </div>
 
-          {/* Volumes & Chapters Tree */}
+          {/* Volumes & Chapters Tree with Exact Tab Names & Inline Rename */}
           <div className="space-y-3">
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-              Cấu trúc Vị Diện & Chương ({parseResult.volumes.length} Vị Diện)
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                Danh sách Vị Diện / Hồi truyện từ Tabs ({parseResult.volumes.length} Vị Diện)
+              </h4>
+              <span className="text-[11px] text-slate-400">
+                (Click vào icon bút để sửa lại tên tab nếu muốn)
+              </span>
+            </div>
 
             <div className="space-y-2.5">
               {parseResult.volumes.map((volume) => {
                 const isCollapsed = !!collapsedVolIds[volume.number];
+                const isEditingThis = editingVolNumber === volume.number;
 
                 return (
                   <div
                     key={volume.number}
                     className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm"
                   >
-                    <div
-                      onClick={() => toggleVolumeCollapse(volume.number)}
-                      className="p-3.5 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors flex items-center justify-between select-none text-xs"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-amber-500 text-white font-black flex items-center justify-center font-mono">
+                    <div className="p-3.5 bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-between select-none text-xs">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500 text-white font-black flex items-center justify-center font-mono flex-shrink-0">
                           {volume.number}
                         </span>
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          {volume.title}
-                        </span>
+
+                        {isEditingThis ? (
+                          <div className="flex items-center gap-1.5 flex-1 max-w-md" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editingVolTitle}
+                              onChange={(e) => setEditingVolTitle(e.target.value)}
+                              className="px-2.5 py-1 rounded-lg border border-amber-500 bg-white dark:bg-slate-800 text-xs font-bold w-full"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveVolTitle(volume.number)}
+                              className="p-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditingVolNumber(null)}
+                              className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span 
+                              onClick={() => toggleVolumeCollapse(volume.number)}
+                              className="font-bold text-slate-900 dark:text-white text-sm truncate cursor-pointer hover:text-amber-600"
+                            >
+                              {volume.title}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingVolNumber(volume.number);
+                                setEditingVolTitle(volume.title);
+                              }}
+                              className="p-1 text-slate-400 hover:text-amber-600 rounded"
+                              title="Sửa tên Vị Diện này"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 font-bold text-amber-700 dark:text-amber-300 font-mono">
+                      <div 
+                        onClick={() => toggleVolumeCollapse(volume.number)}
+                        className="flex items-center gap-2 font-bold text-amber-700 dark:text-amber-300 font-mono cursor-pointer"
+                      >
                         <span>{volume.chapters.length} chương</span>
                         {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                       </div>
