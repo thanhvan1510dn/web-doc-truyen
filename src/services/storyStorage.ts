@@ -496,6 +496,55 @@ class StoryStorageService {
     return newVolume;
   }
 
+  public updateVolume(storyId: string, volumeId: string, newTitle: string): Volume | null {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return null;
+
+    const vol = story.volumes.find((v) => v.id === volumeId);
+    if (!vol) return null;
+
+    vol.title = newTitle.trim() || vol.title;
+    story.updatedAt = new Date().toISOString();
+    this.broadcastChange();
+
+    this.saveStoryToFirestore(story).catch((err) =>
+      console.error("Firestore updateVolume error:", err)
+    );
+
+    return vol;
+  }
+
+  public deleteVolume(storyId: string, volumeId: string): boolean {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return false;
+
+    const volIndex = story.volumes.findIndex((v) => v.id === volumeId);
+    if (volIndex === -1) return false;
+
+    const [deletedVol] = story.volumes.splice(volIndex, 1);
+    // Re-index remaining volumes
+    story.volumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
+    story.updatedAt = new Date().toISOString();
+    this.broadcastChange();
+
+    this.saveStoryToFirestore(story).catch((err) =>
+      console.error("Firestore deleteVolume error:", err)
+    );
+
+    // Delete subcollection chapter documents for chapters in this volume
+    if (deletedVol && Array.isArray(deletedVol.chapters)) {
+      for (const ch of deletedVol.chapters) {
+        deleteDoc(doc(db, "stories", storyId, "chapters", ch.id)).catch((err) =>
+          console.warn("Firestore subcollection deleteChapter error:", err)
+        );
+      }
+    }
+
+    return true;
+  }
+
   public createChapter(storyIdOrDto: string | CreateChapterDto, maybeDto?: CreateChapterDto): Chapter | null {
     const dto = typeof storyIdOrDto === "string" ? maybeDto! : storyIdOrDto;
     const storyId = typeof storyIdOrDto === "string" ? storyIdOrDto : dto.storyId;
@@ -667,7 +716,7 @@ class StoryStorageService {
   public async importParsedVolumes(
     storyId: string,
     parsedVolumes: ParsedVolume[],
-    replaceExisting = true
+    replaceExisting = false
   ): Promise<Story | null> {
     let story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) {
@@ -684,11 +733,13 @@ class StoryStorageService {
     }
 
     const now = new Date().toISOString();
+    const existingVolCount = replaceExisting ? 0 : story.volumes.length;
+
     const convertedVolumes: Volume[] = parsedVolumes.map((pv, vIdx) => {
       const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
       return {
         id: volumeId,
-        number: pv.number || vIdx + 1,
+        number: existingVolCount + (pv.number || vIdx + 1),
         title: pv.title,
         chapters: pv.chapters.map((ch, cIdx) => ({
           id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
@@ -710,6 +761,12 @@ class StoryStorageService {
     } else {
       story.volumes = [...story.volumes, ...convertedVolumes];
     }
+
+    // Re-index all volumes sequentially 1..N and sort chapters in each volume
+    story.volumes.forEach((vol, idx) => {
+      vol.number = idx + 1;
+      vol.chapters.sort((a, b) => a.number - b.number);
+    });
 
     story.updatedAt = now;
     this.broadcastChange();

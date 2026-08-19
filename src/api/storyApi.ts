@@ -251,6 +251,46 @@ export const storyApi = {
   },
 
   /**
+   * [Admin] Update volume title
+   */
+  async updateVolume(storyId: string, volumeId: string, newTitle: string): Promise<ApiResponse<Volume>> {
+    try {
+      const updated = storyStorage.updateVolume(storyId, volumeId, newTitle);
+      return {
+        success: !!updated,
+        data: updated as Volume,
+        message: updated ? "Đã đổi tên mục lục thành công" : "Không tìm thấy mục lục",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null as any,
+        error: error.message || "Failed to update volume",
+      };
+    }
+  },
+
+  /**
+   * [Admin] Delete an entire volume and all its chapters
+   */
+  async deleteVolume(storyId: string, volumeId: string): Promise<ApiResponse<boolean>> {
+    try {
+      const ok = storyStorage.deleteVolume(storyId, volumeId);
+      return {
+        success: ok,
+        data: ok,
+        message: ok ? "Đã xóa toàn bộ mục lục thành công" : "Không tìm thấy mục lục cần xóa",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: false,
+        error: error.message || "Failed to delete volume",
+      };
+    }
+  },
+
+  /**
    * [Admin] Toggle chapter active/inactive
    */
   async toggleChapterStatus(storyId: string, chapterId: string): Promise<ApiResponse<Chapter>> {
