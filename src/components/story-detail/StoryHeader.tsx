@@ -1,7 +1,6 @@
 import React from "react";
 import { Play, Clock, ArrowLeft, ExternalLink, AlertTriangle } from "lucide-react";
 import { Story } from "../../types/story";
-import { getTotalChapters } from "../../utils/format";
 
 interface StoryHeaderProps {
   story: Story;
@@ -70,7 +69,6 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
   onBack,
   onStartReading,
 }) => {
-  const totalChapters = getTotalChapters(story);
   const allActiveChapters = story.volumes.flatMap((v) => v.chapters).filter((c) => c.isActive !== false);
   const firstChapter = allActiveChapters.length > 0 ? allActiveChapters[0] : null;
   const latestChapter = allActiveChapters.length > 0 ? allActiveChapters[allActiveChapters.length - 1] : null;
@@ -128,7 +126,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
               </p>
             )}
             <p>
-              <strong>Quy mô:</strong> {story.volumes.length} mục lục • {totalChapters} chương
+              <strong>Quy mô:</strong> {story.volumes.length} mục lục
             </p>
             {story.editorBeta && (
               <p className="col-span-full">

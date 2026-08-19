@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Story } from '../types/story';
 import { Search, BookOpen, ChevronRight, X } from 'lucide-react';
-import { getTotalChapters } from '../utils/format';
 
 interface HomeViewProps {
   stories: Story[];
@@ -74,8 +73,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
           {filteredStories.map((story) => {
-            const totalChapters = getTotalChapters(story);
-            const firstChapter = story.volumes[0]?.chapters[0];
+            const firstChapter = story.volumes.flatMap((v) => v.chapters).find((c) => c.isActive !== false) || story.volumes[0]?.chapters[0];
 
             return (
               <div
@@ -100,7 +98,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </div>
 
                   <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                    Tác giả: <span className="text-gray-700 dark:text-slate-300 font-medium">{story.author}</span> • {story.volumes.length} quyển • {totalChapters} chương
+                    Tác giả: <span className="text-gray-700 dark:text-slate-300 font-medium">{story.author}</span>
                   </p>
 
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300 line-clamp-2 leading-relaxed mt-2">
@@ -116,7 +114,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       }}
                       className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
                     >
-                      <span>Mục lục các chương</span>
+                      <span>Mục lục</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
 
@@ -128,7 +126,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         }}
                         className="text-xs px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold hover:bg-amber-500 hover:text-white transition-colors"
                       >
-                        Đọc từ chương 1
+                        Đọc từ đầu
                       </button>
                     )}
                   </div>
