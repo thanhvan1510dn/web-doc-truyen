@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
-  Plus, Search, Edit, Trash2, Upload, BookOpen, Layers, 
+  Search, Edit, Trash2, Upload, BookOpen, Layers, 
   AlertTriangle, ExternalLink 
 } from "lucide-react";
 import { Story } from "../../types/story";
@@ -115,9 +115,8 @@ export const AdminStoryListView: React.FC<AdminStoryListViewProps> = ({
             setStoryToEdit(null);
             setStoryModalOpen(true);
           }}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white text-xs font-semibold shadow-sm transition-all self-start sm:self-auto"
+          className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white text-xs font-semibold shadow-sm transition-all self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
           <span>Tạo truyện mới</span>
         </button>
       </div>

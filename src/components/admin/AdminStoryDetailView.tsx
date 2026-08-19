@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
-  ArrowLeft, Upload, Edit, Trash2, Layers, X, FileUp, 
-  BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Info
+  Edit, Trash2, X, 
+  BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle
 } from "lucide-react";
 import { Chapter, Story, Volume } from "../../types/story";
 import { storyApi } from "../../api";
@@ -150,10 +150,9 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-500 hover:text-zinc-900 transition-colors w-fit"
+          className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 transition-colors w-fit"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Quay lại danh sách truyện</span>
+          Quay lại danh sách truyện
         </button>
 
         {/* Action Tabs Navigation */}
@@ -161,52 +160,48 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab("chapters")}
-            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center justify-center " + (
               activeSubTab === "chapters"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
             )}
           >
-            <Layers className="w-3.5 h-3.5" />
             <span>Mục lục ({story.volumes.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab("info")}
-            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center justify-center " + (
               activeSubTab === "info"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
             )}
           >
-            <Info className="w-3.5 h-3.5" />
             <span>Thông tin truyện</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab("pdf-upload")}
-            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center justify-center " + (
               activeSubTab === "pdf-upload"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
             )}
           >
-            <FileUp className="w-3.5 h-3.5" />
-            <span>Tự động tách file</span>
+            <span>Nạp file</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab("manual-upload")}
-            className={"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (
+            className={"px-3 py-1.5 rounded-lg transition-all flex items-center justify-center " + (
               activeSubTab === "manual-upload"
                 ? "bg-white text-zinc-900 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-900"
             )}
           >
-            <Upload className="w-3.5 h-3.5" />
             <span>Đăng chương</span>
           </button>
         </div>
@@ -379,7 +374,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                   onClick={() => setActiveSubTab("pdf-upload")}
                   className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold shadow-sm transition-all"
                 >
-                  Tự động tách file
+                  Nạp file
                 </button>
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Story, Chapter, ReaderSettings } from '../../types/story';
-import { Clock, Layers } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 
 interface ReaderContentProps {
@@ -88,11 +88,6 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
       <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${getReaderWidthClass()}`}>
         {/* Chapter Header */}
         <div className="text-center pb-8 mb-8 border-b border-black/10 dark:border-white/10">
-          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-2">
-            <Layers className="w-3.5 h-3.5" />
-            <span>{chapter.volumeTitle}</span>
-          </div>
-
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
             {chapter.title}
           </h1>
