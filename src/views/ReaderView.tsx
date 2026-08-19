@@ -8,6 +8,7 @@ import { ReaderTOCModal } from '../components/reader/ReaderTOCModal';
 import { MobileReaderBar } from '../components/reader/MobileReaderBar';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { analyticsApi } from '../api';
+import { storyStorage } from '../services/storyStorage';
 
 interface ReaderViewProps {
   story: Story;
@@ -44,6 +45,22 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const currentChapter = flatChapters[currentIndex] || flatChapters[0];
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < flatChapters.length - 1;
+
+  const [activeContent, setActiveContent] = useState<string>(currentChapter?.content || '');
+
+  useEffect(() => {
+    if (!currentChapter) return;
+    if (currentChapter.content && currentChapter.content.trim().length > 0) {
+      setActiveContent(currentChapter.content);
+    } else {
+      storyStorage.getChapter(story.id, currentChapter.id).then((ch) => {
+        if (ch && ch.content) {
+          currentChapter.content = ch.content;
+          setActiveContent(ch.content);
+        }
+      });
+    }
+  }, [currentChapter?.id, story?.id]);
 
   // Track analytics event when chapter is loaded
   useEffect(() => {
@@ -124,12 +141,17 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     );
   }
 
+  const effectiveChapter = {
+    ...currentChapter,
+    content: activeContent || currentChapter.content || '',
+  };
+
   return (
     <div className={`min-h-screen flex flex-col selection:bg-amber-500 selection:text-white transition-colors theme-${settings.theme}`}>
       {/* Sticky Reader Header */}
       <ReaderHeader
         story={story}
-        chapter={currentChapter}
+        chapter={effectiveChapter}
         hasPrev={hasPrev}
         hasNext={hasNext}
         onPrevChapter={handlePrev}
@@ -144,7 +166,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       <main className="flex-1">
         <ReaderContent
           story={story}
-          chapter={currentChapter}
+          chapter={effectiveChapter}
           settings={settings}
           readingProgressPercent={readingProgressPercent}
         />

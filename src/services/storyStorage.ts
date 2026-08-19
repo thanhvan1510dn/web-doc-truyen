@@ -11,6 +11,8 @@ import {
   updateDoc, 
   onSnapshot, 
   increment,
+  getDoc,
+  writeBatch,
   Unsubscribe
 } from "firebase/firestore";
 
@@ -245,6 +247,63 @@ class StoryStorageService {
     }
   }
 
+  public async saveStoryToFirestore(story: Story): Promise<void> {
+    try {
+      const sanitized = sanitizeStory(story);
+      if (!sanitized) return;
+
+      const firestoreData = toFirestoreData(sanitized);
+      const jsonStr = JSON.stringify(firestoreData);
+
+      // If document payload is larger than 600KB, split chapter contents into subcollections to prevent hitting Firestore 1MB limit
+      if (jsonStr.length > 600000) {
+        const lightweightStory = JSON.parse(jsonStr);
+        const chaptersWithContent: any[] = [];
+
+        lightweightStory.volumes?.forEach((vol: any) => {
+          vol.chapters?.forEach((ch: any) => {
+            if (ch.content) {
+              chaptersWithContent.push({
+                id: ch.id,
+                number: ch.number,
+                title: ch.title,
+                wordCount: ch.wordCount,
+                content: ch.content,
+                volumeId: vol.id,
+                volumeTitle: vol.title,
+                storyId: story.id,
+                updatedAt: ch.updatedAt || new Date().toISOString(),
+                createdAt: ch.createdAt || new Date().toISOString(),
+                isActive: ch.isActive !== false,
+              });
+              ch.content = ""; // clear bulky content from main story doc
+            }
+          });
+        });
+
+        // 1. Save lightweight TOC main doc (< 50KB)
+        await setDoc(doc(db, "stories", story.id), lightweightStory);
+
+        // 2. Save individual chapter documents to subcollection in batches of 200
+        const chunkSize = 200;
+        for (let i = 0; i < chaptersWithContent.length; i += chunkSize) {
+          const chunk = chaptersWithContent.slice(i, i + chunkSize);
+          const batch = writeBatch(db);
+          for (const ch of chunk) {
+            batch.set(doc(db, "stories", story.id, "chapters", ch.id), toFirestoreData(ch));
+          }
+          await batch.commit();
+        }
+      } else {
+        // Under 600KB: Save directly in 1 doc
+        await setDoc(doc(db, "stories", story.id), firestoreData);
+      }
+    } catch (err) {
+      console.error("Firestore saveStoryToFirestore error:", err);
+      throw err;
+    }
+  }
+
   // --- CRUD METHODS (Realtime Cloud Firestore + Instant Optimistic Cache) ---
 
   public getStories(params: StoryFilterParams = {}): Story[] {
@@ -337,7 +396,7 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", newStory.id), toFirestoreData(newStory)).catch((err) =>
+    this.saveStoryToFirestore(newStory).catch((err) =>
       console.error("Firestore create error:", err)
     );
 
@@ -358,7 +417,7 @@ class StoryStorageService {
     this.cachedStories[index] = updated;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), toFirestoreData(updated)).catch((err) =>
+    this.saveStoryToFirestore(updated).catch((err) =>
       console.error("Firestore update error:", err)
     );
 
@@ -372,7 +431,7 @@ class StoryStorageService {
     if (soft) {
       this.cachedStories[index].isDeleted = true;
       this.cachedStories[index].deletedAt = new Date().toISOString();
-      setDoc(doc(db, "stories", id), toFirestoreData(this.cachedStories[index])).catch((err) =>
+      this.saveStoryToFirestore(this.cachedStories[index]).catch((err) =>
         console.error("Firestore soft delete error:", err)
       );
     } else {
@@ -395,7 +454,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), toFirestoreData(story)).catch((err) =>
+    this.saveStoryToFirestore(story).catch((err) =>
       console.error("Firestore restore error:", err)
     );
 
@@ -414,7 +473,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", id), toFirestoreData(story)).catch((err) =>
+    this.saveStoryToFirestore(story).catch((err) =>
       console.error("Firestore toggle status error:", err)
     );
 
@@ -436,7 +495,7 @@ class StoryStorageService {
     story.updatedAt = new Date().toISOString();
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
+    this.saveStoryToFirestore(story).catch((err) =>
       console.error("Firestore addVolume error:", err)
     );
 
@@ -482,7 +541,7 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
+    this.saveStoryToFirestore(story).catch((err) =>
       console.error("Firestore addChapter error:", err)
     );
 
@@ -507,7 +566,7 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
+        this.saveStoryToFirestore(story).catch((err) =>
           console.error("Firestore updateChapter error:", err)
         );
 
@@ -528,7 +587,7 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
+        this.saveStoryToFirestore(story).catch((err) =>
           console.error("Firestore deleteChapter error:", err)
         );
 
@@ -553,9 +612,41 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
-        setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
+        this.saveStoryToFirestore(story).catch((err) =>
           console.error("Firestore toggleChapter error:", err)
         );
+
+        return ch;
+      }
+    }
+    return null;
+  }
+
+  public async getChapter(storyId: string, chapterId: string, includeInactive = false): Promise<Chapter | null> {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return null;
+
+    for (const vol of story.volumes) {
+      const ch = vol.chapters.find((c) => c.id === chapterId);
+      if (ch) {
+        if (!includeInactive && ch.isActive === false) return null;
+        if (ch.content && ch.content.trim().length > 0) {
+          return ch;
+        }
+
+        try {
+          const snap = await getDoc(doc(db, "stories", storyId, "chapters", chapterId));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data?.content) {
+              ch.content = data.content;
+              this.broadcastChange();
+              return ch;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch subcollection chapter:", e);
+        }
 
         return ch;
       }
@@ -625,11 +716,7 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    try {
-      await setDoc(doc(db, "stories", storyId), toFirestoreData(story));
-    } catch (err: any) {
-      console.error("Firestore importParsedVolumes setDoc error:", err);
-    }
+    await this.saveStoryToFirestore(story);
 
     return story;
   }
@@ -699,11 +786,7 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    try {
-      await setDoc(doc(db, "stories", storyId), toFirestoreData(newStory));
-    } catch (err: any) {
-      console.error("Firestore importAsNewStory setDoc error:", err);
-    }
+    await this.saveStoryToFirestore(newStory);
 
     return newStory;
   }
