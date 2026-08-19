@@ -134,28 +134,22 @@ class StoryStorageService {
               const data = docSnap.data();
               const sanitized = sanitizeStory({ ...data, id: docSnap.id });
               if (sanitized) {
-                // Safeguard: Merge with existing local memory cache to protect freshly imported chapters
+                // If local memory cache has existing chapter contents, preserve only the content text for matching active chapters
                 const existing = this.cachedStories.find((s) => s.id === sanitized.id);
-                if (existing && existing.volumes && existing.volumes.length > 0) {
-                  const remoteChapCount = sanitized.volumes.reduce((a, v) => a + v.chapters.length, 0);
-                  const localChapCount = existing.volumes.reduce((a, v) => a + v.chapters.length, 0);
-                  if (remoteChapCount === 0 && localChapCount > 0) {
-                    sanitized.volumes = existing.volumes;
-                  } else {
-                    sanitized.volumes.forEach((rVol) => {
-                      const lVol = existing.volumes.find((v) => v.id === rVol.id || v.number === rVol.number);
-                      if (lVol) {
-                        rVol.chapters.forEach((rCh) => {
-                          if (!rCh.content) {
-                            const lCh = lVol.chapters.find((c) => c.id === rCh.id || c.number === rCh.number);
-                            if (lCh && lCh.content) {
-                              rCh.content = lCh.content;
-                            }
+                if (existing && Array.isArray(existing.volumes)) {
+                  sanitized.volumes.forEach((rVol) => {
+                    const lVol = existing.volumes.find((v) => v.id === rVol.id);
+                    if (lVol && Array.isArray(lVol.chapters)) {
+                      rVol.chapters.forEach((rCh) => {
+                        if (!rCh.content) {
+                          const lCh = lVol.chapters.find((c) => c.id === rCh.id);
+                          if (lCh && lCh.content) {
+                            rCh.content = lCh.content;
                           }
-                        });
-                      }
-                    });
-                  }
+                        }
+                      });
+                    }
+                  });
                 }
                 remoteStories.push(sanitized);
               }
@@ -589,6 +583,10 @@ class StoryStorageService {
 
         this.saveStoryToFirestore(story).catch((err) =>
           console.error("Firestore deleteChapter error:", err)
+        );
+
+        deleteDoc(doc(db, "stories", storyId, "chapters", chapterId)).catch((err) =>
+          console.warn("Firestore subcollection deleteChapter error:", err)
         );
 
         return true;
