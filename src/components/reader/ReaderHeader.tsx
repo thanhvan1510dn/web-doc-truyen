@@ -30,13 +30,13 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
   const getHeaderThemeClasses = () => {
     switch (settings.theme) {
       case 'dark':
-        return 'bg-slate-900/90 border-slate-800 text-slate-100';
+        return 'bg-[#0f172a]/90 border-slate-800/80 text-[#e2e8f0]';
       case 'sepia':
-        return 'bg-[#f0e6cb]/90 border-[#dfd2af] text-[#4a3828]';
+        return 'bg-[#f4ecdc]/90 border-[#e5dcbe] text-[#3d2f21]';
       case 'midnight':
-        return 'bg-[#0a0f1d]/90 border-slate-800 text-slate-200';
+        return 'bg-[#060911]/90 border-slate-900 text-[#cbd5e1]';
       default:
-        return 'bg-white/90 border-gray-200 text-gray-800';
+        return 'bg-[#fdfbf7]/90 border-gray-200/80 text-[#1e293b]';
     }
   };
 

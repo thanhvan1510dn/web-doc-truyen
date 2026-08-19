@@ -40,13 +40,13 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
   const getFooterThemeClasses = () => {
     switch (settings.theme) {
       case 'dark':
-        return 'bg-slate-900 border-slate-800 text-slate-200';
+        return 'bg-[#0f172a] border-slate-800 text-[#e2e8f0]';
       case 'sepia':
-        return 'bg-[#ebdcb3] border-[#d4c393] text-[#4a3828]';
+        return 'bg-[#f4ecdc] border-[#e5dcbe] text-[#3d2f21]';
       case 'midnight':
-        return 'bg-[#0a0f1d] border-slate-800 text-slate-200';
+        return 'bg-[#060911] border-slate-900 text-[#cbd5e1]';
       default:
-        return 'bg-gray-100 border-gray-200 text-gray-800';
+        return 'bg-[#fdfbf7] border-gray-200 text-[#1e293b]';
     }
   };
 

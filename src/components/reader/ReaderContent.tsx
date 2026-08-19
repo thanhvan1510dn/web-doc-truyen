@@ -32,15 +32,15 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
   const getLineHeightClass = () => {
     switch (settings.lineHeight) {
       case 'tight':
-        return 'leading-relaxed';
+        return 'leading-[1.8] space-y-5';
       case 'normal':
-        return 'leading-loose';
+        return 'leading-[2.1] space-y-6';
       case 'relaxed':
-        return 'leading-[2.2]';
+        return 'leading-[2.4] space-y-7';
       case 'loose':
-        return 'leading-[2.5]';
+        return 'leading-[2.7] space-y-8';
       default:
-        return 'leading-loose';
+        return 'leading-[2.1] space-y-6';
     }
   };
 
@@ -62,13 +62,13 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
   const getThemeBackgroundClass = () => {
     switch (settings.theme) {
       case 'dark':
-        return 'bg-slate-900 text-slate-200';
+        return 'bg-[#0f172a] text-[#e2e8f0]';
       case 'sepia':
-        return 'bg-[#f5ecd4] text-[#4a3828]';
+        return 'bg-[#f4ecdc] text-[#3d2f21]';
       case 'midnight':
-        return 'bg-[#0a0f1d] text-[#cbd5e1]';
+        return 'bg-[#060911] text-[#cbd5e1]';
       default:
-        return 'bg-[#fbfbfb] text-gray-800';
+        return 'bg-[#fdfbf7] text-[#1e293b]';
     }
   };
 

@@ -5,34 +5,49 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: #f59e0b;
+    color: #ffffff;
   }
 }
 
-/* Custom Themes for Reader */
+/* ==========================================================================
+   Editorial Reader Themes (Calibrated for Eye Comfort & Distraction-Free Reading)
+   ========================================================================== */
+
+/* Light: Warm Paper Natural Tone */
 body.theme-light {
-  background-color: #f8fafc;
+  background-color: #fdfbf7;
   color: #1e293b;
 }
 
+/* Sepia: Classic Literary Warmth */
+body.theme-sepia {
+  background-color: #f4ecdc;
+  color: #3d2f21;
+}
+
+/* Dark: Deep Obsidian Slate */
 body.theme-dark {
   background-color: #0f172a;
   color: #e2e8f0;
 }
 
-body.theme-sepia {
-  background-color: #f5ecd4;
-  color: #4a3828;
-}
-
+/* Midnight: Pure OLED Starlight */
 body.theme-midnight {
-  background-color: #0a0f1d;
+  background-color: #060911;
   color: #cbd5e1;
 }
 
-/* Custom scrollbars */
+/* Refined Subtle Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -40,10 +55,10 @@ body.theme-midnight {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.8);
+  background: rgba(148, 163, 184, 0.6);
 }
