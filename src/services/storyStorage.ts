@@ -132,6 +132,29 @@ class StoryStorageService {
               const data = docSnap.data();
               const sanitized = sanitizeStory({ ...data, id: docSnap.id });
               if (sanitized) {
+                // Safeguard: Merge with existing local memory cache to protect freshly imported chapters
+                const existing = this.cachedStories.find((s) => s.id === sanitized.id);
+                if (existing && existing.volumes && existing.volumes.length > 0) {
+                  const remoteChapCount = sanitized.volumes.reduce((a, v) => a + v.chapters.length, 0);
+                  const localChapCount = existing.volumes.reduce((a, v) => a + v.chapters.length, 0);
+                  if (remoteChapCount === 0 && localChapCount > 0) {
+                    sanitized.volumes = existing.volumes;
+                  } else {
+                    sanitized.volumes.forEach((rVol) => {
+                      const lVol = existing.volumes.find((v) => v.id === rVol.id || v.number === rVol.number);
+                      if (lVol) {
+                        rVol.chapters.forEach((rCh) => {
+                          if (!rCh.content) {
+                            const lCh = lVol.chapters.find((c) => c.id === rCh.id || c.number === rCh.number);
+                            if (lCh && lCh.content) {
+                              rCh.content = lCh.content;
+                            }
+                          }
+                        });
+                      }
+                    });
+                  }
+                }
                 remoteStories.push(sanitized);
               }
             });
@@ -271,7 +294,7 @@ class StoryStorageService {
     const story = this.cachedStories.find((s) => s.id === id && !s.isDeleted);
     if (!story) return null;
     if (!includeInactive && story.isActive === false) return null;
-    return story;
+    return JSON.parse(JSON.stringify(story));
   }
 
   public createStory(dto: CreateStoryDto): Story {
