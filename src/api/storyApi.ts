@@ -294,7 +294,7 @@ export const storyApi = {
    * Subscribe to real-time story data changes across tabs
    */
     /**
-   * [Admin] Import full parsed volumes & chapters from PDF
+   * [Admin] Import full parsed volumes & chapters from PDF / Word / TXT
    */
   async importParsedVolumes(
     storyId: string,
@@ -302,40 +302,47 @@ export const storyApi = {
     replaceExisting = false
   ): Promise<ApiResponse<Story>> {
     try {
-      const story = storyStorage.importParsedVolumes(storyId, parsedVolumes, replaceExisting);
+      const story = await storyStorage.importParsedVolumes(storyId, parsedVolumes, replaceExisting);
+      if (!story) {
+        return {
+          success: false,
+          data: null as any,
+          error: "Không tìm thấy truyện đích để nạp chương",
+        };
+      }
       return {
         success: true,
-        data: story || (null as any),
-        message: `Đã nhập thành công ${parsedVolumes.length} Vị Diện và toàn bộ các chương từ PDF!`,
+        data: story,
+        message: `Đã nhập thành công ${parsedVolumes.length} mục lục và toàn bộ các chương!`,
       };
     } catch (error: any) {
       return {
         success: false,
         data: null as any,
-        error: error.message || "Failed to import volumes from PDF",
+        error: error.message || "Failed to import volumes",
       };
     }
   },
 
   /**
-   * [Admin] Create new story and import all parsed volumes from PDF
+   * [Admin] Create new story and import all parsed volumes from file
    */
   async importAsNewStory(
     dto: CreateStoryDto,
     parsedVolumes: any[]
   ): Promise<ApiResponse<Story>> {
     try {
-      const story = storyStorage.importAsNewStory(dto, parsedVolumes);
+      const story = await storyStorage.importAsNewStory(dto, parsedVolumes);
       return {
         success: true,
         data: story,
-        message: `Đã tạo truyện mới và nhập thành công ${parsedVolumes.length} Vị Diện!`,
+        message: `Đã tạo truyện mới và nhập thành công ${parsedVolumes.length} mục lục!`,
       };
     } catch (error: any) {
       return {
         success: false,
         data: null as any,
-        error: error.message || "Failed to create story and import PDF",
+        error: error.message || "Failed to create story and import",
       };
     }
   },

@@ -1,4 +1,4 @@
-﻿import { Story, Chapter, Volume } from "../types/story";
+import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 import { ParsedVolume } from "./documentParserService";
 import { MOCK_STORIES } from "../data/mockStories";
@@ -552,9 +552,24 @@ class StoryStorageService {
     }
   }
 
-  public importParsedVolumes(storyId: string, parsedVolumes: ParsedVolume[], replaceExisting = true): Story | null {
-    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
-    if (!story) return null;
+  public async importParsedVolumes(
+    storyId: string,
+    parsedVolumes: ParsedVolume[],
+    replaceExisting = true
+  ): Promise<Story | null> {
+    let story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) {
+      const localList = this.loadFromLocalStorage();
+      story = localList.find((s) => s.id === storyId && !s.isDeleted);
+      if (story) {
+        this.cachedStories.push(story);
+      }
+    }
+
+    if (!story) {
+      console.error("Story not found:", storyId);
+      throw new Error(`Không tìm thấy truyện đích (ID: ${storyId})`);
+    }
 
     const now = new Date().toISOString();
     const convertedVolumes: Volume[] = parsedVolumes.map((pv, vIdx) => {
@@ -568,7 +583,7 @@ class StoryStorageService {
           number: ch.number || cIdx + 1,
           title: ch.title,
           wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
-          content: ch.content,
+          content: ch.content || "",
           volumeId: volumeId,
           volumeTitle: pv.title,
           createdAt: now,
@@ -587,23 +602,29 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), toFirestoreData(story)).catch((err) =>
-      console.error("Firestore importParsedVolumes error:", err)
-    );
+    try {
+      await setDoc(doc(db, "stories", storyId), toFirestoreData(story));
+    } catch (err: any) {
+      console.error("Firestore importParsedVolumes setDoc error:", err);
+    }
 
     return story;
   }
 
-  public importAsNewStory(
+  public async importAsNewStory(
     metadata: {
       title: string;
       author?: string;
       genres?: string[];
       coverImage?: string;
       description?: string;
+      hanVietTitle?: string;
+      editorBeta?: string;
+      originalStatus?: string;
+      editStatus?: string;
     },
     parsedVolumes: ParsedVolume[]
-  ): Story {
+  ): Promise<Story> {
     const now = new Date().toISOString();
     const storyId = "story_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
 
@@ -618,7 +639,7 @@ class StoryStorageService {
           number: ch.number || cIdx + 1,
           title: ch.title,
           wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
-          content: ch.content,
+          content: ch.content || "",
           volumeId: volumeId,
           volumeTitle: pv.title,
           createdAt: now,
@@ -631,7 +652,11 @@ class StoryStorageService {
     const newStory: Story = {
       id: storyId,
       title: metadata.title,
+      hanVietTitle: metadata.hanVietTitle,
       author: metadata.author || "Chưa rõ",
+      editorBeta: metadata.editorBeta,
+      originalStatus: metadata.originalStatus,
+      editStatus: metadata.editStatus,
       coverImage: metadata.coverImage || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
       genres: metadata.genres || ["Huyền Huyễn"],
       status: "Đang ra",
@@ -651,9 +676,11 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    setDoc(doc(db, "stories", storyId), toFirestoreData(newStory)).catch((err) =>
-      console.error("Firestore importAsNewStory error:", err)
-    );
+    try {
+      await setDoc(doc(db, "stories", storyId), toFirestoreData(newStory));
+    } catch (err: any) {
+      console.error("Firestore importAsNewStory setDoc error:", err);
+    }
 
     return newStory;
   }
