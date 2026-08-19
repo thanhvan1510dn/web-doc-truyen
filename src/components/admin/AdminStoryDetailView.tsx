@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Edit, Trash2, X, 
-  BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle
+  Edit, Trash2, X, Plus, Minus,
+  BookOpen, ExternalLink, AlertTriangle
 } from "lucide-react";
 import { Chapter, Story, Volume } from "../../types/story";
 import { storyApi } from "../../api";
@@ -398,15 +398,15 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                     {/* Volume Header */}
                     <div
                       onClick={() => toggleVolCollapse(volume.id)}
-                      className="p-3.5 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors group/vol"
+                      className="p-4 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors group/vol"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 truncate">
+                        <h4 className="font-bold text-sm sm:text-base text-zinc-900 truncate">
                           {volume.title || `Mục lục ${vIdx + 1}`}
                         </h4>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -418,7 +418,9 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        <span className="w-6 h-6 rounded-md bg-zinc-200/70 flex items-center justify-center font-bold text-xs text-zinc-700">
+                          {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        </span>
                       </div>
                     </div>
 

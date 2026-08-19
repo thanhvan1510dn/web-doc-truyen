@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, RefreshCw, 
-  ChevronDown, ChevronUp, X, Edit3, Check, Scissors, Trash2
+  Plus, Minus, X, Edit3, Check, Scissors, Trash2
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
@@ -610,7 +610,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span 
                               onClick={() => toggleVolumeCollapse(volume.number)}
-                              className="font-medium text-zinc-900 dark:text-white text-xs truncate cursor-pointer hover:underline"
+                              className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate cursor-pointer hover:underline"
                             >
                               {volume.title}
                             </span>
@@ -658,9 +658,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
                       <div 
                         onClick={() => toggleVolumeCollapse(volume.number)}
-                        className="flex items-center text-zinc-400 dark:text-zinc-500 cursor-pointer"
+                        className="w-6 h-6 rounded-md bg-zinc-200/70 dark:bg-zinc-700/70 flex items-center justify-center font-bold text-xs text-zinc-700 dark:text-zinc-200 cursor-pointer"
                       >
-                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 

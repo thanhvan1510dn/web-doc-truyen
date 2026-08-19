@@ -93,14 +93,11 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                   className="flex items-center justify-between p-3.5 sm:p-4 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none gap-3"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-slate-100 leading-snug">
+                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-slate-100 leading-snug">
                       {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2.5 flex-shrink-0 whitespace-nowrap">
-                    <span className="text-[11px] sm:text-xs text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                      {volume.chapters.length} chương
-                    </span>
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
                     <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-slate-300">
                       {isExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                     </div>
@@ -134,10 +131,6 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                             )}
                             <span className="truncate">{chapter.title}</span>
                           </div>
-
-                          <span className="text-[10px] text-gray-400 flex-shrink-0">
-                            {chapter.wordCount.toLocaleString()} chữ
-                          </span>
                         </div>
                       );
                     })}
