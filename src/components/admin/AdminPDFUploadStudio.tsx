@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, RefreshCw, 
-  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check, Scissors
+  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check, Scissors, Trash2
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
@@ -27,7 +27,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   // Target Mode: "new" | "existing"
   const [targetMode, setTargetMode] = useState<"new" | "existing">(storyId ? "existing" : "new");
   const [selectedStoryId, setSelectedStoryId] = useState<string>(storyId || "");
-  const [replaceExisting, setReplaceExisting] = useState(true);
+  const [replaceExisting, setReplaceExisting] = useState(false);
 
   // New Story Form
   const [newStoryTitle, setNewStoryTitle] = useState("");
@@ -48,7 +48,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     const res = await storyApi.getStories({ includeInactive: true });
     if (res.success) {
       setStories(res.data);
-      if (res.data.length > 0 && !selectedStoryId) {
+      if (storyId) {
+        setSelectedStoryId(storyId);
+        setTargetMode("existing");
+      } else if (res.data.length > 0 && !selectedStoryId) {
         setSelectedStoryId(res.data[0].id);
       }
     }
@@ -56,7 +59,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
   useEffect(() => {
     loadStories();
-  }, []);
+    if (storyId) {
+      setSelectedStoryId(storyId);
+      setTargetMode("existing");
+    }
+  }, [storyId]);
 
   const handleFileChange = async (file: File) => {
     if (!file) return;
@@ -189,6 +196,26 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     });
 
     toast.success("Đã gộp vào " + prevVol.title);
+  };
+
+  const handleDeleteVolume = (volNumber: number) => {
+    if (!parseResult) return;
+    const remainingVolumes = parseResult.volumes
+      .filter((v) => v.number !== volNumber)
+      .map((v, idx) => ({ ...v, number: idx + 1 }));
+
+    const totalCh = remainingVolumes.reduce((acc, v) => acc + v.chapters.length, 0);
+    const totalW = remainingVolumes.reduce((acc, v) => acc + v.chapters.reduce((ca, c) => ca + c.wordCount, 0), 0);
+
+    setParseResult({
+      ...parseResult,
+      totalVolumes: remainingVolumes.length,
+      totalChapters: totalCh,
+      totalWords: totalW,
+      volumes: remainingVolumes,
+    });
+
+    toast.info("Đã xóa mục lục " + volNumber);
   };
 
   const handleConfirmImport = async () => {
@@ -337,144 +364,217 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                   {selectedFile?.name}
                 </h4>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  {parseResult.totalVolumes} Mục lục • {parseResult.totalChapters} Chương • {parseResult.totalWords.toLocaleString()} từ
+                  {parseResult.totalVolumes} Mục lục
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                setParseResult(null);
-                setSelectedFile(null);
-              }}
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 self-start sm:self-auto"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Đổi tệp khác</span>
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={handleConfirmImport}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <span>{isSaving ? "Đang lưu..." : "Lưu & Nạp vào hệ thống"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setParseResult(null);
+                  setSelectedFile(null);
+                }}
+                className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Đổi tệp</span>
+              </button>
+            </div>
           </div>
 
           {/* Import Mode Form */}
           <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
-            <div className="flex items-center p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setTargetMode("new")}
-                className={"px-3 py-1.5 rounded-md transition-all " + (
-                  targetMode === "new"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                )}
-              >
-                Tạo truyện mới
-              </button>
-              <button
-                type="button"
-                onClick={() => setTargetMode("existing")}
-                className={"px-3 py-1.5 rounded-md transition-all " + (
-                  targetMode === "existing"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                )}
-              >
-                Nạp vào truyện có sẵn ({stories.length})
-              </button>
-            </div>
-
-            {targetMode === "new" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            {storyId ? (
+              <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Tên truyện
-                  </label>
-                  <input
-                    type="text"
-                    value={newStoryTitle}
-                    onChange={(e) => setNewStoryTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                    required
-                  />
+                  <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">Truyện đích tiếp nhận chương</span>
+                  <p className="font-bold text-zinc-900 dark:text-white text-sm mt-0.5">
+                    {stories.find((s) => s.id === storyId)?.title || "Truyện hiện tại"}
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Tác giả
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer font-medium">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={!replaceExisting}
+                      onChange={() => setReplaceExisting(false)}
+                      className="text-zinc-900 focus:ring-0"
+                    />
+                    <span className={!replaceExisting ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-500"}>
+                      ➕ Gộp tiếp nối (File tiếp theo)
+                    </span>
                   </label>
-                  <input
-                    type="text"
-                    value={newStoryAuthor}
-                    onChange={(e) => setNewStoryAuthor(e.target.value)}
-                    placeholder="Chưa rõ"
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Thể loại
+                  <label className="flex items-center gap-2 cursor-pointer font-medium">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={replaceExisting}
+                      onChange={() => setReplaceExisting(true)}
+                      className="text-zinc-900 focus:ring-0"
+                    />
+                    <span className={replaceExisting ? "font-bold text-rose-600 dark:text-rose-400" : "text-zinc-500"}>
+                      ⚠️ Ghi đè toàn bộ
+                    </span>
                   </label>
-                  <select
-                    value={newStoryGenre}
-                    onChange={(e) => setNewStoryGenre(e.target.value as StoryGenre)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                  >
-                    <option value="Huyền Huyễn">Huyền Huyễn</option>
-                    <option value="Tiên Hiệp">Tiên Hiệp</option>
-                    <option value="Khoa Huyễn">Khoa Huyễn</option>
-                    <option value="Đô Thị">Đô Thị</option>
-                    <option value="Dị Giới">Dị Giới</option>
-                    <option value="Hệ Thống">Hệ Thống</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Ảnh bìa (URL)
-                  </label>
-                  <input
-                    type="text"
-                    value={newStoryCover}
-                    onChange={(e) => setNewStoryCover(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                  />
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 pt-1">
-                <select
-                  value={selectedStoryId}
-                  onChange={(e) => setSelectedStoryId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white"
-                >
-                  {stories.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title} ({s.volumes.length} mục lục)
-                    </option>
-                  ))}
-                </select>
+              <>
+                <div className="flex items-center p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setTargetMode("new")}
+                    className={"px-3 py-1.5 rounded-md transition-all " + (
+                      targetMode === "new"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                    )}
+                  >
+                    Tạo truyện mới
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetMode("existing")}
+                    className={"px-3 py-1.5 rounded-md transition-all " + (
+                      targetMode === "existing"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                    )}
+                  >
+                    Nạp vào truyện có sẵn ({stories.length})
+                  </button>
+                </div>
 
-                <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={replaceExisting}
-                    onChange={(e) => setReplaceExisting(e.target.checked)}
-                    className="rounded text-zinc-900 dark:text-white w-4 h-4"
-                  />
-                  <span>Ghi đè toàn bộ các mục lục cũ của truyện này</span>
-                </label>
-              </div>
+                {targetMode === "new" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Tên truyện
+                      </label>
+                      <input
+                        type="text"
+                        value={newStoryTitle}
+                        onChange={(e) => setNewStoryTitle(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Tác giả
+                      </label>
+                      <input
+                        type="text"
+                        value={newStoryAuthor}
+                        onChange={(e) => setNewStoryAuthor(e.target.value)}
+                        placeholder="Chưa rõ"
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Thể loại
+                      </label>
+                      <select
+                        value={newStoryGenre}
+                        onChange={(e) => setNewStoryGenre(e.target.value as StoryGenre)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                      >
+                        <option value="Huyền Huyễn">Huyền Huyễn</option>
+                        <option value="Tiên Hiệp">Tiên Hiệp</option>
+                        <option value="Khoa Huyễn">Khoa Huyễn</option>
+                        <option value="Đô Thị">Đô Thị</option>
+                        <option value="Dị Giới">Dị Giới</option>
+                        <option value="Hệ Thống">Hệ Thống</option>
+                        <option value="Ngôn Tình">Ngôn Tình</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Ảnh bìa (URL)
+                      </label>
+                      <input
+                        type="text"
+                        value={newStoryCover}
+                        onChange={(e) => setNewStoryCover(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-1">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                        Chọn truyện nhận file tiếp theo
+                      </label>
+                      <select
+                        value={selectedStoryId}
+                        onChange={(e) => setSelectedStoryId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white"
+                      >
+                        {stories.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.title} ({s.volumes.length} mục lục)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 flex flex-col sm:flex-row gap-4 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium">
+                        <input
+                          type="radio"
+                          name="importModeExisting"
+                          checked={!replaceExisting}
+                          onChange={() => setReplaceExisting(false)}
+                          className="text-zinc-900 focus:ring-0"
+                        />
+                        <span className={!replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>
+                          Gộp tiếp nối (Thêm vào sau các mục lục hiện có)
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer font-medium">
+                        <input
+                          type="radio"
+                          name="importModeExisting"
+                          checked={replaceExisting}
+                          onChange={() => setReplaceExisting(true)}
+                          className="text-zinc-900 focus:ring-0"
+                        />
+                        <span className={replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>
+                          Ghi đè (Thay thế toàn bộ nội dung)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Volumes & Chapters Tree */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-white">
+              <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
                 Danh sách Mục Lục & Chương ({parseResult.volumes.length} Mục lục)
               </h4>
-              <span className="text-[11px] text-zinc-400">
-                (Sửa tên: bấm ✏️ • Tách Mục lục mới: bấm ✂️)
-              </span>
             </div>
 
             <div className="space-y-2">
@@ -487,9 +587,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                     key={volume.number}
                     className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm"
                   >
-                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/60 flex items-center justify-between select-none text-xs">
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
-                        <span className="w-5 h-5 rounded-md bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-[11px] flex items-center justify-center font-mono flex-shrink-0">
+                    <div className="p-2.5 px-3 bg-zinc-50/80 dark:bg-zinc-800/40 flex items-center justify-between select-none text-xs group">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                        <span className="w-5 h-5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-[11px] flex items-center justify-center font-mono flex-shrink-0">
                           {volume.number}
                         </span>
 
@@ -499,27 +599,27 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                               type="text"
                               value={editingVolTitle}
                               onChange={(e) => setEditingVolTitle(e.target.value)}
-                              className="px-2.5 py-1 rounded-md border border-zinc-400 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-xs font-semibold w-full"
+                              className="px-2 py-1 rounded border border-zinc-400 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-xs font-medium w-full"
                               autoFocus
                             />
                             <button
                               onClick={() => handleSaveVolTitle(volume.number)}
-                              className="p-1 rounded-md bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                              className="p-1 rounded bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setEditingVolNumber(null)}
-                              className="p-1 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                              className="p-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <span 
                               onClick={() => toggleVolumeCollapse(volume.number)}
-                              className="font-semibold text-zinc-900 dark:text-white text-xs truncate cursor-pointer hover:underline"
+                              className="font-medium text-zinc-900 dark:text-white text-xs truncate cursor-pointer hover:underline"
                             >
                               {volume.title}
                             </span>
@@ -530,7 +630,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                                 setEditingVolNumber(volume.number);
                                 setEditingVolTitle(volume.title);
                               }}
-                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded"
+                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
                               title="Sửa tên mục lục"
                             >
                               <Edit3 className="w-3 h-3" />
@@ -543,66 +643,74 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                                   e.stopPropagation();
                                   handleMergeWithPrevVolume(volume.number);
                                 }}
-                                className="px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-rose-500 bg-zinc-200/60 dark:bg-zinc-800 rounded font-medium"
+                                className="px-1.5 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Gộp vào mục lục phía trước"
                               >
                                 Gộp lên
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteVolume(volume.number);
+                              }}
+                              className="p-1 text-zinc-400 hover:text-rose-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Xóa mục lục này"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         )}
                       </div>
 
                       <div 
                         onClick={() => toggleVolumeCollapse(volume.number)}
-                        className="flex items-center gap-2 font-mono text-zinc-500 cursor-pointer text-[11px]"
+                        className="flex items-center text-zinc-400 dark:text-zinc-500 cursor-pointer"
                       >
-                        <span>{volume.chapters.length} chương</span>
                         {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 
                     {!isCollapsed && (
-                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
+                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
                         {volume.chapters.map((chapter, idx) => (
                           <div
                             key={chapter.number + "-" + idx}
-                            className="p-2.5 px-4 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                            className="p-2 px-3 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 group"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <span className="text-zinc-400 font-mono text-[11px]">
                                 #{chapter.number}
                               </span>
-                              <span className="font-normal text-zinc-800 dark:text-zinc-200 truncate">
+                              <span className="font-normal text-zinc-700 dark:text-zinc-300 truncate">
                                 {chapter.title}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="text-[11px] text-zinc-400 font-mono">
-                                {chapter.wordCount.toLocaleString()} từ
-                              </span>
+                            <div className="flex items-center flex-shrink-0">
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {idx > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
+                                    className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                                    title="Tách thành Mục lục mới từ chương này"
+                                  >
+                                    <Scissors className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
 
-                              {idx > 0 && (
                                 <button
                                   type="button"
-                                  onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
-                                  className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-900 hover:text-white dark:hover:bg-white dark:hover:text-zinc-900 font-semibold text-[10px] flex items-center gap-1 transition-all"
-                                  title="Tách các chương từ đây thành Mục lục mới"
+                                  onClick={() => setPreviewChapter(chapter)}
+                                  className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                                  title="Xem nội dung"
                                 >
-                                  <Scissors className="w-3 h-3" />
-                                  <span>Tách Mục Lục</span>
+                                  <Eye className="w-3.5 h-3.5" />
                                 </button>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => setPreviewChapter(chapter)}
-                                className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                                title="Xem nội dung"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
+                              </div>
                             </div>
                           </div>
                         ))}
