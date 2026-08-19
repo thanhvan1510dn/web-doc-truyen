@@ -35,39 +35,39 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl border-l border-gray-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-right duration-200">
+      <div className="relative w-full max-w-full sm:max-w-xl md:max-w-2xl bg-white dark:bg-slate-900 h-full shadow-2xl border-l border-gray-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-right duration-200">
         {/* Drawer Header */}
         <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-amber-500" />
-            <h3 className="font-bold text-base text-gray-900 dark:text-slate-100">
+            <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-slate-100">
               Mục Lục
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Chapter Search Input */}
-        <div className="p-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/50">
+        <div className="p-3.5 sm:p-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/50">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm mục lục, chương..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
         </div>
 
         {/* Volume & Chapter List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
           {story.volumes.map((volume) => {
             const filteredChapters = volume.chapters.filter(
               (c) =>
@@ -90,20 +90,20 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                 {/* Volume Header Banner */}
                 <div
                   onClick={() => toggleVolume(volume.id)}
-                  className="flex items-center justify-between p-3 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none"
+                  className="flex items-center justify-between p-3.5 sm:p-4 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none gap-3"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-slate-100">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-slate-100 leading-snug">
                       {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-500 dark:text-slate-400">
+                  <div className="flex items-center gap-2.5 flex-shrink-0 whitespace-nowrap">
+                    <span className="text-[11px] sm:text-xs text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">
                       {volume.chapters.length} chương
                     </span>
-                    <button className="text-gray-500 dark:text-slate-400 p-0.5" aria-label="Toggle">
+                    <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-slate-300">
                       {isExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                    </button>
+                    </div>
                   </div>
                 </div>
 

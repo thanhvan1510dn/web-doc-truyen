@@ -116,19 +116,19 @@ export const VolumeList: React.FC<VolumeListProps> = ({
                 {/* Volume Header Banner */}
                 <div
                   onClick={() => toggleVolume(volume.id)}
-                  className="flex items-center justify-between p-3 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none"
+                  className="flex items-center justify-between p-3.5 sm:p-4 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none gap-3"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-bold text-xs sm:text-sm text-amber-800 dark:text-amber-300 leading-snug">
                       {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-500 dark:text-slate-400">
+                  <div className="flex items-center gap-2.5 flex-shrink-0 whitespace-nowrap">
+                    <span className="text-[11px] sm:text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap">
                       {volume.filteredChapters.length} chương
                     </span>
-                    <button className="text-gray-400">
+                    <button className="text-gray-500 dark:text-slate-400 p-0.5" aria-label="Toggle">
                       {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                     </button>
                   </div>
