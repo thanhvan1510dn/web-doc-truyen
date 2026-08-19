@@ -71,9 +71,9 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
   onStartReading,
 }) => {
   const totalChapters = getTotalChapters(story);
-  const firstChapter = story.volumes[0]?.chapters[0];
-  const latestVolume = story.volumes[story.volumes.length - 1];
-  const latestChapter = latestVolume ? latestVolume.chapters[latestVolume.chapters.length - 1] : null;
+  const allActiveChapters = story.volumes.flatMap((v) => v.chapters).filter((c) => c.isActive !== false);
+  const firstChapter = allActiveChapters.length > 0 ? allActiveChapters[0] : null;
+  const latestChapter = allActiveChapters.length > 0 ? allActiveChapters[allActiveChapters.length - 1] : null;
 
   return (
     <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-5 sm:p-7 border border-gray-200/80 dark:border-slate-800 shadow-sm transition-colors space-y-5">
@@ -183,7 +183,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
                 className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium text-xs transition-colors"
               >
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span>Mục lục mới nhất</span>
+                <span>Chương mới nhất</span>
               </button>
             )}
           </div>
