@@ -158,7 +158,7 @@ export class DocumentParserService {
    * Universal Line-by-Line Document Parser
    */
   public parseDocumentLines(rawText: string): ParsedVolume[] {
-    const lines = rawText.split(/\r?\n/);
+    const rawLines = rawText.split(/\r?\n/);
     const volumes: ParsedVolume[] = [];
 
     let currentVolume: ParsedVolume | null = null;
@@ -177,54 +177,115 @@ export class DocumentParserService {
       }
     };
 
+    const normalizeLine = (str: string) => {
+      return str
+        .normalize("NFKC")
+        .replace(/[\u00A0\u1680\u180e\u2000-\u200b\u202f\u205f\u3000\ufeff]/g, " ")
+        .trim();
+    };
+
     const isMajorTab = (line: string): string | null => {
-      const trimmed = line.trim();
+      const trimmed = normalizeLine(line);
       if (!trimmed || trimmed.length > 120) return null;
 
-      // Pattern 1: (2376-2378) or (2379-2416) Realm title
-      const rangeMatch = trimmed.match(/^\s*\(?\s*(\d+)\s*[-–—]\s*(\d+)\s*\)?\s*(.*)$/i);
+      // Strip leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, 🔹, 🔸, etc.)
+      // and bracketed indicators like [✅], [v], (v), [x]
+      const cleaned = trimmed
+        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
+        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•]\s*[】\]\)]\s*/u, "")
+        .trim();
+
+      const targetStr = cleaned.length > 0 ? cleaned : trimmed;
+
+      // 1. Chapter Range: (2904-2934), [2904-2934], 【2904-2934】 with optional title
+      const rangeMatch = targetStr.match(/^(?:[\(\[【]\s*)?(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])?(?:\s*[:\-\._]?\s*(.*))?$/i);
       if (rangeMatch) {
-        if (!trimmed.toLowerCase().startsWith("chương") && !trimmed.toLowerCase().startsWith("chuong")) {
-          return trimmed.replace(/^[\(\[]/, "(").replace(/[\)\]]$/, ")");
+        const from = parseInt(rangeMatch[1], 10);
+        const to = parseInt(rangeMatch[2], 10);
+        if (to >= from && to - from <= 800) {
+          const extra = rangeMatch[3] ? " " + rangeMatch[3].trim() : "";
+          return `(${from}-${to})${extra}`;
         }
       }
 
-      // Pattern 2: [Mục lục...] or === Mục lục ===
-      const bracketMatch = trimmed.match(/^【([^】]+)】$/) || trimmed.match(/^===\s*([^=]+)\s*===$/) || trimmed.match(/^\[([^\]]+)\]$/);
-      if (bracketMatch && !bracketMatch[1].toLowerCase().includes("chương")) {
-        return bracketMatch[1].trim();
+      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Arc / Vol
+      const keywordMatch = targetStr.match(/^(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Arc|Vol(?:ume)?\.?)\s+(\d+|[IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s]{1,40})(?:[:\-\._\s]+(.*))?$/i);
+      if (keywordMatch) {
+        return targetStr;
       }
 
-      // Pattern 3: Muc luc 1, Quyển 1, Vị diện 1
-      const sectionMatch = trimmed.match(/^(?:Mục lục|Muc luc|Quyển|Quyen|Tập|Tap|Phần|Phan|Vị [Dd]iện|Vi [Dd]ien|Arc)\s+(\d+|[IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s]{1,40})[:\-\._\s]?(.*)$/i);
-      if (sectionMatch) {
-        return trimmed;
-      }
-
-      // Pattern 4: Markdown # Heading
-      if (trimmed.startsWith("# ") && !trimmed.toLowerCase().includes("chương")) {
-        return trimmed.replace(/^#\s+/, "").trim();
+      // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...] or 【Vị diện 1: ...】
+      const bracketMatch = targetStr.match(/^[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol)\s*(\d+|[IVXLCDM]+)(?:[:\-\._\s]+(.*))?[】\]]$/i);
+      if (bracketMatch) {
+        return targetStr.replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
       }
 
       return null;
     };
 
     const isChapterHeading = (line: string): { number: number; title: string } | null => {
-      const trimmed = line.trim();
-      if (!trimmed) return null;
+      const trimmed = normalizeLine(line);
+      if (!trimmed || trimmed.length > 200) return null;
 
-      const match = trimmed.match(/^(?:##\s+)?(?:Chương|Chuong|Chapter|Tiết|Tiet)\s*(\d+)(?:[ \t]*[:\-\._][ \t]*(.*))?$/i);
-      if (match) {
+      // Clean leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, etc.)
+      const cleaned = trimmed
+        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
+        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•]\s*[】\]\)]\s*/u, "")
+        .trim();
+
+      const targetStr = cleaned.length > 0 ? cleaned : trimmed;
+
+      // Pattern 1: Explicit chapter keyword (Chương / Chuong / Chapter / Chap / Hồi / Tiết / C / C\d+)
+      const explicitMatch = targetStr.match(
+        /^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phần|Phan|C|Quyển\s*\d+\s*[-–:]\s*Chương)\s*(\d+)(?:[\s:\-\._【\(\[|\/]+(.*))?$/i
+      );
+      if (explicitMatch) {
+        const num = parseInt(explicitMatch[1], 10);
         return {
-          number: parseInt(match[1], 10),
-          title: trimmed.replace(/^##\s+/, "").trim(),
+          number: num,
+          title: targetStr.replace(/^#+\s+/, "").trim(),
         };
       }
+
+      // Pattern 2: Bracketed chapters like 【Chương 2376: ...】 or [Chương 2376] or (Chương 2376)
+      const bracketMatch = targetStr.match(
+        /^[【\[\(]\s*(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phần|Phan|C)\s*(\d+)(?:[\s:\-\._|]+(.*))?[】\]\)]/i
+      );
+      if (bracketMatch) {
+        const num = parseInt(bracketMatch[1], 10);
+        return {
+          number: num,
+          title: targetStr.trim(),
+        };
+      }
+
+      // Pattern 3: Numbered chapter headings like "2376. Tiêu đề" or "2376: Tiêu đề" or "2376 - Tiêu đề"
+      // (Strictly avoid dialogue lines starting or ending with quotes)
+      if (!/^["'“«「『]/.test(targetStr) && !/["'”»」』]$/.test(targetStr)) {
+        const numMatch = targetStr.match(/^(\d{1,5})[ \t]*[:\-\._\)\/][ \t]+([^\d"“'«\.\?].+)$/);
+        if (
+          numMatch &&
+          targetStr.length < 90 &&
+          !targetStr.includes("http") &&
+          !targetStr.includes('"') &&
+          !targetStr.includes('“') &&
+          !targetStr.includes('”') &&
+          !targetStr.includes('...') &&
+          !targetStr.includes('…')
+        ) {
+          const num = parseInt(numMatch[1], 10);
+          return {
+            number: num,
+            title: `Chương ${num}: ${numMatch[2].trim()}`,
+          };
+        }
+      }
+
       return null;
     };
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
       const majorTabTitle = isMajorTab(line);
       const chapInfo = isChapterHeading(line);
 
@@ -262,7 +323,54 @@ export class DocumentParserService {
 
     flushChapter();
 
-    const validVolumes = volumes.filter((v) => v.chapters.length > 0);
+    let validVolumes = volumes.filter((v) => v.chapters.length > 0);
+
+    // Fallback: If no chapters detected by headings, but text exists, split by paragraphs or chunk into chapters
+    if (validVolumes.length === 0 && rawText.trim().length > 0) {
+      const paragraphs = rawText.split(/\r?\n\s*\r?\n+/).map((p) => p.trim()).filter(Boolean);
+      const fallbackChapters: ParsedChapter[] = [];
+      let currentChunk: string[] = [];
+      let currentWordCount = 0;
+      let chapNum = 1;
+
+      for (const p of paragraphs) {
+        const words = p.split(/\s+/).filter(Boolean).length;
+        currentChunk.push(p);
+        currentWordCount += words;
+
+        if (currentWordCount >= 2000) {
+          fallbackChapters.push({
+            number: chapNum,
+            title: `Chương ${chapNum}`,
+            content: currentChunk.join("\n\n"),
+            wordCount: currentWordCount,
+          });
+          chapNum++;
+          currentChunk = [];
+          currentWordCount = 0;
+        }
+      }
+
+      if (currentChunk.length > 0) {
+        fallbackChapters.push({
+          number: chapNum,
+          title: `Chương ${chapNum}`,
+          content: currentChunk.join("\n\n"),
+          wordCount: currentWordCount,
+        });
+      }
+
+      if (fallbackChapters.length > 0) {
+        validVolumes = [
+          {
+            number: 1,
+            title: "Mục lục 1",
+            chapters: fallbackChapters,
+          },
+        ];
+      }
+    }
+
     validVolumes.forEach((v, idx) => {
       v.number = idx + 1;
     });
