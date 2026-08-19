@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, BookOpen, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import { X, Search, BookOpen, Plus, Minus, CheckCircle } from 'lucide-react';
 import { Story } from '../../types/story';
 
 interface ReaderTOCModalProps {
@@ -18,12 +18,12 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
   onSelectChapter,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [collapsedVolumes, setCollapsedVolumes] = useState<Record<string, boolean>>({});
+  const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
   if (!isOpen) return null;
 
   const toggleVolume = (volumeId: string) => {
-    setCollapsedVolumes((prev) => ({
+    setExpandedVolumes((prev) => ({
       ...prev,
       [volumeId]: !prev[volumeId],
     }));
@@ -38,16 +38,11 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
       <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl border-l border-gray-200 dark:border-slate-800 flex flex-col z-10 animate-in slide-in-from-right duration-200">
         {/* Drawer Header */}
         <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-amber-500" />
-            <div>
-              <h3 className="font-bold text-base text-gray-900 dark:text-slate-100">
-                Mục Lục Chương
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[220px]">
-                {story.title}
-              </p>
-            </div>
+            <h3 className="font-bold text-base text-gray-900 dark:text-slate-100">
+              Mục Lục
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -65,14 +60,14 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm chương (ví dụ: Chương 1, Dã Lang...)"
+              placeholder="Tìm kiếm mục lục, chương..."
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
         </div>
 
         {/* Volume & Chapter List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {story.volumes.map((volume) => {
             const filteredChapters = volume.chapters.filter(
               (c) =>
@@ -85,12 +80,12 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
               return null;
             }
 
-            const isCollapsed = !normalizedQuery && !!collapsedVolumes[volume.id];
+            const isExpanded = normalizedQuery !== '' || !!expandedVolumes[volume.id];
 
             return (
               <div 
                 key={volume.id}
-                className="rounded-2xl border border-gray-200/80 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800/40"
+                className="rounded-2xl border border-gray-200/80 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800/40 shadow-sm"
               >
                 {/* Volume Header Banner */}
                 <div
@@ -102,13 +97,18 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                       {volume.title || `Mục lục ${volume.number}`}
                     </span>
                   </div>
-                  <button className="text-gray-400">
-                    {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-500 dark:text-slate-400">
+                      {volume.chapters.length} chương
+                    </span>
+                    <button className="text-gray-500 dark:text-slate-400 p-0.5" aria-label="Toggle">
+                      {isExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Chapter items */}
-                {!isCollapsed && (
+                {isExpanded && (
                   <div className="divide-y divide-gray-100 dark:divide-slate-800">
                     {filteredChapters.map((chapter) => {
                       const isCurrent = currentChapterId === chapter.id;
