@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, BookOpen, Layers } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { Story, Chapter, ReaderSettings } from '../../types/story';
 
 interface ReaderFooterProps {
@@ -23,9 +23,7 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
   hasNext,
   onPrevChapter,
   onNextChapter,
-  onBackToStory,
   onSelectChapter,
-  onOpenTOC,
   settings,
   readingProgressPercent,
 }) => {
@@ -52,9 +50,18 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
     }
   };
 
+  const getDisplayChapterTitle = (num: number, rawTitle?: string) => {
+    if (!rawTitle || !rawTitle.trim()) return `Chương ${num}`;
+    const t = rawTitle.trim();
+    if (/^(?:chương|chuong|chap|c)\s*\d+/i.test(t)) {
+      return t;
+    }
+    return `Chương ${num}: ${t}`;
+  };
+
   return (
-    <footer className={`py-12 border-t transition-colors ${getFooterThemeClasses()}`}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6 text-center">
+    <footer className={`py-8 sm:py-10 border-t transition-colors ${getFooterThemeClasses()}`}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-5 text-center">
         {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 text-xs font-semibold opacity-70">
           <span>Tiến độ đọc:</span>
@@ -83,11 +90,11 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
               value={chapter.id}
               onChange={(e) => onSelectChapter(e.target.value)}
               aria-label="Chọn chương nhanh"
-              className="appearance-none pl-4 pr-10 py-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 font-semibold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-left max-w-[200px] sm:max-w-[280px] truncate cursor-pointer"
+              className="appearance-none pl-4 pr-10 py-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 font-semibold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 text-left max-w-[200px] sm:max-w-[300px] truncate cursor-pointer shadow-sm"
             >
               {allChapters.map((c) => (
                 <option key={c.id} value={c.id}>
-                  Chương {c.number}: {c.title}
+                  {getDisplayChapterTitle(c.number, c.title)}
                 </option>
               ))}
             </select>
@@ -108,25 +115,6 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
             <span>Chương Sau</span>
             <ChevronRight className="w-5 h-5" />
             <kbd className="hidden sm:inline text-[10px] opacity-60">→</kbd>
-          </button>
-        </div>
-
-        {/* Back to story detail & TOC triggers */}
-        <div className="flex items-center justify-center gap-4 text-xs font-semibold pt-4">
-          <button
-            onClick={onBackToStory}
-            className="flex items-center gap-1.5 opacity-75 hover:opacity-100 hover:text-amber-600 transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Về trang giới thiệu truyện</span>
-          </button>
-          <span>•</span>
-          <button
-            onClick={onOpenTOC}
-            className="flex items-center gap-1.5 opacity-75 hover:opacity-100 hover:text-amber-600 transition-all"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Mở danh sách mục lục</span>
           </button>
         </div>
       </div>
