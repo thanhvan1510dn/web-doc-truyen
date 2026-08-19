@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, RefreshCw, 
-  ChevronDown, ChevronUp, Eye, ArrowRight, X, Edit3, Check, Scissors, Trash2
+  ChevronDown, ChevronUp, ArrowRight, X, Edit3, Check, Scissors, Trash2
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
@@ -38,8 +38,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   );
   const [newStoryDesc, setNewStoryDesc] = useState("");
 
-  const [previewChapter, setPreviewChapter] = useState<{ title: string; content: string; wordCount: number } | null>(null);
-  const [collapsedVolIds, setCollapsedVolIds] = useState<Record<number, boolean>>({});
+  const [expandedVolIds, setExpandedVolIds] = useState<Record<number, boolean>>({});
   const [editingVolNumber, setEditingVolNumber] = useState<number | null>(null);
   const [editingVolTitle, setEditingVolTitle] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
@@ -99,7 +98,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   };
 
   const toggleVolumeCollapse = (volNumber: number) => {
-    setCollapsedVolIds((prev) => ({
+    setExpandedVolIds((prev) => ({
       ...prev,
       [volNumber]: !prev[volNumber],
     }));
@@ -573,13 +572,13 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
-                Danh sách Mục Lục & Chương ({parseResult.volumes.length} Mục lục)
+                Mục lục ({parseResult.volumes.length})
               </h4>
             </div>
 
             <div className="space-y-2">
               {parseResult.volumes.map((volume) => {
-                const isCollapsed = !!collapsedVolIds[volume.number];
+                const isExpanded = !!expandedVolIds[volume.number];
                 const isEditingThis = editingVolNumber === volume.number;
 
                 return (
@@ -669,11 +668,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                         onClick={() => toggleVolumeCollapse(volume.number)}
                         className="flex items-center text-zinc-400 dark:text-zinc-500 cursor-pointer"
                       >
-                        {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 
-                    {!isCollapsed && (
+                    {isExpanded && (
                       <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
                         {volume.chapters.map((chapter, idx) => (
                           <div
@@ -681,9 +680,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                             className="p-2 px-3 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 group"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <span className="text-zinc-400 font-mono text-[11px]">
-                                #{chapter.number}
-                              </span>
                               <span className="font-normal text-zinc-700 dark:text-zinc-300 truncate">
                                 {chapter.title}
                               </span>
@@ -701,15 +697,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                                     <Scissors className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewChapter(chapter)}
-                                  className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                                  title="Xem nội dung"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
                               </div>
                             </div>
                           </div>
@@ -729,26 +716,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               disabled={isSaving}
               className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>{isSaving ? "Đang lưu..." : ("Xác nhận nạp " + parseResult.totalVolumes + " Mục lục & " + parseResult.totalChapters + " Chương")}</span>
+              <span>{isSaving ? "Đang lưu..." : ("Xác nhận nạp " + parseResult.totalVolumes + " Mục lục")}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Chapter Preview Modal */}
-      {previewChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 w-full max-w-xl space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-white">{previewChapter.title}</h4>
-              <button onClick={() => setPreviewChapter(null)} className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="max-h-80 overflow-y-auto font-serif text-xs leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
-              {previewChapter.content}
-            </div>
           </div>
         </div>
       )}

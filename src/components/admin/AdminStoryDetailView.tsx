@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
-  ArrowLeft, Upload, Edit, Trash2, Layers, Eye, X, FileUp, 
+  ArrowLeft, Upload, Edit, Trash2, Layers, X, FileUp, 
   BookOpen, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, Info
 } from "lucide-react";
 import { Chapter, Story, Volume } from "../../types/story";
@@ -27,13 +27,10 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSubTab, setActiveSubTab] = useState<"chapters" | "pdf-upload" | "manual-upload" | "info">(initialTab);
-  const [collapsedVolIds, setCollapsedVolIds] = useState<Record<string, boolean>>({});
+  const [expandedVolIds, setExpandedVolIds] = useState<Record<string, boolean>>({});
 
   // Edit Story Modal state
   const [isEditStoryModalOpen, setIsEditStoryModalOpen] = useState(false);
-
-  // Chapter Preview Modal
-  const [previewChapter, setPreviewChapter] = useState<Chapter | null>(null);
 
   // Edit Chapter Modal state
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
@@ -66,7 +63,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   }, [storyId]);
 
   const toggleVolCollapse = (volId: string) => {
-    setCollapsedVolIds((prev) => ({
+    setExpandedVolIds((prev) => ({
       ...prev,
       [volId]: !prev[volId],
     }));
@@ -171,7 +168,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
             )}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Mục lục & Chương ({story.volumes.length})</span>
+            <span>Mục lục ({story.volumes.length})</span>
           </button>
 
           <button
@@ -362,7 +359,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-base text-zinc-900">
-              Cấu trúc Mục lục & Danh sách Chương
+              Mục lục
             </h3>
             <span className="text-xs text-zinc-500 font-medium">
               Tổng cộng: {story.volumes.length} mục lục
@@ -396,7 +393,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
           ) : (
             <div className="space-y-3">
               {story.volumes.map((volume, vIdx) => {
-                const isCollapsed = !!collapsedVolIds[volume.id];
+                const isExpanded = !!expandedVolIds[volume.id];
 
                 return (
                   <div
@@ -426,12 +423,12 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </div>
                     </div>
 
                     {/* Chapters List */}
-                    {!isCollapsed && (
+                    {isExpanded && (
                       <div className="divide-y divide-zinc-100 text-xs">
                         {volume.chapters.map((chapter) => {
                           const isChapActive = chapter.isActive !== false;
@@ -442,9 +439,6 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                               className="p-3 px-4 flex items-center justify-between gap-3 hover:bg-zinc-50 transition-colors group"
                             >
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-zinc-400 font-mono font-medium text-[11px] flex-shrink-0">
-                                  #{chapter.number}
-                                </span>
                                 <span className="font-normal text-zinc-800 truncate">
                                   {chapter.title}
                                 </span>
@@ -463,16 +457,6 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                   title="Bật / Tắt hiển thị chương này"
                                 >
                                   {isChapActive ? "Hiện" : "Ẩn"}
-                                </button>
-
-                                {/* Preview Chapter Modal */}
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewChapter(chapter)}
-                                  className="p-1 rounded text-zinc-400 hover:text-zinc-900"
-                                  title="Xem nội dung chương"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
                                 </button>
 
                                 {/* Read on User Web */}
@@ -517,27 +501,6 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Chapter Content Preview Modal */}
-      {previewChapter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-zinc-200 p-5 w-full max-w-2xl space-y-3 shadow-xl">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
-              <h4 className="font-bold text-sm text-zinc-900">{previewChapter.title}</h4>
-              <button
-                type="button"
-                onClick={() => setPreviewChapter(null)}
-                className="p-1 text-zinc-400 hover:text-zinc-900 rounded"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="max-h-96 overflow-y-auto font-serif text-xs leading-relaxed whitespace-pre-wrap text-zinc-700 p-2 bg-zinc-50 rounded-xl">
-              {previewChapter.content}
-            </div>
-          </div>
         </div>
       )}
 
