@@ -208,14 +208,14 @@ export class DocumentParserService {
         }
       }
 
-      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Arc / Vol
-      const keywordMatch = targetStr.match(/^(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Arc|Vol(?:ume)?\.?)\s+(\d+|[IVXLCDM]+|[A-Za-zÀ-ỹ0-9\s]{1,40})(?:[:\-\._\s]+(.*))?$/i);
+      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Arc / Vol (MUST have number or roman numeral)
+      const keywordMatch = targetStr.match(/^(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Arc|Vol(?:ume)?\.?)\s+(\d+|[IVXLCDM]+)(?:[:\-\._\s]+(.*))?$/i);
       if (keywordMatch) {
         return targetStr;
       }
 
       // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...] or 【Vị diện 1: ...】
-      const bracketMatch = targetStr.match(/^[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol)\s*(\d+|[IVXLCDM]+)(?:[:\-\._\s]+(.*))?[】\]]$/i);
+      const bracketMatch = targetStr.match(/^[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]$/i);
       if (bracketMatch) {
         return targetStr.replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
       }
