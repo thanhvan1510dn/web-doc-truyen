@@ -1,6 +1,7 @@
 import React from 'react';
 import { Story, Chapter, ReaderSettings } from '../../types/story';
-import { Clock, BookOpen, Layers } from 'lucide-react';
+import { Clock, Layers } from 'lucide-react';
+import { formatDate } from '../../utils/format';
 
 interface ReaderContentProps {
   story: Story;
@@ -96,18 +97,9 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
             {chapter.title}
           </h1>
 
-          <div className="flex items-center justify-center gap-4 text-xs opacity-70 flex-wrap">
-            <span className="flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{story.title}</span>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{chapter.wordCount.toLocaleString()} chữ</span>
-            </span>
-            <span>•</span>
-            <span>Cập nhật: {chapter.updatedAt}</span>
+          <div className="flex items-center justify-center gap-1.5 text-xs opacity-70">
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span>Cập nhật: {formatDate(chapter.updatedAt || story.updatedAt)}</span>
           </div>
         </div>
 

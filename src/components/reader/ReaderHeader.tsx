@@ -44,7 +44,7 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
     <header className={`sticky top-0 z-30 backdrop-blur-md border-b transition-colors ${getHeaderThemeClasses()}`}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 h-13 sm:h-14 flex items-center justify-between gap-2">
         {/* Left: Back button & Breadcrumbs */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <button
             onClick={onBackToStory}
             className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex-shrink-0"
@@ -53,16 +53,12 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          <div className="min-w-0">
-            <div 
-              onClick={onBackToStory}
-              className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold cursor-pointer hover:underline truncate"
-            >
-              {story.title}
-            </div>
-            <div className="text-xs sm:text-sm font-bold truncate opacity-90">
-              {chapter.title}
-            </div>
+          <div 
+            onClick={onBackToStory}
+            className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-bold cursor-pointer hover:underline truncate"
+            title={story.title}
+          >
+            {story.title}
           </div>
         </div>
 
