@@ -149,11 +149,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
       {/* Sticky Reader Header */}
       <ReaderHeader
         story={story}
-        chapter={effectiveChapter}
-        hasPrev={hasPrev}
-        hasNext={hasNext}
-        onPrevChapter={handlePrev}
-        onNextChapter={handleNext}
         onBackToStory={onBackToStory}
         onOpenTOC={() => setTocOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}

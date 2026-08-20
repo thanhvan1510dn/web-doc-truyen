@@ -1,14 +1,9 @@
 import React from 'react';
-import { ArrowLeft, BookOpen, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Story, Chapter, ReaderSettings } from '../../types/story';
+import { ArrowLeft, BookOpen, Settings } from 'lucide-react';
+import { Story, ReaderSettings } from '../../types/story';
 
 interface ReaderHeaderProps {
   story: Story;
-  chapter: Chapter;
-  hasPrev: boolean;
-  hasNext: boolean;
-  onPrevChapter: () => void;
-  onNextChapter: () => void;
   onBackToStory: () => void;
   onOpenTOC: () => void;
   onOpenSettings: () => void;
@@ -17,11 +12,6 @@ interface ReaderHeaderProps {
 
 export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
   story,
-  chapter,
-  hasPrev,
-  hasNext,
-  onPrevChapter,
-  onNextChapter,
   onBackToStory,
   onOpenTOC,
   onOpenSettings,
@@ -62,35 +52,8 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Chapter Navigation, TOC & Settings */}
+        {/* Right: TOC & Settings */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Chapter Prev / Next in Header (desktop) */}
-          <div className="hidden sm:flex items-center rounded-lg bg-black/5 dark:bg-white/10 p-0.5 text-xs">
-            <button
-              onClick={onPrevChapter}
-              disabled={!hasPrev}
-              className={`p-1 rounded-md transition-colors ${
-                hasPrev ? 'hover:bg-black/10 dark:hover:bg-white/20' : 'opacity-30 cursor-not-allowed'
-              }`}
-              title="Chương trước (Phím ←)"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-1.5 font-medium opacity-80">
-              Ch. {chapter.number}
-            </span>
-            <button
-              onClick={onNextChapter}
-              disabled={!hasNext}
-              className={`p-1 rounded-md transition-colors ${
-                hasNext ? 'hover:bg-black/10 dark:hover:bg-white/20' : 'opacity-30 cursor-not-allowed'
-              }`}
-              title="Chương sau (Phím →)"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* Table of Contents button */}
           <button
             onClick={onOpenTOC}
