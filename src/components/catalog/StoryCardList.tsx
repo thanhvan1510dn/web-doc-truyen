@@ -35,8 +35,8 @@ export const StoryCardList: React.FC<StoryCardListProps> = ({
         />
         {/* Hot badge */}
         {story.hot && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-sm">
-            HOT
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-sm">
+            Nổi bật
           </span>
         )}
       </div>

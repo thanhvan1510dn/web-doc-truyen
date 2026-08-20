@@ -30,7 +30,7 @@ function renderLinkedText(text: string) {
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-amber-600 dark:text-amber-400 underline font-semibold hover:text-amber-700 dark:hover:text-amber-300 inline-flex items-center gap-0.5 mx-0.5"
+          className="text-zinc-900 dark:text-zinc-100 underline font-semibold hover:opacity-75 inline-flex items-center gap-0.5 mx-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           <span>{linkText}</span>
@@ -45,7 +45,7 @@ function renderLinkedText(text: string) {
           href={plainUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-amber-600 dark:text-amber-400 underline font-medium hover:text-amber-700 dark:hover:text-amber-300 break-all inline-flex items-center gap-0.5 mx-0.5"
+          className="text-zinc-900 dark:text-zinc-100 underline font-medium hover:opacity-75 break-all inline-flex items-center gap-0.5 mx-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           <span>{plainUrl}</span>
@@ -203,7 +203,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
       {story.warning && (
         <div className="p-4 rounded-2xl bg-stone-100 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 text-xs sm:text-sm text-stone-800 dark:text-stone-200 space-y-1.5">
           <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs text-stone-900 dark:text-stone-100">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <AlertTriangle className="w-4 h-4 text-stone-700 dark:text-stone-300" />
             <span>Lưu ý / Cảnh báo độc giả</span>
           </div>
           <div className="leading-relaxed">

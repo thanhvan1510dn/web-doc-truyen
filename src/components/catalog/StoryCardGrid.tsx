@@ -38,8 +38,8 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
           <div className="flex gap-1.5 flex-wrap">
             {story.hot && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500 text-white shadow-sm">
-                HOT
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-sm">
+                Nổi bật
               </span>
             )}
             <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold text-white shadow-sm ${

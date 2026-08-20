@@ -46,63 +46,55 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
         {/* 1. Theme Color Picker */}
         <div>
           <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-            Chế độ màu / Giao diện
+            Màu nền đọc
           </label>
           <div className="grid grid-cols-4 gap-2">
             <button
               onClick={() => onUpdateSettings({ theme: 'light' })}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                 settings.theme === 'light'
-                  ? 'border-zinc-900 dark:border-white bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold shadow-sm'
-                  : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center shadow-xs">
-                <Sun className="w-3.5 h-3.5 text-zinc-800" />
-              </div>
+              <Sun className="w-4 h-4" />
               <span className="text-xs">Sáng</span>
             </button>
 
             <button
               onClick={() => onUpdateSettings({ theme: 'sepia' })}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                 settings.theme === 'sepia'
-                  ? 'border-[#4a3828] bg-[#ebdcb3] text-[#3d2f21] font-bold shadow-sm'
-                  : 'border-[#e5dcbe] bg-[#f5ecd4] text-[#4a3828]'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-[#ebdcb3] border border-[#d4c393] flex items-center justify-center shadow-xs">
-                <Coffee className="w-3.5 h-3.5 text-[#4a3828]" />
-              </div>
-              <span className="text-xs">Sepia</span>
+              <Coffee className="w-4 h-4" />
+              <span className="text-xs">Giấy ngà</span>
             </button>
 
             <button
               onClick={() => onUpdateSettings({ theme: 'dark' })}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                 settings.theme === 'dark'
-                  ? 'border-white bg-slate-800 text-white font-bold shadow-sm'
-                  : 'border-slate-700 bg-slate-900 text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shadow-xs">
-                <Moon className="w-3.5 h-3.5 text-slate-200" />
-              </div>
-              <span className="text-xs">Tối (Dark)</span>
+              <Moon className="w-4 h-4" />
+              <span className="text-xs">Ban đêm</span>
             </button>
 
             <button
               onClick={() => onUpdateSettings({ theme: 'midnight' })}
-              className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                 settings.theme === 'midnight'
-                  ? 'border-indigo-400 bg-[#0e172a] text-indigo-200 font-bold shadow-sm'
-                  : 'border-slate-800 bg-[#0a0f1d] text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
               }`}
             >
-              <div className="w-6 h-6 rounded-full bg-[#131e38] border border-slate-700 flex items-center justify-center shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              </div>
-              <span className="text-xs">Midnight</span>
+              <Sparkles className="w-4 h-4" />
+              <span className="text-xs">Nền đen</span>
             </button>
           </div>
         </div>
@@ -111,7 +103,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-              Cỡ chữ (Font Size)
+              Cỡ chữ
             </label>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
               {settings.fontSize}px
@@ -122,8 +114,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
             <button
               onClick={() => handleFontSizeChange(-1)}
               disabled={settings.fontSize <= 14}
-              className="p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold flex items-center gap-1"
-              title="Giảm cỡ chữ (A-)"
+              className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold flex items-center gap-1 text-zinc-700 dark:text-zinc-300"
+              title="Giảm cỡ chữ"
             >
               <Minus className="w-4 h-4" />
               <span>A-</span>
@@ -137,14 +129,14 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               value={settings.fontSize}
               onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
               aria-label="Thanh trượt cỡ chữ"
-              className="flex-1 accent-zinc-900 dark:accent-zinc-100 h-2 bg-gray-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+              className="flex-1 accent-zinc-900 dark:accent-white h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
             />
 
             <button
               onClick={() => handleFontSizeChange(1)}
               disabled={settings.fontSize >= 32}
-              className="p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold flex items-center gap-1"
-              title="Tăng cỡ chữ (A+)"
+              className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold flex items-center gap-1 text-zinc-700 dark:text-zinc-300"
+              title="Tăng cỡ chữ"
             >
               <span>A+</span>
               <Plus className="w-4 h-4" />
@@ -155,60 +147,60 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
         {/* 3. Font Family */}
         <div>
           <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-            Kiểu phông chữ (Font Family)
+            Kiểu phông chữ
           </label>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <button
               onClick={() => onUpdateSettings({ fontFamily: 'serif' })}
               className={`p-2.5 rounded-xl border font-serif transition-all ${
                 settings.fontFamily === 'serif'
-                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
-                  : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               }`}
             >
-              Merriweather
+              Có chân (Merriweather)
             </button>
 
             <button
               onClick={() => onUpdateSettings({ fontFamily: 'lora' })}
               className={`p-2.5 rounded-xl border font-serif italic transition-all ${
                 settings.fontFamily === 'lora'
-                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
-                  : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               }`}
             >
-              Lora Classic
+              Cổ điển (Lora)
             </button>
 
             <button
               onClick={() => onUpdateSettings({ fontFamily: 'sans' })}
               className={`p-2.5 rounded-xl border font-sans transition-all ${
                 settings.fontFamily === 'sans'
-                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
-                  : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               }`}
             >
-              Inter Sans
+              Không chân (Inter)
             </button>
           </div>
         </div>
 
-        {/* 4. Line Spacing & Text Align & Width */}
+        {/* 4. Line Spacing & Text Align */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           {/* Line Spacing */}
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
               Giãn dòng
             </label>
-            <div className="flex rounded-xl bg-gray-100 dark:bg-slate-800 p-1 text-xs">
+            <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 text-xs">
               {(['tight', 'normal', 'relaxed'] as LineHeight[]).map((lh) => (
                 <button
                   key={lh}
                   onClick={() => onUpdateSettings({ lineHeight: lh })}
                   className={`flex-1 py-1.5 rounded-lg font-medium transition-all ${
                     settings.lineHeight === lh
-                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
-                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm font-bold'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
                   {lh === 'tight' ? 'Hẹp' : lh === 'normal' ? 'Vừa' : 'Rộng'}
@@ -220,15 +212,15 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
           {/* Text Alignment */}
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-              Canh lề văn bản
+              Căn lề
             </label>
-            <div className="flex rounded-xl bg-gray-100 dark:bg-slate-800 p-1 text-xs">
+            <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 text-xs">
               <button
                 onClick={() => onUpdateSettings({ textAlign: 'left' })}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.textAlign === 'left'
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 <AlignLeft className="w-3.5 h-3.5" />
@@ -238,8 +230,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
                 onClick={() => onUpdateSettings({ textAlign: 'justify' })}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.textAlign === 'justify'
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 <AlignJustify className="w-3.5 h-3.5" />
@@ -254,15 +246,15 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
           <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
             Độ rộng khung đọc
           </label>
-          <div className="flex rounded-xl bg-gray-100 dark:bg-slate-800 p-1 text-xs">
+          <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 text-xs">
             {(['narrow', 'medium', 'wide', 'full'] as ReaderWidth[]).map((w) => (
               <button
                 key={w}
                 onClick={() => onUpdateSettings({ readerWidth: w })}
                 className={`flex-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.readerWidth === w
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
                 {w === 'narrow' ? '650px' : w === 'medium' ? '800px' : w === 'wide' ? '1000px' : 'Tràn viền'}
