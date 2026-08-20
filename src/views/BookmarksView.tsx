@@ -25,8 +25,8 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
-            <Bookmark className="w-6 h-6 fill-current" />
+          <div className="p-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-sm">
+            <Bookmark className="w-5 h-5 fill-current" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">

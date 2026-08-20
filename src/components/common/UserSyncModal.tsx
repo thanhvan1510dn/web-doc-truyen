@@ -79,7 +79,7 @@ export const UserSyncModal: React.FC<UserSyncModalProps> = ({ isOpen, onClose, o
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 flex items-center justify-center font-bold">
               <Database className="w-4 h-4" />
             </div>
             <div>
@@ -99,7 +99,7 @@ export const UserSyncModal: React.FC<UserSyncModalProps> = ({ isOpen, onClose, o
         <div className="p-5 space-y-5 overflow-y-auto">
           {/* Import section */}
           <div className="space-y-2.5">
-            <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
               1. Dán Mã Truyện Hoặc File Từ Admin
             </h4>
             <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed">
@@ -110,12 +110,12 @@ export const UserSyncModal: React.FC<UserSyncModalProps> = ({ isOpen, onClose, o
               onChange={(e) => setImportText(e.target.value)}
               placeholder="Dán chuỗi mã JSON từ trang Admin vào đây..."
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-xs font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-xs font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
             />
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={handleImportText}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold transition-colors shadow-sm"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Nạp truyện ngay</span>

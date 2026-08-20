@@ -50,7 +50,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {/* Results count & active reset */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-5 h-5 text-amber-500" />
+            <SlidersHorizontal className="w-5 h-5 opacity-80" />
             <span className="font-bold text-gray-800 dark:text-slate-100">
               Danh Sách Truyện
             </span>
@@ -62,7 +62,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {hasActiveFilters && (
             <button
               onClick={onResetFilters}
-              className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline ml-2"
+              className="flex items-center gap-1 text-xs text-zinc-900 dark:text-zinc-100 hover:underline ml-2 font-medium"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Đặt lại bộ lọc</span>
@@ -80,7 +80,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 onClick={() => onSelectStatus(status)}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                   selectedStatus === status
-                    ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm font-semibold'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-semibold'
                     : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
                 }`}
               >
@@ -96,7 +96,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value as SortOption)}
               aria-label="Sắp xếp theo"
-              className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 font-medium focus:outline-none focus:ring-1 focus:ring-zinc-400"
             >
               <option value="views">Lượt xem nhiều nhất</option>
               <option value="rating">Đánh giá cao nhất</option>
@@ -111,7 +111,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onClick={() => onViewModeChange('grid')}
               className={`p-1.5 rounded-lg transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
                   : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
               }`}
               title="Xem dạng Lưới ảnh bìa (Thumbnail Grid)"
@@ -123,7 +123,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onClick={() => onViewModeChange('list')}
               className={`p-1.5 rounded-lg transition-all ${
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
                   : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
               }`}
               title="Xem dạng Danh sách chi tiết (List View)"
@@ -148,7 +148,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onClick={() => onSelectGenre(genre)}
               className={`px-3 py-1.5 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 ${
                 selectedGenre === genre
-                  ? 'bg-amber-500 text-white shadow-sm font-semibold'
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-semibold'
                   : 'bg-gray-100 dark:bg-slate-700/70 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
               }`}
             >

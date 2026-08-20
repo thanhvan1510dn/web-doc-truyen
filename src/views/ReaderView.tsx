@@ -130,7 +130,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           <p className="text-sm font-medium mb-3">Không tìm thấy chương truyện này.</p>
           <button
             onClick={onBackToStory}
-            className="px-4 py-2 rounded-xl bg-amber-500 text-white font-semibold text-xs"
+            className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-xs shadow-sm"
           >
             Quay lại danh sách
           </button>
@@ -145,7 +145,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   };
 
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-amber-500 selection:text-white transition-colors theme-${settings.theme}`}>
+    <div className={`min-h-screen flex flex-col selection:bg-zinc-800 selection:text-white dark:selection:bg-zinc-200 dark:selection:text-zinc-900 transition-colors theme-${settings.theme}`}>
       {/* Sticky Reader Header */}
       <ReaderHeader
         story={story}

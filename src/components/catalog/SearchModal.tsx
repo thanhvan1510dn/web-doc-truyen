@@ -67,7 +67,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       <div className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-10 flex flex-col max-h-[80vh]">
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3.5 border-b border-gray-100 dark:border-slate-700 gap-3">
-          <Search className="w-5 h-5 text-amber-500 flex-shrink-0" />
+          <Search className="w-5 h-5 opacity-70 flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -104,7 +104,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <button
                     key={tag}
                     onClick={() => setQuery(tag)}
-                    className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600 transition-colors"
+                    className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-colors"
                   >
                     {tag}
                   </button>
@@ -124,7 +124,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   onSelectStory(story.id);
                   onClose();
                 }}
-                className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-amber-50/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
+                className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-zinc-100/80 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
               >
                 <img
                   src={story.coverImage}
@@ -133,10 +133,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-slate-100 group-hover:opacity-75 transition-opacity truncate">
                       {story.title}
                     </h4>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
                       {story.genres[0]}
                     </span>
                   </div>
@@ -144,9 +144,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     Tác giả: {story.author}
                   </p>
                   <div className="flex items-center gap-3 text-[11px] text-gray-400 dark:text-slate-500 mt-1">
-                    <span className="flex items-center gap-0.5 text-amber-500">
+                    <span className="flex items-center gap-0.5 text-yellow-400">
                       <Star className="w-3 h-3 fill-current" />
-                      {story.rating.toFixed(1)}
+                      <span className="text-zinc-700 dark:text-zinc-300 font-semibold">{story.rating.toFixed(1)}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <BookOpen className="w-3 h-3" />
@@ -154,7 +154,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     </span>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-zinc-900 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </div>
             ))
           )}

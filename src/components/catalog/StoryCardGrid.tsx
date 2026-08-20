@@ -43,7 +43,7 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
               </span>
             )}
             <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold text-white shadow-sm ${
-              story.status === 'Hoàn thành' ? 'bg-emerald-600' : 'bg-amber-600'
+              story.status === 'Hoàn thành' ? 'bg-emerald-600' : 'bg-zinc-700'
             }`}>
               {story.status}
             </span>
@@ -53,7 +53,7 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
             onClick={(e) => onToggleBookmark(story.id, e)}
             className={`pointer-events-auto p-2 rounded-full backdrop-blur-md transition-colors ${
               isBookmarked
-                ? 'bg-amber-500 text-white shadow-md'
+                ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md'
                 : 'bg-black/40 text-white/80 hover:bg-black/60 hover:text-white'
             }`}
             title={isBookmarked ? 'Bỏ lưu truyện' : 'Lưu vào tủ sách'}
@@ -65,8 +65,8 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
         {/* Bottom Overlay Info inside Cover */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-xs text-white/90">
           <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="font-bold text-amber-300">{story.rating.toFixed(1)}</span>
+            <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+            <span className="font-bold text-white">{story.rating.toFixed(1)}</span>
           </div>
           <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full">
             <BookOpen className="w-3.5 h-3.5" />
@@ -83,7 +83,7 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
             {story.genres.slice(0, 2).map((genre) => (
               <span
                 key={genre}
-                className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40"
+                className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
               >
                 {genre}
               </span>
@@ -91,7 +91,7 @@ export const StoryCardGrid: React.FC<StoryCardGridProps> = ({
           </div>
 
           {/* Title */}
-          <h3 className="font-bold text-base text-gray-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 mb-1">
+          <h3 className="font-bold text-base text-gray-900 dark:text-slate-100 group-hover:opacity-75 transition-opacity line-clamp-1 mb-1">
             {story.title}
           </h3>
 

@@ -88,11 +88,11 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   <div>
                     <h3 
                       onClick={() => onSelectStory(story.id)}
-                      className="font-bold text-base text-gray-900 dark:text-slate-100 hover:text-amber-600 truncate cursor-pointer"
+                      className="font-bold text-base text-gray-900 dark:text-slate-100 hover:opacity-75 truncate cursor-pointer transition-opacity"
                     >
                       {story.title}
                     </h3>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold truncate mt-1">
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 font-semibold truncate mt-1">
                       Đang đọc: {item.chapterTitle}
                     </p>
                     <p className="text-[11px] text-gray-400 dark:text-slate-400 truncate mt-0.5">
@@ -104,7 +104,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                     <span>{timeStr}</span>
                     <button
                       onClick={() => onReadChapter(story.id, item.chapterId)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-sm transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Đọc tiếp</span>

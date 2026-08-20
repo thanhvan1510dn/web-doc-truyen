@@ -8,11 +8,11 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center text-white">
+              <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 font-bold">
                 <BookOpen className="w-5 h-5" />
               </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 to-red-600 bg-clip-text text-transparent">
-                Mê Đọc Truyện
+              <span className="text-lg font-bold text-zinc-900 dark:text-white">
+                Đọc Truyện
               </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-slate-400 max-w-md leading-relaxed">
@@ -25,11 +25,11 @@ export const Footer: React.FC = () => {
               Thể Loại Nổi Bật
             </h4>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
-              <li className="hover:text-amber-600 cursor-pointer">Tiên Hiệp & Tu Chân</li>
-              <li className="hover:text-amber-600 cursor-pointer">Huyền Huyễn & Dị Giới</li>
-              <li className="hover:text-amber-600 cursor-pointer">Kiếm Hiệp Cổ Điển</li>
-              <li className="hover:text-amber-600 cursor-pointer">Trinh Thám & Phá Án</li>
-              <li className="hover:text-amber-600 cursor-pointer">Đô Thị & Võng Du</li>
+              <li className="hover:text-zinc-900 dark:hover:text-white cursor-pointer transition-colors">Tiên Hiệp & Tu Chân</li>
+              <li className="hover:text-zinc-900 dark:hover:text-white cursor-pointer transition-colors">Huyền Huyễn & Dị Giới</li>
+              <li className="hover:text-zinc-900 dark:hover:text-white cursor-pointer transition-colors">Kiếm Hiệp Cổ Điển</li>
+              <li className="hover:text-zinc-900 dark:hover:text-white cursor-pointer transition-colors">Trinh Thám & Phá Án</li>
+              <li className="hover:text-zinc-900 dark:hover:text-white cursor-pointer transition-colors">Đô Thị & Võng Du</li>
             </ul>
           </div>
 
@@ -38,9 +38,9 @@ export const Footer: React.FC = () => {
               Tính Năng Độc Đáo
             </h4>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
-              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Tùy chỉnh Font & Cỡ chữ</li>
-              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Chia chương theo Quyển/Phần</li>
-              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Chế độ Dark/Light/Sepia</li>
+              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 opacity-70" /> Tùy chỉnh Font & Cỡ chữ</li>
+              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 opacity-70" /> Chia chương theo Quyển/Phần</li>
+              <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 opacity-70" /> Chế độ Dark/Light/Sepia</li>
               <li className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Tự động lưu tiến độ đọc</li>
             </ul>
           </div>
