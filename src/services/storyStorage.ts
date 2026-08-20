@@ -16,7 +16,7 @@ import {
   Unsubscribe
 } from "firebase/firestore";
 
-const STORAGE_KEY = "web_doc_truyen_stories_clean_v4";
+const STORAGE_KEY = "web_doc_truyen_stories_clean_v5";
 const BACKUP_KEY = "web_doc_truyen_stories_backup";
 const BROADCAST_CHANNEL_NAME = "web_doc_truyen_sync_channel";
 
