@@ -5,7 +5,6 @@ import { ReaderContent } from '../components/reader/ReaderContent';
 import { ReaderFooter } from '../components/reader/ReaderFooter';
 import { ReaderToolbar } from '../components/reader/ReaderToolbar';
 import { ReaderTOCModal } from '../components/reader/ReaderTOCModal';
-import { MobileReaderBar } from '../components/reader/MobileReaderBar';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { analyticsApi } from '../api';
 import { storyStorage } from '../services/storyStorage';
@@ -185,18 +184,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         onOpenTOC={() => setTocOpen(true)}
         settings={settings}
         readingProgressPercent={readingProgressPercent}
-      />
-
-      {/* Floating Bottom Bar for Mobile Devices */}
-      <MobileReaderBar
-        hasPrev={hasPrev}
-        hasNext={hasNext}
-        onPrevChapter={handlePrev}
-        onNextChapter={handleNext}
-        onOpenTOC={() => setTocOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        chapterNumber={currentChapter.number}
-        settings={settings}
       />
 
       {/* TOC Drawer / Modal */}
