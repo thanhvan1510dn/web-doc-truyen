@@ -76,7 +76,7 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
   const paragraphs = chapter.content.split('\n\n').filter(p => p.trim() !== '');
 
   return (
-    <div className={`min-h-[80vh] py-8 sm:py-12 transition-colors ${getThemeBackgroundClass()}`}>
+    <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>
       {/* Sticky Progress Bar on Top */}
       <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-black/10 dark:bg-white/10">
         <div

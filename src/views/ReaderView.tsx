@@ -5,6 +5,7 @@ import { ReaderContent } from '../components/reader/ReaderContent';
 import { ReaderFooter } from '../components/reader/ReaderFooter';
 import { ReaderToolbar } from '../components/reader/ReaderToolbar';
 import { ReaderTOCModal } from '../components/reader/ReaderTOCModal';
+import { MobileReaderBar } from '../components/reader/MobileReaderBar';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { analyticsApi } from '../api';
 import { storyStorage } from '../services/storyStorage';
@@ -201,6 +202,18 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={onUpdateSettings}
+      />
+
+      {/* Fixed Bottom Chapter Navigation Bar (Quick next/prev chapter without scrolling to the end) */}
+      <MobileReaderBar
+        story={story}
+        chapter={effectiveChapter}
+        hasPrev={hasPrev}
+        hasNext={hasNext}
+        onPrevChapter={handlePrev}
+        onNextChapter={handleNext}
+        onSelectChapter={onNavigateChapter}
+        settings={settings}
       />
     </div>
   );

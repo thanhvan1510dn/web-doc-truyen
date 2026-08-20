@@ -1,91 +1,111 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, BookOpen, Settings } from 'lucide-react';
-import { ReaderSettings } from '../../types/story';
+import { ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { Story, Chapter, ReaderSettings } from '../../types/story';
 
-interface MobileReaderBarProps {
+interface ReaderBottomBarProps {
+  story: Story;
+  chapter: Chapter;
   hasPrev: boolean;
   hasNext: boolean;
   onPrevChapter: () => void;
   onNextChapter: () => void;
-  onOpenTOC: () => void;
-  onOpenSettings: () => void;
-  chapterNumber: number;
+  onSelectChapter: (chapterId: string) => void;
   settings: ReaderSettings;
 }
 
-export const MobileReaderBar: React.FC<MobileReaderBarProps> = ({
+export const MobileReaderBar: React.FC<ReaderBottomBarProps> = ({
+  story,
+  chapter,
   hasPrev,
   hasNext,
   onPrevChapter,
   onNextChapter,
-  onOpenTOC,
-  onOpenSettings,
-  chapterNumber,
+  onSelectChapter,
   settings,
 }) => {
+  // Collect all chapters for quick jump dropdown
+  const allChapters = story.volumes.flatMap((v) =>
+    v.chapters.map((c) => ({
+      id: c.id,
+      number: c.number,
+      title: c.title,
+    }))
+  );
+
   const getBarClasses = () => {
     switch (settings.theme) {
       case 'dark':
-        return 'bg-slate-900/95 border-slate-800 text-slate-100 shadow-slate-950/50';
+        return 'bg-[#0f172a]/95 border-slate-800 text-[#e2e8f0]';
       case 'sepia':
-        return 'bg-[#ebdcb3]/95 border-[#d4c393] text-[#4a3828] shadow-[#4a3828]/20';
+        return 'bg-[#f4ecdc]/95 border-[#e5dcbe] text-[#3d2f21]';
       case 'midnight':
-        return 'bg-[#0a0f1d]/95 border-slate-800 text-slate-100 shadow-black/60';
+        return 'bg-[#060911]/95 border-slate-900 text-[#cbd5e1]';
       default:
-        return 'bg-white/95 border-gray-200 text-gray-800 shadow-gray-400/20';
+        return 'bg-[#fdfbf7]/95 border-gray-200 text-[#1e293b]';
     }
   };
 
+  const getDisplayChapterTitle = (num: number, rawTitle?: string) => {
+    if (!rawTitle || !rawTitle.trim()) return `Chương ${num}`;
+    const t = rawTitle.trim();
+    if (/^(?:chương|chuong|chap|c)\s*\d+/i.test(t)) {
+      return t;
+    }
+    return `Chương ${num}: ${t}`;
+  };
+
   return (
-    <div className="fixed bottom-3 left-3 right-3 z-40 sm:hidden">
-      <div className={`flex items-center justify-between px-3 py-2 rounded-2xl border backdrop-blur-md shadow-xl ${getBarClasses()}`}>
-        {/* Prev Chapter */}
+    <div className={`fixed bottom-0 left-0 right-0 z-30 border-t backdrop-blur-md shadow-lg transition-colors ${getBarClasses()}`}>
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
+        {/* Prev Chapter Button */}
         <button
           onClick={onPrevChapter}
           disabled={!hasPrev}
-          className={`flex items-center gap-1 p-2 rounded-xl text-xs font-semibold ${
-            hasPrev ? 'hover:bg-black/5 dark:hover:bg-white/10 active:scale-95' : 'opacity-30'
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+            hasPrev
+              ? 'hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 text-amber-600 dark:text-amber-400'
+              : 'opacity-30 cursor-not-allowed text-gray-400'
           }`}
-          title="Chương trước"
+          title="Chương trước (Phím ←)"
         >
-          <ChevronLeft className="w-5 h-5" />
-          <span>Trước</span>
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="hidden sm:inline">Chương trước</span>
+          <span className="sm:hidden">Trước</span>
         </button>
 
-        {/* TOC Button */}
-        <button
-          onClick={onOpenTOC}
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-[11px] font-semibold hover:bg-black/5 dark:hover:bg-white/10"
-        >
-          <BookOpen className="w-4 h-4 text-amber-500" />
-          <span>Mục lục</span>
-        </button>
+        {/* Quick Chapter Selector Dropdown */}
+        <div className="relative flex items-center max-w-[170px] sm:max-w-[280px]">
+          <select
+            value={chapter.id}
+            onChange={(e) => onSelectChapter(e.target.value)}
+            aria-label="Chọn chương nhanh"
+            className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/10 font-bold text-xs sm:text-sm truncate cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
+          >
+            {allChapters.map((c) => (
+              <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+                {getDisplayChapterTitle(c.number, c.title)}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+            <Layers className="w-3.5 h-3.5" />
+          </div>
+        </div>
 
-        {/* Chapter Badge */}
-        <span className="text-xs font-bold px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-          Ch. {chapterNumber}
-        </span>
-
-        {/* Settings Button */}
-        <button
-          onClick={onOpenSettings}
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-[11px] font-semibold hover:bg-black/5 dark:hover:bg-white/10"
-        >
-          <Settings className="w-4 h-4 text-amber-500" />
-          <span>Cài đặt</span>
-        </button>
-
-        {/* Next Chapter */}
+        {/* Next Chapter Button */}
         <button
           onClick={onNextChapter}
           disabled={!hasNext}
-          className={`flex items-center gap-1 p-2 rounded-xl text-xs font-semibold ${
-            hasNext ? 'text-amber-600 dark:text-amber-400 font-bold active:scale-95' : 'opacity-30'
+          className={`flex items-center gap-1 sm:gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all ${
+            hasNext
+              ? 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-amber-500/20'
+              : 'opacity-30 cursor-not-allowed bg-gray-200 dark:bg-slate-800 text-gray-400'
           }`}
-          title="Chương sau"
+          title="Chương sau (Phím →)"
         >
-          <span>Sau</span>
-          <ChevronRight className="w-5 h-5" />
+          <span className="hidden sm:inline">Chương sau</span>
+          <span className="sm:hidden">Sau</span>
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
     </div>
