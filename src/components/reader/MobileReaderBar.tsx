@@ -61,10 +61,10 @@ export const MobileReaderBar: React.FC<ReaderBottomBarProps> = ({
         <button
           onClick={onPrevChapter}
           disabled={!hasPrev}
-          className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex-shrink-0 whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex-shrink-0 whitespace-nowrap transition-all ${
             hasPrev
-              ? 'hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 text-amber-600 dark:text-amber-400'
-              : 'opacity-30 cursor-not-allowed text-gray-400'
+              ? 'border border-zinc-300 dark:border-zinc-700 bg-zinc-100/90 dark:bg-zinc-800/90 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 active:scale-95 shadow-sm'
+              : 'opacity-30 cursor-not-allowed border border-transparent text-zinc-400'
           }`}
           title="Chương trước (Phím ←)"
         >
@@ -74,20 +74,20 @@ export const MobileReaderBar: React.FC<ReaderBottomBarProps> = ({
         </button>
 
         {/* Quick Chapter Selector Dropdown (Middle, Flexible Width) */}
-        <div className="relative flex-1 min-w-0 max-w-[220px] sm:max-w-sm mx-1">
+        <div className="relative flex-1 min-w-0 max-w-[240px] sm:max-w-sm mx-1">
           <select
             value={chapter.id}
             onChange={(e) => onSelectChapter(e.target.value)}
             aria-label="Chọn chương nhanh"
-            className="appearance-none w-full pl-3 pr-8 py-2 rounded-xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/10 font-bold text-xs sm:text-sm text-center truncate cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-sm"
+            className="appearance-none w-full pl-3 pr-8 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 text-center truncate cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-400 shadow-sm"
           >
             {allChapters.map((c) => (
-              <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+              <option key={c.id} value={c.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
                 {getDisplayChapterTitle(c.number, c.title)}
               </option>
             ))}
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
             <Layers className="w-3.5 h-3.5" />
           </div>
         </div>
@@ -96,10 +96,10 @@ export const MobileReaderBar: React.FC<ReaderBottomBarProps> = ({
         <button
           onClick={onNextChapter}
           disabled={!hasNext}
-          className={`flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex-shrink-0 whitespace-nowrap shadow-sm transition-all ${
+          className={`flex items-center justify-center gap-1 sm:gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex-shrink-0 whitespace-nowrap transition-all ${
             hasNext
-              ? 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-amber-500/20'
-              : 'opacity-30 cursor-not-allowed bg-gray-200 dark:bg-slate-800 text-gray-400'
+              ? 'bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 active:scale-95 shadow-sm'
+              : 'opacity-30 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-400'
           }`}
           title="Chương sau (Phím →)"
         >

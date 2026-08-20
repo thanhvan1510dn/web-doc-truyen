@@ -45,7 +45,7 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
 
           <div 
             onClick={onBackToStory}
-            className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-bold cursor-pointer hover:underline truncate"
+            className="text-xs sm:text-sm font-bold cursor-pointer hover:underline truncate opacity-90 hover:opacity-100"
             title={story.title}
           >
             {story.title}
@@ -60,7 +60,7 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-xs font-semibold"
             title="Mục lục các chương"
           >
-            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+            <BookOpen className="w-3.5 h-3.5 opacity-75" />
             <span>Mục Lục</span>
           </button>
 
@@ -70,7 +70,7 @@ export const ReaderHeader: React.FC<ReaderHeaderProps> = ({
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-xs font-semibold"
             title="Cài đặt cỡ chữ & giao diện"
           >
-            <Settings className="w-3.5 h-3.5 text-amber-500" />
+            <Settings className="w-3.5 h-3.5 opacity-75" />
             <span>Cỡ Chữ</span>
           </button>
         </div>

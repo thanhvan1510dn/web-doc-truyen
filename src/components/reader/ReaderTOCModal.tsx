@@ -39,7 +39,7 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
         {/* Drawer Header */}
         <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <BookOpen className="w-5 h-5 text-amber-500" />
+            <BookOpen className="w-5 h-5 opacity-80" />
             <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-slate-100">
               Mục Lục
             </h3>
@@ -61,7 +61,7 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm mục lục, chương..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                 {/* Volume Header Banner */}
                 <div
                   onClick={() => toggleVolume(volume.id)}
-                  className="flex items-center justify-between p-3.5 sm:p-4 bg-amber-500/10 dark:bg-amber-500/15 cursor-pointer hover:bg-amber-500/20 transition-colors select-none gap-3"
+                  className="flex items-center justify-between p-3.5 sm:p-4 bg-zinc-100/90 dark:bg-zinc-800/90 cursor-pointer hover:bg-zinc-200/90 dark:hover:bg-zinc-700/90 transition-colors select-none gap-3"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-slate-100 leading-snug">
@@ -119,13 +119,13 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                           }}
                           className={`flex items-center justify-between px-3.5 py-3 transition-colors cursor-pointer text-xs ${
                             isCurrent
-                              ? 'bg-amber-500/20 font-bold text-amber-900 dark:text-amber-300'
+                              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold rounded-lg my-1 mx-2'
                               : 'hover:bg-gray-50 dark:hover:bg-slate-800/80 text-gray-700 dark:text-slate-300'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate pr-2">
                             {isCurrent ? (
-                              <CheckCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                              <CheckCircle className="w-4 h-4 text-emerald-400 dark:text-emerald-600 flex-shrink-0" />
                             ) : (
                               <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-slate-600 flex-shrink-0" />
                             )}

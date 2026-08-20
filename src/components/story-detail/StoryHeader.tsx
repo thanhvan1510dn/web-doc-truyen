@@ -78,7 +78,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
       {/* Back button */}
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-xs sm:text-sm text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+        className="inline-flex items-center gap-2 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white font-semibold hover:underline"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Về danh sách truyện</span>
@@ -140,7 +140,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
                     href={story.convertLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-amber-600 dark:text-amber-400 underline inline-flex items-center gap-0.5 ml-1"
+                    className="text-zinc-900 dark:text-zinc-100 underline inline-flex items-center gap-0.5 ml-1 font-medium hover:opacity-80"
                   >
                     <span>Link bản convert</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -155,7 +155,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             {story.genres.map((g) => (
               <span
                 key={g}
-                className="px-3 py-1 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold"
+                className="px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold"
               >
                 {g}
               </span>
@@ -167,7 +167,7 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             {firstChapter && (
               <button
                 onClick={() => onStartReading(firstChapter.id)}
-                className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-98"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Đọc từ đầu</span>
@@ -177,9 +177,9 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
             {latestChapter && (
               <button
                 onClick={() => onStartReading(latestChapter.id)}
-                className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 font-semibold text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold text-sm transition-colors"
               >
-                <Clock className="w-4 h-4 text-amber-500" />
+                <Clock className="w-4 h-4 opacity-70" />
                 <span>Chương mới nhất</span>
               </button>
             )}
@@ -199,14 +199,16 @@ export const StoryHeader: React.FC<StoryHeaderProps> = ({
         </div>
       )}
 
-      {/* Warning */}
+      {/* Cảnh báo tác phẩm */}
       {story.warning && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs sm:text-sm text-amber-900 dark:text-amber-200 space-y-1.5">
-          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Warning (Lưu ý độc giả):</span>
+        <div className="p-4 rounded-2xl bg-stone-100 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 text-xs sm:text-sm text-stone-800 dark:text-stone-200 space-y-1.5">
+          <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs text-stone-900 dark:text-stone-100">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <span>Lưu ý / Cảnh báo độc giả</span>
           </div>
-          <p className="leading-relaxed">{story.warning}</p>
+          <div className="leading-relaxed">
+            {renderLinkedText(story.warning)}
+          </div>
         </div>
       )}
     </div>

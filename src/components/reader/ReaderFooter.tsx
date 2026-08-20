@@ -67,8 +67,8 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
             disabled={!hasPrev}
             className={`flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl border font-bold text-xs sm:text-sm flex-shrink-0 whitespace-nowrap transition-all ${
               hasPrev
-                ? 'border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 hover:bg-amber-500 hover:text-white hover:border-amber-500 shadow-sm'
-                : 'opacity-40 border-black/5 dark:border-white/5 cursor-not-allowed'
+                ? 'border-zinc-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 shadow-sm'
+                : 'opacity-30 border-transparent text-zinc-400 cursor-not-allowed'
             }`}
           >
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -82,15 +82,15 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
               value={chapter.id}
               onChange={(e) => onSelectChapter(e.target.value)}
               aria-label="Chọn chương nhanh"
-              className="appearance-none w-full pl-3 pr-8 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 font-semibold text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 text-center truncate cursor-pointer shadow-sm"
+              className="appearance-none w-full pl-3 pr-8 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 text-center truncate cursor-pointer shadow-sm"
             >
               {allChapters.map((c) => (
-                <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+                <option key={c.id} value={c.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
                   {getDisplayChapterTitle(c.number, c.title)}
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-500">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -100,8 +100,8 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
             disabled={!hasNext}
             className={`flex items-center justify-center gap-1 sm:gap-1.5 px-3.5 sm:px-5 py-2.5 rounded-xl border font-bold text-xs sm:text-sm flex-shrink-0 whitespace-nowrap transition-all ${
               hasNext
-                ? 'border-amber-500 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20'
-                : 'opacity-40 border-black/5 dark:border-white/5 cursor-not-allowed'
+                ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-black dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white shadow-sm'
+                : 'opacity-30 border-transparent bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
             }`}
           >
             <span className="hidden sm:inline">Chương Sau</span>

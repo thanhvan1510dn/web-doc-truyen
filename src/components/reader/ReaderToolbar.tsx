@@ -30,7 +30,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <Type className="w-5 h-5 text-amber-500" />
+            <Type className="w-5 h-5 opacity-80" />
             <h3 className="font-bold text-base text-gray-900 dark:text-slate-100">
               Tùy Chỉnh Đọc Truyện
             </h3>
@@ -53,12 +53,12 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ theme: 'light' })}
               className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
                 settings.theme === 'light'
-                  ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-600 font-bold shadow-sm'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold shadow-sm'
                   : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300'
               }`}
             >
               <div className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center shadow-xs">
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                <Sun className="w-3.5 h-3.5 text-zinc-800" />
               </div>
               <span className="text-xs">Sáng</span>
             </button>
@@ -67,12 +67,12 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ theme: 'sepia' })}
               className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
                 settings.theme === 'sepia'
-                  ? 'border-amber-600 bg-amber-50/50 text-amber-700 font-bold shadow-sm'
-                  : 'border-amber-200/80 bg-[#f5ecd4] text-[#4a3828]'
+                  ? 'border-[#4a3828] bg-[#ebdcb3] text-[#3d2f21] font-bold shadow-sm'
+                  : 'border-[#e5dcbe] bg-[#f5ecd4] text-[#4a3828]'
               }`}
             >
               <div className="w-6 h-6 rounded-full bg-[#ebdcb3] border border-[#d4c393] flex items-center justify-center shadow-xs">
-                <Coffee className="w-3.5 h-3.5 text-amber-700" />
+                <Coffee className="w-3.5 h-3.5 text-[#4a3828]" />
               </div>
               <span className="text-xs">Sepia</span>
             </button>
@@ -81,12 +81,12 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ theme: 'dark' })}
               className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
                 settings.theme === 'dark'
-                  ? 'border-amber-500 bg-slate-800 text-amber-400 font-bold shadow-sm'
+                  ? 'border-white bg-slate-800 text-white font-bold shadow-sm'
                   : 'border-slate-700 bg-slate-900 text-slate-300'
               }`}
             >
               <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shadow-xs">
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <Moon className="w-3.5 h-3.5 text-slate-200" />
               </div>
               <span className="text-xs">Tối (Dark)</span>
             </button>
@@ -95,12 +95,12 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ theme: 'midnight' })}
               className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
                 settings.theme === 'midnight'
-                  ? 'border-blue-500 bg-[#0e172a] text-blue-400 font-bold shadow-sm'
+                  ? 'border-indigo-400 bg-[#0e172a] text-indigo-200 font-bold shadow-sm'
                   : 'border-slate-800 bg-[#0a0f1d] text-slate-300'
               }`}
             >
               <div className="w-6 h-6 rounded-full bg-[#131e38] border border-slate-700 flex items-center justify-center shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               </div>
               <span className="text-xs">Midnight</span>
             </button>
@@ -113,7 +113,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
             <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
               Cỡ chữ (Font Size)
             </label>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
               {settings.fontSize}px
             </span>
           </div>
@@ -137,7 +137,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               value={settings.fontSize}
               onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
               aria-label="Thanh trượt cỡ chữ"
-              className="flex-1 accent-amber-500 h-2 bg-gray-200 dark:bg-slate-700 rounded-lg cursor-pointer"
+              className="flex-1 accent-zinc-900 dark:accent-zinc-100 h-2 bg-gray-200 dark:bg-slate-700 rounded-lg cursor-pointer"
             />
 
             <button
@@ -162,7 +162,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ fontFamily: 'serif' })}
               className={`p-2.5 rounded-xl border font-serif transition-all ${
                 settings.fontFamily === 'serif'
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
                   : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
               }`}
             >
@@ -173,7 +173,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ fontFamily: 'lora' })}
               className={`p-2.5 rounded-xl border font-serif italic transition-all ${
                 settings.fontFamily === 'lora'
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
                   : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
               }`}
             >
@@ -184,7 +184,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
               onClick={() => onUpdateSettings({ fontFamily: 'sans' })}
               className={`p-2.5 rounded-xl border font-sans transition-all ${
                 settings.fontFamily === 'sans'
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                  ? 'border-zinc-900 dark:border-white bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-sm'
                   : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300'
               }`}
             >
@@ -207,8 +207,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
                   onClick={() => onUpdateSettings({ lineHeight: lh })}
                   className={`flex-1 py-1.5 rounded-lg font-medium transition-all ${
                     settings.lineHeight === lh
-                      ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm font-semibold'
-                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {lh === 'tight' ? 'Hẹp' : lh === 'normal' ? 'Vừa' : 'Rộng'}
@@ -227,8 +227,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
                 onClick={() => onUpdateSettings({ textAlign: 'left' })}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.textAlign === 'left'
-                    ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm font-semibold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <AlignLeft className="w-3.5 h-3.5" />
@@ -238,8 +238,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
                 onClick={() => onUpdateSettings({ textAlign: 'justify' })}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.textAlign === 'justify'
-                    ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm font-semibold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <AlignJustify className="w-3.5 h-3.5" />
@@ -261,8 +261,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
                 onClick={() => onUpdateSettings({ readerWidth: w })}
                 className={`flex-1 py-1.5 rounded-lg font-medium transition-all ${
                   settings.readerWidth === w
-                    ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm font-semibold'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900'
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-bold'
+                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 {w === 'narrow' ? '650px' : w === 'medium' ? '800px' : w === 'wide' ? '1000px' : 'Tràn viền'}

@@ -83,7 +83,7 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
           </h1>
 
           <div className="flex items-center justify-center gap-1.5 text-xs opacity-70">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <Clock className="w-3.5 h-3.5 opacity-60" />
             <span>Cập nhật: {formatDate(chapter.updatedAt || story.updatedAt)}</span>
           </div>
         </div>
