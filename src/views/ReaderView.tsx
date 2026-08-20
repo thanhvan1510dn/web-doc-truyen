@@ -6,7 +6,6 @@ import { ReaderFooter } from '../components/reader/ReaderFooter';
 import { ReaderToolbar } from '../components/reader/ReaderToolbar';
 import { ReaderTOCModal } from '../components/reader/ReaderTOCModal';
 import { MobileReaderBar } from '../components/reader/MobileReaderBar';
-import { useReadingProgress } from '../hooks/useReadingProgress';
 import { analyticsApi } from '../api';
 import { storyStorage } from '../services/storyStorage';
 
@@ -29,7 +28,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 }) => {
   const [tocOpen, setTocOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const readingProgressPercent = useReadingProgress();
   const startTimeRef = useRef<number>(Date.now());
 
   // Flatten all active chapters across volumes for easy sequence navigation
@@ -168,7 +166,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           story={story}
           chapter={effectiveChapter}
           settings={settings}
-          readingProgressPercent={readingProgressPercent}
         />
       </main>
 
@@ -184,7 +181,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         onSelectChapter={onNavigateChapter}
         onOpenTOC={() => setTocOpen(true)}
         settings={settings}
-        readingProgressPercent={readingProgressPercent}
       />
 
       {/* TOC Drawer / Modal */}

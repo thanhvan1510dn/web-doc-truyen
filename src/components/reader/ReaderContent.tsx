@@ -7,14 +7,12 @@ interface ReaderContentProps {
   story: Story;
   chapter: Chapter;
   settings: ReaderSettings;
-  readingProgressPercent: number;
 }
 
 export const ReaderContent: React.FC<ReaderContentProps> = ({
   story,
   chapter,
   settings,
-  readingProgressPercent,
 }) => {
   const getFontFamilyClass = () => {
     switch (settings.fontFamily) {
@@ -77,14 +75,6 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
 
   return (
     <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>
-      {/* Sticky Progress Bar on Top */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-black/10 dark:bg-white/10">
-        <div
-          className="h-full bg-gradient-to-r from-amber-500 to-red-500 transition-all duration-150"
-          style={{ width: `${readingProgressPercent}%` }}
-        />
-      </div>
-
       <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${getReaderWidthClass()}`}>
         {/* Chapter Header */}
         <div className="text-center pb-8 mb-8 border-b border-black/10 dark:border-white/10">
