@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Edit, Trash2, X, Plus, Minus,
-  BookOpen, ExternalLink, AlertTriangle
+  BookOpen, ExternalLink, AlertTriangle, RefreshCw
 } from "lucide-react";
 import { Chapter, Story, Volume } from "../../types/story";
 import { storyApi } from "../../api";
@@ -39,6 +39,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   const [editContent, setEditContent] = useState("");
   const [editActive, setEditActive] = useState(true);
   const [savingChapter, setSavingChapter] = useState(false);
+  const [isLoadingChapterContent, setIsLoadingChapterContent] = useState(false);
 
   const [deleteChapterTarget, setDeleteChapterTarget] = useState<Chapter | null>(null);
 
@@ -81,12 +82,28 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
     }
   };
 
-  const handleOpenEditChapter = (chapter: Chapter) => {
+  const handleOpenEditChapter = async (chapter: Chapter) => {
     setEditingChapter(chapter);
     setEditTitle(chapter.title);
     setEditNumber(chapter.number);
-    setEditContent(chapter.content);
+    setEditContent(chapter.content || "");
     setEditActive(chapter.isActive !== false);
+
+    // If chapter content is empty (e.g. lazy-loaded from subcollection), fetch full text from Cloud immediately!
+    if (!chapter.content || chapter.content.trim().length === 0) {
+      setIsLoadingChapterContent(true);
+      try {
+        const res = await storyApi.getChapter(storyId, chapter.id, true);
+        if (res.success && res.data?.content) {
+          setEditContent(res.data.content);
+          chapter.content = res.data.content;
+        }
+      } catch (err) {
+        console.error("Error fetching full chapter content:", err);
+      } finally {
+        setIsLoadingChapterContent(false);
+      }
+    }
   };
 
   const handleSaveChapter = async (e: React.FormEvent) => {
@@ -557,15 +574,24 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-700 mb-1">
-                  Nội dung chương
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-zinc-700">
+                    Nội dung chương
+                  </label>
+                  {isLoadingChapterContent && (
+                    <span className="text-[11px] text-zinc-500 font-medium animate-pulse flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Đang tải nội dung chương từ Cloud...</span>
+                    </span>
+                  )}
+                </div>
                 <textarea
                   rows={8}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 bg-zinc-50 text-xs font-serif leading-relaxed text-zinc-900"
-                  required
+                  placeholder={isLoadingChapterContent ? "Đang tải dữ liệu chương..." : "Nhập hoặc chỉnh sửa nội dung chương..."}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 bg-zinc-50 text-xs font-serif leading-relaxed text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  disabled={isLoadingChapterContent}
                 />
               </div>
 
@@ -579,8 +605,8 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={savingChapter}
-                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold shadow-sm"
+                  disabled={savingChapter || isLoadingChapterContent}
+                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {savingChapter ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
