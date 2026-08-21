@@ -609,6 +609,19 @@ class StoryStorageService {
         story.updatedAt = new Date().toISOString();
         this.broadcastChange();
 
+        // 1. Direct subcollection write for instant Cloud sync
+        setDoc(
+          doc(db, "stories", storyId, "chapters", chapterId),
+          toFirestoreData({
+            ...updated,
+            volumeId: vol.id,
+            volumeTitle: vol.title,
+            storyId: story.id,
+          }),
+          { merge: true }
+        ).catch((err) => console.warn("Firestore direct subcollection update error:", err));
+
+        // 2. Save full story structure to Firestore
         this.saveStoryToFirestore(story).catch((err) =>
           console.error("Firestore updateChapter error:", err)
         );
