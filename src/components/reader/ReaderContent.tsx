@@ -105,6 +105,15 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
             </p>
           ))}
         </div>
+
+        {/* End of Chapter Divider */}
+        <div className="pt-12 pb-6 text-center select-none">
+          <div className="inline-flex items-center gap-3 text-xs opacity-50 font-medium">
+            <span className="w-10 h-[1px] bg-current opacity-40"></span>
+            <span>Hết {chapter.title}</span>
+            <span className="w-10 h-[1px] bg-current opacity-40"></span>
+          </div>
+        </div>
       </div>
     </div>
   );

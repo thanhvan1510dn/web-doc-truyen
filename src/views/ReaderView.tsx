@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Story, ReaderSettings } from '../types/story';
 import { ReaderHeader } from '../components/reader/ReaderHeader';
 import { ReaderContent } from '../components/reader/ReaderContent';
-import { ReaderFooter } from '../components/reader/ReaderFooter';
 import { ReaderToolbar } from '../components/reader/ReaderToolbar';
 import { ReaderTOCModal } from '../components/reader/ReaderTOCModal';
 import { MobileReaderBar } from '../components/reader/MobileReaderBar';
@@ -164,19 +163,6 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         />
       </main>
 
-      {/* Reader Footer with Pagination */}
-      <ReaderFooter
-        story={story}
-        chapter={currentChapter}
-        hasPrev={hasPrev}
-        hasNext={hasNext}
-        onPrevChapter={handlePrev}
-        onNextChapter={handleNext}
-        onBackToStory={onBackToStory}
-        onSelectChapter={onNavigateChapter}
-        onOpenTOC={() => setTocOpen(true)}
-        settings={settings}
-      />
 
       {/* TOC Drawer / Modal */}
       <ReaderTOCModal
