@@ -560,28 +560,25 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
             )}
           </div>
 
-          {/* Volumes & Chapters Tree */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+          {/* Volumes & Chapters Tree (Flat Minimalist) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">
               <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
-                Mục lục ({parseResult.volumes.length})
+                Mục lục bóc tách ({parseResult.volumes.length})
               </h4>
             </div>
 
-            <div className="space-y-2">
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
               {parseResult.volumes.map((volume) => {
                 const isExpanded = !!expandedVolIds[volume.number];
                 const isEditingThis = editingVolNumber === volume.number;
 
                 return (
-                  <div
-                    key={volume.number}
-                    className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm"
-                  >
-                    <div className="p-2.5 px-3 bg-zinc-50/80 dark:bg-zinc-800/40 flex items-center justify-between select-none text-xs group">
+                  <div key={volume.number} className="py-1">
+                    <div className="py-2 px-2 rounded-lg hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 flex items-center justify-between select-none text-xs group transition-colors">
                       <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                        <span className="w-5 h-5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-[11px] flex items-center justify-center font-mono flex-shrink-0">
-                          {volume.number}
+                        <span className="text-[11px] font-semibold text-zinc-400 flex-shrink-0">
+                          #{volume.number}
                         </span>
 
                         {isEditingThis ? (
@@ -610,9 +607,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span 
                               onClick={() => toggleVolumeCollapse(volume.number)}
-                              className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate cursor-pointer hover:underline"
+                              className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors truncate cursor-pointer"
                             >
                               {volume.title}
+                            </span>
+                            <span className="text-[11px] font-normal text-zinc-400 flex-shrink-0">
+                              ({volume.chapters.length})
                             </span>
                             <button
                               type="button"
@@ -658,21 +658,22 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
                       <div 
                         onClick={() => toggleVolumeCollapse(volume.number)}
-                        className="w-6 h-6 rounded-md bg-zinc-200/70 dark:bg-zinc-700/70 flex items-center justify-center font-bold text-xs text-zinc-700 dark:text-zinc-200 cursor-pointer"
+                        className="text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 p-1 flex items-center justify-center cursor-pointer transition-colors"
                       >
                         {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
+                      <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 dark:border-zinc-800 ml-3 my-1">
                         {volume.chapters.map((chapter, idx) => (
                           <div
                             key={chapter.number + "-" + idx}
-                            className="p-2 px-3 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 group"
+                            className="px-2 py-1.5 rounded-lg flex items-center justify-between gap-2 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 group transition-colors"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <span className="font-normal text-zinc-700 dark:text-zinc-300 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
+                              <span className="font-normal text-xs text-zinc-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white truncate">
                                 {chapter.title}
                               </span>
                             </div>

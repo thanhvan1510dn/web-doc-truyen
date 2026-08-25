@@ -628,7 +628,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 pt-1">
               {story.volumes.map((volume, vIdx) => {
                 const isExpanded = !!expandedVolIds[volume.id];
                 const isBeingDragged = draggedVolIdx === vIdx;
@@ -652,18 +652,18 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                       e.preventDefault();
                       handleDropVolume(vIdx);
                     }}
-                    className={`rounded-2xl border bg-white overflow-hidden shadow-sm transition-all duration-150 ${
+                    className={`py-1.5 transition-all duration-150 ${
                       isBeingDragged
-                        ? "opacity-40 border-dashed border-zinc-400 scale-[0.99]"
+                        ? "opacity-30 bg-zinc-100 rounded-xl"
                         : isOver
-                        ? "border-zinc-900 ring-2 ring-zinc-900/10 shadow-md translate-y-[-2px]"
-                        : "border-zinc-200"
+                        ? "bg-zinc-100/90 rounded-xl ring-1 ring-zinc-900/10 shadow-xs"
+                        : ""
                     }`}
                   >
-                    {/* Volume Header */}
+                    {/* Compact Volume Header (Borderless & Flat) */}
                     <div
                       onClick={() => toggleVolCollapse(volume.id)}
-                      className="p-3 sm:p-4 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors group/vol"
+                      className="p-2 sm:px-2.5 rounded-xl flex items-center justify-between cursor-pointer select-none hover:bg-zinc-100/70 transition-colors group/vol"
                     >
                       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 mr-2">
                         {/* Drag Handle */}
@@ -679,14 +679,14 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                             setDragOverVolIdx(null);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200/80 transition-colors flex-shrink-0"
+                          className="cursor-grab active:cursor-grabbing p-1 rounded-md text-zinc-300 group-hover/vol:text-zinc-600 hover:bg-zinc-200/70 transition-colors flex-shrink-0"
                           title="Kéo thả để thay đổi vị trí Mục lục"
                         >
-                          <GripVertical className="w-4 h-4" />
+                          <GripVertical className="w-3.5 h-3.5" />
                         </div>
 
                         {/* Order badge */}
-                        <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 text-zinc-800 text-[11px] font-bold flex-shrink-0">
+                        <span className="text-[11px] font-semibold text-zinc-400 flex-shrink-0">
                           #{vIdx + 1}
                         </span>
 
@@ -725,11 +725,11 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                           </form>
                         ) : (
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <h4 className="font-bold text-sm sm:text-base text-zinc-900 truncate">
+                            <h4 className="font-semibold text-xs sm:text-sm text-zinc-900 group-hover/vol:text-black transition-colors truncate">
                               {volume.title || `Mục lục ${vIdx + 1}`}
                             </h4>
-                            <span className="text-[11px] font-semibold text-zinc-400 flex-shrink-0">
-                              ({volume.chapters.length} chương)
+                            <span className="text-[11px] font-normal text-zinc-400 flex-shrink-0">
+                              ({volume.chapters.length})
                             </span>
                             <button
                               type="button"
@@ -737,7 +737,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                               className="p-1 rounded text-zinc-400 hover:text-zinc-900 opacity-0 group-hover/vol:opacity-100 transition-opacity"
                               title="Đổi tên Mục lục"
                             >
-                              <Edit className="w-3.5 h-3.5" />
+                              <Edit className="w-3 h-3" />
                             </button>
                           </div>
                         )}
@@ -746,12 +746,12 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                       {/* Action buttons on Volume Header */}
                       <div className="flex items-center gap-1 sm:gap-1.5 text-xs text-zinc-500 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         {/* Move Up / Down Buttons */}
-                        <div className="flex items-center bg-white border border-zinc-200 rounded-lg p-0.5 shadow-2xs">
+                        <div className="flex items-center opacity-0 group-hover/vol:opacity-100 transition-opacity">
                           <button
                             type="button"
                             disabled={vIdx === 0}
                             onClick={(e) => handleMoveVolume(vIdx, vIdx - 1, e)}
-                            className="p-1 rounded hover:bg-zinc-100 text-zinc-600 disabled:opacity-20 disabled:hover:bg-transparent"
+                            className="p-1 rounded hover:bg-zinc-200/70 text-zinc-500 hover:text-zinc-900 disabled:opacity-10 disabled:hover:bg-transparent"
                             title="Di chuyển lên trên"
                           >
                             <ChevronUp className="w-3.5 h-3.5" />
@@ -760,7 +760,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                             type="button"
                             disabled={vIdx === story.volumes.length - 1}
                             onClick={(e) => handleMoveVolume(vIdx, vIdx + 1, e)}
-                            className="p-1 rounded hover:bg-zinc-100 text-zinc-600 disabled:opacity-20 disabled:hover:bg-transparent"
+                            className="p-1 rounded hover:bg-zinc-200/70 text-zinc-500 hover:text-zinc-900 disabled:opacity-10 disabled:hover:bg-transparent"
                             title="Di chuyển xuống dưới"
                           >
                             <ChevronDown className="w-3.5 h-3.5" />
@@ -774,27 +774,27 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                             e.stopPropagation();
                             setDeleteVolumeTarget(volume);
                           }}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover/vol:opacity-100 transition-opacity"
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover/vol:opacity-100 transition-opacity"
                           title="Xoá cả mục lục này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Toggle Expand */}
+                        {/* Toggle Expand Icon */}
                         <span 
                           onClick={() => toggleVolCollapse(volume.id)}
-                          className="w-7 h-7 rounded-lg bg-zinc-200/70 hover:bg-zinc-300/70 flex items-center justify-center font-bold text-xs text-zinc-700 cursor-pointer transition-colors"
+                          className="text-zinc-400 group-hover/vol:text-zinc-700 p-1 flex items-center justify-center cursor-pointer transition-colors"
                         >
                           {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                         </span>
                       </div>
                     </div>
 
-                    {/* Chapters List with Drag & Drop */}
+                    {/* Compact Chapters List with Drag & Drop */}
                     {isExpanded && (
-                      <div className="divide-y divide-zinc-100 text-xs">
+                      <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 ml-3 my-1">
                         {volume.chapters.length === 0 ? (
-                          <div className="p-6 text-center text-zinc-400 italic">
+                          <div className="py-2 px-2 text-zinc-400 text-xs italic">
                             Chưa có chương nào trong mục lục này.
                           </div>
                         ) : (
@@ -821,12 +821,12 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                   e.preventDefault();
                                   handleDropChapter(volume.id, cIdx);
                                 }}
-                                className={`p-2.5 sm:p-3 px-3 sm:px-4 flex items-center justify-between gap-2.5 transition-all duration-100 group ${
+                                className={`px-2 py-1.5 rounded-lg flex items-center justify-between gap-2 transition-all duration-100 group ${
                                   isChapBeingDragged
                                     ? "opacity-30 bg-zinc-100"
                                     : isChapOver
                                     ? "bg-zinc-100 border-t-2 border-zinc-900"
-                                    : "hover:bg-zinc-50"
+                                    : "hover:bg-zinc-100/70"
                                 }`}
                               >
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -842,22 +842,20 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                       setDraggedChap(null);
                                       setDragOverChap(null);
                                     }}
-                                    className="cursor-grab active:cursor-grabbing p-1 rounded text-zinc-300 group-hover:text-zinc-600 hover:bg-zinc-200/60 transition-colors flex-shrink-0"
+                                    className="cursor-grab active:cursor-grabbing p-0.5 rounded text-zinc-300 group-hover:text-zinc-600 hover:bg-zinc-200/60 transition-colors flex-shrink-0"
                                     title="Kéo thả để đổi thứ tự chương"
                                   >
-                                    <GripVertical className="w-3.5 h-3.5" />
+                                    <GripVertical className="w-3 h-3" />
                                   </div>
 
-                                  <span className="font-semibold text-zinc-400 text-[11px] w-6 flex-shrink-0">
-                                    #{cIdx + 1}
-                                  </span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 flex-shrink-0" />
 
-                                  <span className="font-medium text-zinc-900 truncate">
+                                  <span className="font-normal text-xs text-zinc-800 hover:text-black truncate">
                                     {chapter.title}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                                <div className="flex items-center gap-1 flex-shrink-0">
                                   {/* Chapter Up/Down quick buttons */}
                                   <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
@@ -867,7 +865,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                       className="p-1 text-zinc-400 hover:text-zinc-900 disabled:opacity-10"
                                       title="Lên trên"
                                     >
-                                      <ChevronUp className="w-3.5 h-3.5" />
+                                      <ChevronUp className="w-3 h-3" />
                                     </button>
                                     <button
                                       type="button"
@@ -876,7 +874,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                       className="p-1 text-zinc-400 hover:text-zinc-900 disabled:opacity-10"
                                       title="Xuống dưới"
                                     >
-                                      <ChevronDown className="w-3.5 h-3.5" />
+                                      <ChevronDown className="w-3 h-3" />
                                     </button>
                                   </div>
 
@@ -884,10 +882,10 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleToggleChapterStatus(chapter)}
-                                    className={"px-2 py-0.5 rounded text-[10px] font-bold transition-colors " + (
+                                    className={"px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors " + (
                                       isChapActive
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                                        : "bg-zinc-100 text-zinc-500 border border-zinc-200"
+                                        ? "text-emerald-700 hover:bg-emerald-50"
+                                        : "text-zinc-400 hover:bg-zinc-100 line-through"
                                     )}
                                     title="Bật / Tắt hiển thị chương này"
                                   >
@@ -899,10 +897,10 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => onReadChapterOnWeb(story.id, chapter.id)}
-                                      className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
+                                      className="p-1 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
                                       title="Mở đọc trên Web"
                                     >
-                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      <ExternalLink className="w-3 h-3" />
                                     </button>
                                   )}
 
@@ -910,20 +908,20 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditChapter(chapter)}
-                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
+                                    className="p-1 rounded text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
                                     title="Sửa nội dung"
                                   >
-                                    <Edit className="w-3.5 h-3.5" />
+                                    <Edit className="w-3 h-3" />
                                   </button>
 
                                   {/* Delete Chapter */}
                                   <button
                                     type="button"
                                     onClick={() => setDeleteChapterTarget(chapter)}
-                                    className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                                    className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50"
                                     title="Xoá chương"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
                                 </div>
                               </div>
