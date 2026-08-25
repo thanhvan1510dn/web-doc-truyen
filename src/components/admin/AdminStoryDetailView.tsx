@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   Edit, Trash2, X, Plus, Minus,
-  BookOpen, ExternalLink, AlertTriangle, RefreshCw
+  BookOpen, ExternalLink, AlertTriangle, RefreshCw,
+  GripVertical, ChevronUp, ChevronDown, Check, FolderPlus
 } from "lucide-react";
 import { Chapter, Story, Volume } from "../../types/story";
 import { storyApi } from "../../api";
@@ -28,6 +29,20 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [activeSubTab, setActiveSubTab] = useState<"chapters" | "pdf-upload" | "manual-upload" | "info">(initialTab);
   const [expandedVolIds, setExpandedVolIds] = useState<Record<string, boolean>>({});
+
+  // Reorder & Drag Drop states for Volumes (Mục lục)
+  const [draggedVolIdx, setDraggedVolIdx] = useState<number | null>(null);
+  const [dragOverVolIdx, setDragOverVolIdx] = useState<number | null>(null);
+
+  // Reorder & Drag Drop states for Chapters
+  const [draggedChap, setDraggedChap] = useState<{ volId: string; chapIdx: number } | null>(null);
+  const [dragOverChap, setDragOverChap] = useState<{ volId: string; chapIdx: number } | null>(null);
+
+  // Edit / Add Volume inline
+  const [editingVolId, setEditingVolId] = useState<string | null>(null);
+  const [editingVolTitle, setEditingVolTitle] = useState("");
+  const [isAddingVol, setIsAddingVol] = useState(false);
+  const [newVolTitle, setNewVolTitle] = useState("");
 
   // Edit Story Modal state
   const [isEditStoryModalOpen, setIsEditStoryModalOpen] = useState(false);
@@ -152,6 +167,148 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
     }
   };
 
+  // Reorder Volume Drag & Drop handler
+  const handleDropVolume = async (targetIdx: number) => {
+    if (draggedVolIdx === null || draggedVolIdx === targetIdx || !story) {
+      setDraggedVolIdx(null);
+      setDragOverVolIdx(null);
+      return;
+    }
+    const newVolumes = [...story.volumes];
+    const [movedVol] = newVolumes.splice(draggedVolIdx, 1);
+    newVolumes.splice(targetIdx, 0, movedVol);
+    newVolumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
+
+    setStory({ ...story, volumes: newVolumes });
+    setDraggedVolIdx(null);
+    setDragOverVolIdx(null);
+
+    const res = await storyApi.reorderVolumes(story.id, newVolumes.map((v) => v.id));
+    if (res.success) {
+      toast.success(`Đã đổi vị trí: ${movedVol.title || 'Mục lục'}`);
+    } else {
+      toast.error("Không thể lưu thứ tự mục lục");
+      loadStory();
+    }
+  };
+
+  // Move Volume via Up/Down buttons
+  const handleMoveVolume = async (fromIdx: number, toIdx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!story || toIdx < 0 || toIdx >= story.volumes.length || fromIdx === toIdx) return;
+    const newVolumes = [...story.volumes];
+    const [movedVol] = newVolumes.splice(fromIdx, 1);
+    newVolumes.splice(toIdx, 0, movedVol);
+    newVolumes.forEach((v, idx) => {
+      v.number = idx + 1;
+    });
+
+    setStory({ ...story, volumes: newVolumes });
+
+    const res = await storyApi.reorderVolumes(story.id, newVolumes.map((v) => v.id));
+    if (res.success) {
+      toast.success(`Đã di chuyển: ${movedVol.title || 'Mục lục'}`);
+    } else {
+      toast.error("Không thể lưu thứ tự");
+      loadStory();
+    }
+  };
+
+  // Reorder Chapter Drag & Drop handler
+  const handleDropChapter = async (targetVolId: string, targetChapIdx: number) => {
+    if (!story || !draggedChap || (draggedChap.volId === targetVolId && draggedChap.chapIdx === targetChapIdx)) {
+      setDraggedChap(null);
+      setDragOverChap(null);
+      return;
+    }
+    const vol = story.volumes.find((v) => v.id === targetVolId);
+    if (!vol) return;
+
+    if (draggedChap.volId === targetVolId) {
+      const newChapters = [...vol.chapters];
+      const [movedChap] = newChapters.splice(draggedChap.chapIdx, 1);
+      newChapters.splice(targetChapIdx, 0, movedChap);
+      newChapters.forEach((c, idx) => {
+        c.number = idx + 1;
+      });
+      vol.chapters = newChapters;
+      setStory({ ...story });
+      setDraggedChap(null);
+      setDragOverChap(null);
+
+      const res = await storyApi.reorderChapters(story.id, targetVolId, newChapters.map((c) => c.id));
+      if (res.success) {
+        toast.success(`Đã đổi thứ tự: ${movedChap.title}`);
+      } else {
+        loadStory();
+      }
+    }
+  };
+
+  // Move Chapter via Up/Down buttons
+  const handleMoveChapter = async (volId: string, fromIdx: number, toIdx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!story) return;
+    const vol = story.volumes.find((v) => v.id === volId);
+    if (!vol || toIdx < 0 || toIdx >= vol.chapters.length || fromIdx === toIdx) return;
+
+    const newChapters = [...vol.chapters];
+    const [movedChap] = newChapters.splice(fromIdx, 1);
+    newChapters.splice(toIdx, 0, movedChap);
+    newChapters.forEach((c, idx) => {
+      c.number = idx + 1;
+    });
+    vol.chapters = newChapters;
+    setStory({ ...story });
+
+    const res = await storyApi.reorderChapters(story.id, volId, newChapters.map((c) => c.id));
+    if (res.success) {
+      toast.success(`Đã di chuyển: ${movedChap.title}`);
+    } else {
+      loadStory();
+    }
+  };
+
+  // Inline rename volume
+  const handleStartEditVolume = (vol: Volume, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingVolId(vol.id);
+    setEditingVolTitle(vol.title || "");
+  };
+
+  const handleSaveVolumeTitle = async (volId: string, e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!story || !editingVolTitle.trim()) {
+      setEditingVolId(null);
+      return;
+    }
+    const res = await storyApi.updateVolume(story.id, volId, editingVolTitle.trim());
+    if (res.success) {
+      toast.success("Đã đổi tên Mục lục thành công!");
+      setEditingVolId(null);
+      loadStory();
+    } else {
+      toast.error("Không thể đổi tên mục lục");
+    }
+  };
+
+  // Add new volume
+  const handleAddNewVolume = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!story || !newVolTitle.trim()) return;
+    const res = await storyApi.addVolume(story.id, newVolTitle.trim());
+    if (res.success) {
+      toast.success(`Đã thêm Mục lục "${newVolTitle.trim()}"!`);
+      setNewVolTitle("");
+      setIsAddingVol(false);
+      loadStory();
+    } else {
+      toast.error("Không thể thêm mục lục");
+    }
+  };
+
   if (loading || !story) {
     return (
       <div className="py-20 text-center text-zinc-400">
@@ -239,7 +396,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
               </h2>
               {story.hot && (
                 <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-white text-[10px] font-bold">
-                  HOT
+                  Nổi bật
                 </span>
               )}
             </div>
@@ -329,8 +486,8 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
           {/* Warning */}
           {story.warning && (
-            <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs text-amber-900 space-y-1">
-              <span className="font-bold uppercase tracking-wider text-[11px] text-amber-800">Warning (Cảnh báo trước khi đọc):</span>
+            <div className="p-3.5 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-800 space-y-1">
+              <span className="font-bold uppercase tracking-wider text-[11px] text-stone-900">Lưu ý / Cảnh báo độc giả:</span>
               <p className="leading-relaxed">{story.warning}</p>
             </div>
           )}
@@ -369,14 +526,82 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
 
       {activeSubTab === "chapters" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base text-zinc-900">
-              Mục lục
-            </h3>
-            <span className="text-xs text-zinc-500 font-medium">
-              Tổng cộng: {story.volumes.length} mục lục
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-zinc-100">
+            <div>
+              <h3 className="font-bold text-base text-zinc-900">
+                Mục lục tác phẩm
+              </h3>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                Kéo thả biểu tượng <b>⠿</b> hoặc bấm mũi tên <b>↑ ↓</b> để thay đổi thứ tự hiển thị.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const allExpanded = story.volumes.every((v) => expandedVolIds[v.id]);
+                  const newState: Record<string, boolean> = {};
+                  story.volumes.forEach((v) => {
+                    newState[v.id] = !allExpanded;
+                  });
+                  setExpandedVolIds(newState);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-semibold shadow-sm transition-all"
+              >
+                {story.volumes.every((v) => expandedVolIds[v.id]) ? "Thu gọn tất cả" : "Mở rộng tất cả"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAddingVol(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+                <span>Thêm Mục lục</span>
+              </button>
+            </div>
           </div>
+
+          {/* Form Thêm Mục lục mới */}
+          {isAddingVol && (
+            <form onSubmit={handleAddNewVolume} className="p-4 rounded-2xl border border-zinc-300 bg-zinc-50/80 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-zinc-900 flex items-center gap-1.5">
+                  <FolderPlus className="w-4 h-4 text-zinc-700" />
+                  <span>Tạo Mục lục mới</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingVol(false);
+                    setNewVolTitle("");
+                  }}
+                  className="p-1 text-zinc-400 hover:text-zinc-700 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newVolTitle}
+                  onChange={(e) => setNewVolTitle(e.target.value)}
+                  placeholder={`Ví dụ: Mục lục ${story.volumes.length + 1} - Phần mới...`}
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-zinc-300 bg-white text-xs font-semibold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-bold shadow-sm flex items-center gap-1"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Lưu Mục lục</span>
+                </button>
+              </div>
+            </form>
+          )}
 
           {story.volumes.length === 0 ? (
             <div className="p-12 rounded-2xl bg-white border border-zinc-200 text-center space-y-3 shadow-sm">
@@ -406,108 +631,305 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
             <div className="space-y-3">
               {story.volumes.map((volume, vIdx) => {
                 const isExpanded = !!expandedVolIds[volume.id];
+                const isBeingDragged = draggedVolIdx === vIdx;
+                const isOver = dragOverVolIdx === vIdx && draggedVolIdx !== vIdx;
 
                 return (
                   <div
                     key={volume.id || vIdx}
-                    className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (draggedVolIdx !== null && dragOverVolIdx !== vIdx) {
+                        setDragOverVolIdx(vIdx);
+                      }
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverVolIdx === vIdx) {
+                        setDragOverVolIdx(null);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDropVolume(vIdx);
+                    }}
+                    className={`rounded-2xl border bg-white overflow-hidden shadow-sm transition-all duration-150 ${
+                      isBeingDragged
+                        ? "opacity-40 border-dashed border-zinc-400 scale-[0.99]"
+                        : isOver
+                        ? "border-zinc-900 ring-2 ring-zinc-900/10 shadow-md translate-y-[-2px]"
+                        : "border-zinc-200"
+                    }`}
                   >
                     {/* Volume Header */}
                     <div
                       onClick={() => toggleVolCollapse(volume.id)}
-                      className="p-4 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors group/vol"
+                      className="p-3 sm:p-4 bg-zinc-50 flex items-center justify-between cursor-pointer select-none border-b border-zinc-100 hover:bg-zinc-100/70 transition-colors group/vol"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <h4 className="font-bold text-sm sm:text-base text-zinc-900 truncate">
-                          {volume.title || `Mục lục ${vIdx + 1}`}
-                        </h4>
+                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 mr-2">
+                        {/* Drag Handle */}
+                        <div
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            e.dataTransfer.setData("text/plain", volume.id);
+                            setDraggedVolIdx(vIdx);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedVolIdx(null);
+                            setDragOverVolIdx(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200/80 transition-colors flex-shrink-0"
+                          title="Kéo thả để thay đổi vị trí Mục lục"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+
+                        {/* Order badge */}
+                        <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 text-zinc-800 text-[11px] font-bold flex-shrink-0">
+                          #{vIdx + 1}
+                        </span>
+
+                        {/* Volume Title (Inline Edit support) */}
+                        {editingVolId === volume.id ? (
+                          <form
+                            onSubmit={(e) => handleSaveVolumeTitle(volume.id, e)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1.5 flex-1 max-w-sm"
+                          >
+                            <input
+                              type="text"
+                              value={editingVolTitle}
+                              onChange={(e) => setEditingVolTitle(e.target.value)}
+                              className="px-2.5 py-1 rounded-lg border border-zinc-300 bg-white text-xs font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-400 w-full"
+                              autoFocus
+                            />
+                            <button
+                              type="submit"
+                              className="p-1 rounded-lg bg-zinc-900 text-white hover:bg-black"
+                              title="Lưu tên"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingVolId(null);
+                              }}
+                              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700"
+                              title="Huỷ"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </form>
+                        ) : (
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <h4 className="font-bold text-sm sm:text-base text-zinc-900 truncate">
+                              {volume.title || `Mục lục ${vIdx + 1}`}
+                            </h4>
+                            <span className="text-[11px] font-semibold text-zinc-400 flex-shrink-0">
+                              ({volume.chapters.length} chương)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleStartEditVolume(volume, e)}
+                              className="p-1 rounded text-zinc-400 hover:text-zinc-900 opacity-0 group-hover/vol:opacity-100 transition-opacity"
+                              title="Đổi tên Mục lục"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      {/* Action buttons on Volume Header */}
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-xs text-zinc-500 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {/* Move Up / Down Buttons */}
+                        <div className="flex items-center bg-white border border-zinc-200 rounded-lg p-0.5 shadow-2xs">
+                          <button
+                            type="button"
+                            disabled={vIdx === 0}
+                            onClick={(e) => handleMoveVolume(vIdx, vIdx - 1, e)}
+                            className="p-1 rounded hover:bg-zinc-100 text-zinc-600 disabled:opacity-20 disabled:hover:bg-transparent"
+                            title="Di chuyển lên trên"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={vIdx === story.volumes.length - 1}
+                            onClick={(e) => handleMoveVolume(vIdx, vIdx + 1, e)}
+                            className="p-1 rounded hover:bg-zinc-100 text-zinc-600 disabled:opacity-20 disabled:hover:bg-transparent"
+                            title="Di chuyển xuống dưới"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Delete Volume */}
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteVolumeTarget(volume);
                           }}
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover/vol:opacity-100 transition-opacity"
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover/vol:opacity-100 transition-opacity"
                           title="Xoá cả mục lục này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-6 h-6 rounded-md bg-zinc-200/70 flex items-center justify-center font-bold text-xs text-zinc-700">
+
+                        {/* Toggle Expand */}
+                        <span 
+                          onClick={() => toggleVolCollapse(volume.id)}
+                          className="w-7 h-7 rounded-lg bg-zinc-200/70 hover:bg-zinc-300/70 flex items-center justify-center font-bold text-xs text-zinc-700 cursor-pointer transition-colors"
+                        >
                           {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                         </span>
                       </div>
                     </div>
 
-                    {/* Chapters List */}
+                    {/* Chapters List with Drag & Drop */}
                     {isExpanded && (
                       <div className="divide-y divide-zinc-100 text-xs">
-                        {volume.chapters.map((chapter) => {
-                          const isChapActive = chapter.isActive !== false;
+                        {volume.chapters.length === 0 ? (
+                          <div className="p-6 text-center text-zinc-400 italic">
+                            Chưa có chương nào trong mục lục này.
+                          </div>
+                        ) : (
+                          volume.chapters.map((chapter, cIdx) => {
+                            const isChapActive = chapter.isActive !== false;
+                            const isChapBeingDragged = draggedChap?.volId === volume.id && draggedChap?.chapIdx === cIdx;
+                            const isChapOver = dragOverChap?.volId === volume.id && dragOverChap?.chapIdx === cIdx && !isChapBeingDragged;
 
-                          return (
-                            <div
-                              key={chapter.id}
-                              className="p-3 px-4 flex items-center justify-between gap-3 hover:bg-zinc-50 transition-colors group"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="font-normal text-zinc-800 truncate">
-                                  {chapter.title}
-                                </span>
-                              </div>
+                            return (
+                              <div
+                                key={chapter.id || cIdx}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  if (draggedChap && (dragOverChap?.volId !== volume.id || dragOverChap?.chapIdx !== cIdx)) {
+                                    setDragOverChap({ volId: volume.id, chapIdx: cIdx });
+                                  }
+                                }}
+                                onDragLeave={() => {
+                                  if (dragOverChap?.volId === volume.id && dragOverChap?.chapIdx === cIdx) {
+                                    setDragOverChap(null);
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  handleDropChapter(volume.id, cIdx);
+                                }}
+                                className={`p-2.5 sm:p-3 px-3 sm:px-4 flex items-center justify-between gap-2.5 transition-all duration-100 group ${
+                                  isChapBeingDragged
+                                    ? "opacity-30 bg-zinc-100"
+                                    : isChapOver
+                                    ? "bg-zinc-100 border-t-2 border-zinc-900"
+                                    : "hover:bg-zinc-50"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {/* Chapter Drag Handle */}
+                                  <div
+                                    draggable={true}
+                                    onDragStart={(e) => {
+                                      e.stopPropagation();
+                                      e.dataTransfer.setData("text/plain", chapter.id);
+                                      setDraggedChap({ volId: volume.id, chapIdx: cIdx });
+                                    }}
+                                    onDragEnd={() => {
+                                      setDraggedChap(null);
+                                      setDragOverChap(null);
+                                    }}
+                                    className="cursor-grab active:cursor-grabbing p-1 rounded text-zinc-300 group-hover:text-zinc-600 hover:bg-zinc-200/60 transition-colors flex-shrink-0"
+                                    title="Kéo thả để đổi thứ tự chương"
+                                  >
+                                    <GripVertical className="w-3.5 h-3.5" />
+                                  </div>
 
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                {/* Status Toggle */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleChapterStatus(chapter)}
-                                  className={"px-2 py-0.5 rounded text-[10px] font-semibold transition-colors " + (
-                                    isChapActive
-                                      ? "bg-emerald-50 text-emerald-700"
-                                      : "bg-zinc-100 text-zinc-500"
-                                  )}
-                                  title="Bật / Tắt hiển thị chương này"
-                                >
-                                  {isChapActive ? "Hiện" : "Ẩn"}
-                                </button>
+                                  <span className="font-semibold text-zinc-400 text-[11px] w-6 flex-shrink-0">
+                                    #{cIdx + 1}
+                                  </span>
 
-                                {/* Read on User Web */}
-                                {onReadChapterOnWeb && (
+                                  <span className="font-medium text-zinc-900 truncate">
+                                    {chapter.title}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                                  {/* Chapter Up/Down quick buttons */}
+                                  <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      type="button"
+                                      disabled={cIdx === 0}
+                                      onClick={(e) => handleMoveChapter(volume.id, cIdx, cIdx - 1, e)}
+                                      className="p-1 text-zinc-400 hover:text-zinc-900 disabled:opacity-10"
+                                      title="Lên trên"
+                                    >
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={cIdx === volume.chapters.length - 1}
+                                      onClick={(e) => handleMoveChapter(volume.id, cIdx, cIdx + 1, e)}
+                                      className="p-1 text-zinc-400 hover:text-zinc-900 disabled:opacity-10"
+                                      title="Xuống dưới"
+                                    >
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+
+                                  {/* Status Toggle */}
                                   <button
                                     type="button"
-                                    onClick={() => onReadChapterOnWeb(story.id, chapter.id)}
-                                    className="p-1 rounded text-zinc-400 hover:text-zinc-900"
-                                    title="Mở đọc trên Web"
+                                    onClick={() => handleToggleChapterStatus(chapter)}
+                                    className={"px-2 py-0.5 rounded text-[10px] font-bold transition-colors " + (
+                                      isChapActive
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                                        : "bg-zinc-100 text-zinc-500 border border-zinc-200"
+                                    )}
+                                    title="Bật / Tắt hiển thị chương này"
                                   >
-                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    {isChapActive ? "Hiện" : "Ẩn"}
                                   </button>
-                                )}
 
-                                {/* Edit Chapter */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditChapter(chapter)}
-                                  className="p-1 rounded text-zinc-400 hover:text-zinc-900"
-                                  title="Sửa nội dung"
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </button>
+                                  {/* Read on User Web */}
+                                  {onReadChapterOnWeb && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onReadChapterOnWeb(story.id, chapter.id)}
+                                      className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
+                                      title="Mở đọc trên Web"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
 
-                                {/* Delete Chapter */}
-                                <button
-                                  type="button"
-                                  onClick={() => setDeleteChapterTarget(chapter)}
-                                  className="p-1 rounded text-rose-400 hover:text-rose-600"
-                                  title="Xoá chương"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  {/* Edit Chapter */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditChapter(chapter)}
+                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100"
+                                    title="Sửa nội dung"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Delete Chapter */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteChapterTarget(chapter)}
+                                    className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                                    title="Xoá chương"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })
+                        )}
                       </div>
                     )}
                   </div>

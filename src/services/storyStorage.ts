@@ -545,6 +545,74 @@ class StoryStorageService {
     return true;
   }
 
+  public reorderVolumes(storyId: string, orderedVolumeIds: string[]): boolean {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return false;
+
+    const volumeMap = new Map(story.volumes.map((v) => [v.id, v]));
+    const newVolumes: Volume[] = [];
+
+    orderedVolumeIds.forEach((id, idx) => {
+      const vol = volumeMap.get(id);
+      if (vol) {
+        vol.number = idx + 1;
+        newVolumes.push(vol);
+        volumeMap.delete(id);
+      }
+    });
+
+    // Append any remaining volumes
+    volumeMap.forEach((vol) => {
+      vol.number = newVolumes.length + 1;
+      newVolumes.push(vol);
+    });
+
+    story.volumes = newVolumes;
+    story.updatedAt = new Date().toISOString();
+    this.broadcastChange();
+
+    this.saveStoryToFirestore(story).catch((err) =>
+      console.error("Firestore reorderVolumes error:", err)
+    );
+
+    return true;
+  }
+
+  public reorderChapters(storyId: string, volumeId: string, orderedChapterIds: string[]): boolean {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return false;
+
+    const vol = story.volumes.find((v) => v.id === volumeId);
+    if (!vol) return false;
+
+    const chapterMap = new Map(vol.chapters.map((c) => [c.id, c]));
+    const newChapters: Chapter[] = [];
+
+    orderedChapterIds.forEach((id, idx) => {
+      const ch = chapterMap.get(id);
+      if (ch) {
+        ch.number = idx + 1;
+        newChapters.push(ch);
+        chapterMap.delete(id);
+      }
+    });
+
+    chapterMap.forEach((ch) => {
+      ch.number = newChapters.length + 1;
+      newChapters.push(ch);
+    });
+
+    vol.chapters = newChapters;
+    story.updatedAt = new Date().toISOString();
+    this.broadcastChange();
+
+    this.saveStoryToFirestore(story).catch((err) =>
+      console.error("Firestore reorderChapters error:", err)
+    );
+
+    return true;
+  }
+
   public createChapter(storyIdOrDto: string | CreateChapterDto, maybeDto?: CreateChapterDto): Chapter | null {
     const dto = typeof storyIdOrDto === "string" ? maybeDto! : storyIdOrDto;
     const storyId = typeof storyIdOrDto === "string" ? storyIdOrDto : dto.storyId;

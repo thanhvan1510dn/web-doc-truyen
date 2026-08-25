@@ -270,6 +270,7 @@ export const storyApi = {
     }
   },
 
+
   /**
    * [Admin] Delete an entire volume and all its chapters
    */
@@ -286,6 +287,46 @@ export const storyApi = {
         success: false,
         data: false,
         error: error.message || "Failed to delete volume",
+      };
+    }
+  },
+
+  /**
+   * [Admin] Reorder volumes
+   */
+  async reorderVolumes(storyId: string, orderedVolumeIds: string[]): Promise<ApiResponse<boolean>> {
+    try {
+      const ok = storyStorage.reorderVolumes(storyId, orderedVolumeIds);
+      return {
+        success: ok,
+        data: ok,
+        message: ok ? "Đã cập nhật thứ tự mục lục" : "Không thể đổi thứ tự mục lục",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: false,
+        error: error.message || "Failed to reorder volumes",
+      };
+    }
+  },
+
+  /**
+   * [Admin] Reorder chapters within a volume
+   */
+  async reorderChapters(storyId: string, volumeId: string, orderedChapterIds: string[]): Promise<ApiResponse<boolean>> {
+    try {
+      const ok = storyStorage.reorderChapters(storyId, volumeId, orderedChapterIds);
+      return {
+        success: ok,
+        data: ok,
+        message: ok ? "Đã cập nhật thứ tự chương" : "Không thể đổi thứ tự chương",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: false,
+        error: error.message || "Failed to reorder chapters",
       };
     }
   },
