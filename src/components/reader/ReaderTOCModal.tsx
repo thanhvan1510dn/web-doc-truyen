@@ -66,8 +66,8 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
           </div>
         </div>
 
-        {/* Volume & Chapter List */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+        {/* Volume & Chapter List (Flat Minimalist) */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {story.volumes.map((volume) => {
             const filteredChapters = volume.chapters.filter(
               (c) =>
@@ -83,30 +83,32 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
             const isExpanded = normalizedQuery !== '' || !!expandedVolumes[volume.id];
 
             return (
-              <div 
-                key={volume.id}
-                className="rounded-2xl border border-gray-200/80 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800/40 shadow-sm"
-              >
-                {/* Volume Header Banner */}
+              <div key={volume.id} className="py-1">
+                {/* Compact Volume Header Banner */}
                 <div
                   onClick={() => toggleVolume(volume.id)}
-                  className="flex items-center justify-between p-3.5 sm:p-4 bg-zinc-100/90 dark:bg-zinc-800/90 cursor-pointer hover:bg-zinc-200/90 dark:hover:bg-zinc-700/90 transition-colors select-none gap-3"
+                  className="flex items-center justify-between py-2 px-2 rounded-lg cursor-pointer hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition-colors select-none group"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-slate-100 leading-snug">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors truncate">
                       {volume.title || `Mục lục ${volume.number}`}
                     </span>
+                    <span className="text-[11px] text-zinc-400 font-normal flex-shrink-0">
+                      ({filteredChapters.length})
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2.5 flex-shrink-0">
-                    <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-slate-300">
-                      {isExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                    </div>
+                  <div className="flex items-center text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors flex-shrink-0 ml-2">
+                    {isExpanded ? (
+                      <Minus className="w-3.5 h-3.5" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
                   </div>
                 </div>
 
                 {/* Chapter items */}
                 {isExpanded && (
-                  <div className="divide-y divide-gray-100 dark:divide-slate-800">
+                  <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 dark:border-zinc-800 ml-2.5 my-1">
                     {filteredChapters.map((chapter) => {
                       const isCurrent = currentChapterId === chapter.id;
 
@@ -117,17 +119,17 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                             onSelectChapter(chapter.id);
                             onClose();
                           }}
-                          className={`flex items-center justify-between px-3.5 py-3 transition-colors cursor-pointer text-xs ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-md transition-colors cursor-pointer text-xs ${
                             isCurrent
-                              ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-bold rounded-lg my-1 mx-2'
-                              : 'hover:bg-gray-50 dark:hover:bg-slate-800/80 text-gray-700 dark:text-slate-300'
+                              ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
+                              : 'hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-normal'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate pr-2">
                             {isCurrent ? (
-                              <CheckCircle className="w-4 h-4 text-emerald-400 dark:text-emerald-600 flex-shrink-0" />
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 flex-shrink-0" />
                             ) : (
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-slate-600 flex-shrink-0" />
+                              <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
                             )}
                             <span className="truncate">{chapter.title}</span>
                           </div>

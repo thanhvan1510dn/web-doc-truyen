@@ -94,10 +94,10 @@ export const VolumeList: React.FC<VolumeListProps> = ({
         </div>
       </div>
 
-      {/* Grouped by Volumes */}
-      <div className="space-y-3 pt-1">
+      {/* Grouped by Volumes - Flat Minimalist List without Card Backgrounds or Heavy Borders */}
+      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 pt-1">
         {totalFilteredCount === 0 ? (
-          <div className="py-8 text-center text-xs sm:text-sm text-gray-400 dark:text-slate-500">
+          <div className="py-8 text-center text-xs sm:text-sm text-zinc-400 dark:text-zinc-500">
             Không tìm thấy chương nào phù hợp với từ khóa
           </div>
         ) : (
@@ -109,38 +109,40 @@ export const VolumeList: React.FC<VolumeListProps> = ({
             const isExpanded = !!searchChapterQuery || !!expandedVolumeIds[volume.id];
 
             return (
-              <div 
-                key={volume.id}
-                className="rounded-2xl border border-gray-200/80 dark:border-slate-700/70 overflow-hidden bg-white dark:bg-slate-800/40"
-              >
-                {/* Volume Header Banner */}
+              <div key={volume.id} className="py-1">
+                {/* Compact Volume Header (Borderless & Flat) */}
                 <div
                   onClick={() => toggleVolume(volume.id)}
-                  className="flex items-center justify-between p-4 bg-zinc-100/90 dark:bg-zinc-800/90 cursor-pointer hover:bg-zinc-200/90 dark:hover:bg-zinc-700/90 transition-colors select-none gap-3"
+                  className="flex items-center justify-between py-2.5 px-2 rounded-lg cursor-pointer hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition-colors select-none group"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 leading-snug">
+                    <span className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors truncate">
                       {volume.title || `Mục lục ${volume.number}`}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 font-normal flex-shrink-0">
+                      ({volume.filteredChapters.length})
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="w-6 h-6 rounded-md bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 flex items-center justify-center font-bold text-xs">
-                      {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    </div>
+                  <div className="flex items-center text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors flex-shrink-0 ml-2">
+                    {isExpanded ? (
+                      <Minus className="w-3.5 h-3.5" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
                   </div>
                 </div>
 
-                {/* Chapter List */}
+                {/* Compact Chapters List */}
                 {isExpanded && (
-                  <div className="divide-y divide-gray-100 dark:divide-slate-800/80 bg-gray-50/40 dark:bg-slate-900/20">
+                  <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 dark:border-zinc-800 ml-3 my-1">
                     {volume.filteredChapters.map((chapter) => (
                       <div
                         key={chapter.id}
                         onClick={() => onSelectChapter(chapter.id)}
-                        className="flex items-center justify-between px-5 py-3 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer group text-xs sm:text-sm text-gray-800 dark:text-slate-200"
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                       >
-                        <span className="group-hover:text-black dark:group-hover:text-white transition-colors font-medium">
+                        <span className="font-normal truncate">
                           {chapter.title}
                         </span>
                       </div>
