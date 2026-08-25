@@ -814,33 +814,85 @@ class StoryStorageService {
     }
 
     const now = new Date().toISOString();
-    const existingVolCount = replaceExisting ? 0 : story.volumes.length;
-
-    const convertedVolumes: Volume[] = parsedVolumes.map((pv, vIdx) => {
-      const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
-      return {
-        id: volumeId,
-        number: existingVolCount + (pv.number || vIdx + 1),
-        title: pv.title,
-        chapters: pv.chapters.map((ch, cIdx) => ({
-          id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
-          number: ch.number || cIdx + 1,
-          title: ch.title,
-          wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
-          content: ch.content || "",
-          volumeId: volumeId,
-          volumeTitle: pv.title,
-          createdAt: now,
-          updatedAt: now,
-          isActive: true,
-        })),
-      };
-    });
 
     if (replaceExisting) {
+      // Ghi đè toàn bộ truyện
+      const convertedVolumes: Volume[] = parsedVolumes.map((pv, vIdx) => {
+        const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
+        return {
+          id: volumeId,
+          number: pv.number || vIdx + 1,
+          title: pv.title,
+          chapters: pv.chapters.map((ch, cIdx) => ({
+            id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
+            number: ch.number || cIdx + 1,
+            title: ch.title,
+            wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
+            content: ch.content || "",
+            volumeId: volumeId,
+            volumeTitle: pv.title,
+            createdAt: now,
+            updatedAt: now,
+            isActive: true,
+          })),
+        };
+      });
       story.volumes = convertedVolumes;
     } else {
-      story.volumes = [...story.volumes, ...convertedVolumes];
+      // Gộp thông minh: Nếu title mục lục mới trùng với title mục lục cũ thì đè nội dung lên mục lục cũ
+      const currentVolumes = [...story.volumes];
+
+      parsedVolumes.forEach((pv, vIdx) => {
+        const normalizedPvTitle = (pv.title || "").trim().toLowerCase();
+        
+        // Tìm mục lục cũ có tiêu đề trùng khớp
+        const existingVolIndex = currentVolumes.findIndex(
+          (v) => (v.title || "").trim().toLowerCase() === normalizedPvTitle && normalizedPvTitle.length > 0
+        );
+
+        if (existingVolIndex !== -1) {
+          // Ghi đè toàn bộ chương vào mục lục cũ đã trùng tên
+          const existingVol = currentVolumes[existingVolIndex];
+          const newChapters: Chapter[] = pv.chapters.map((ch, cIdx) => ({
+            id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
+            number: ch.number || cIdx + 1,
+            title: ch.title,
+            wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
+            content: ch.content || "",
+            volumeId: existingVol.id,
+            volumeTitle: pv.title || existingVol.title,
+            createdAt: now,
+            updatedAt: now,
+            isActive: true,
+          }));
+
+          existingVol.title = pv.title || existingVol.title;
+          existingVol.chapters = newChapters;
+        } else {
+          // Mục lục mới không trùng tên -> Thêm mới vào danh sách
+          const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
+          const newVol: Volume = {
+            id: volumeId,
+            number: currentVolumes.length + 1,
+            title: pv.title,
+            chapters: pv.chapters.map((ch, cIdx) => ({
+              id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
+              number: ch.number || cIdx + 1,
+              title: ch.title,
+              wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
+              content: ch.content || "",
+              volumeId: volumeId,
+              volumeTitle: pv.title,
+              createdAt: now,
+              updatedAt: now,
+              isActive: true,
+            })),
+          };
+          currentVolumes.push(newVol);
+        }
+      });
+
+      story.volumes = currentVolumes;
     }
 
     // Re-index all volumes sequentially 1..N and sort chapters in each volume
@@ -871,6 +923,15 @@ class StoryStorageService {
     },
     parsedVolumes: ParsedVolume[]
   ): Promise<Story> {
+    const normalizedNewTitle = (metadata.title || "").trim().toLowerCase();
+    const existingStory = this.cachedStories.find(
+      (s) => !s.isDeleted && s.title.trim().toLowerCase() === normalizedNewTitle
+    );
+    if (existingStory) {
+      const updated = await this.importParsedVolumes(existingStory.id, parsedVolumes, false);
+      if (updated) return updated;
+    }
+
     const now = new Date().toISOString();
     const storyId = "story_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
 

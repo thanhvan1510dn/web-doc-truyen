@@ -537,7 +537,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           className="text-zinc-900 focus:ring-0"
                         />
                         <span className={!replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>
-                          Gộp tiếp nối (Thêm vào sau các mục lục hiện có)
+                          Gộp thông minh (Đè nội dung lên mục lục trùng tên, thêm tiếp nối mục lục mới)
                         </span>
                       </label>
 
@@ -550,7 +550,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           className="text-zinc-900 focus:ring-0"
                         />
                         <span className={replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>
-                          Ghi đè (Thay thế toàn bộ nội dung)
+                          Ghi đè toàn bộ truyện (Xoá hết mục lục cũ)
                         </span>
                       </label>
                     </div>
