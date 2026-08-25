@@ -142,9 +142,12 @@ export const VolumeList: React.FC<VolumeListProps> = ({
                         onClick={() => onSelectChapter(chapter.id)}
                         className="flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                       >
-                        <span className="font-normal truncate">
-                          {chapter.title}
-                        </span>
+                        <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
+                          <span className="font-normal truncate">
+                            {chapter.title}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>

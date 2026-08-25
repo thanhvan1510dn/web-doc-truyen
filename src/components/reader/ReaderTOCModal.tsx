@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, BookOpen, Plus, Minus, CheckCircle } from 'lucide-react';
+import { X, Search, BookOpen, Plus, Minus } from 'lucide-react';
 import { Story } from '../../types/story';
 
 interface ReaderTOCModalProps {
@@ -119,20 +119,24 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                             onSelectChapter(chapter.id);
                             onClose();
                           }}
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-md transition-colors cursor-pointer text-xs ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs ${
                             isCurrent
-                              ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
-                              : 'hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-normal'
+                              ? 'bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-white'
+                              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 font-normal'
                           }`}
                         >
-                          <div className="flex items-center gap-2 truncate pr-2">
-                            {isCurrent ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 flex-shrink-0" />
-                            ) : (
-                              <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
-                            )}
+                          <div className="flex items-center gap-2 min-w-0 flex-1 truncate pr-2">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                              isCurrent ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-zinc-300 dark:bg-zinc-700'
+                            }`} />
                             <span className="truncate">{chapter.title}</span>
                           </div>
+
+                          {isCurrent && (
+                            <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 flex-shrink-0 ml-2">
+                              Đang đọc
+                            </span>
+                          )}
                         </div>
                       );
                     })}
