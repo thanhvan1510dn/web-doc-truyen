@@ -35,15 +35,25 @@ export const VolumeList: React.FC<VolumeListProps> = ({
       );
     }
 
-    const sortedChapters = [...filteredChapters].sort((a, b) =>
-      sortAsc ? a.number - b.number : b.number - a.number
-    );
+    const sortedChapters = [...filteredChapters].sort((a, b) => {
+      if (sortAsc) {
+        return a.number !== b.number
+          ? a.number - b.number
+          : a.title.localeCompare(b.title, 'vi', { numeric: true, sensitivity: 'base' });
+      } else {
+        return b.number !== a.number
+          ? b.number - a.number
+          : b.title.localeCompare(a.title, 'vi', { numeric: true, sensitivity: 'base' });
+      }
+    });
 
     return {
       ...volume,
       filteredChapters: sortedChapters,
     };
   });
+
+  const orderedVolumes = sortAsc ? processedVolumes : [...processedVolumes].reverse();
 
   const totalFilteredCount = processedVolumes.reduce(
     (acc, v) => acc + v.filteredChapters.length,
@@ -82,14 +92,14 @@ export const VolumeList: React.FC<VolumeListProps> = ({
             )}
           </div>
 
-          {/* Sort order button */}
+          {/* Sort order button (A -> Z / Z -> A) */}
           <button
             onClick={() => setSortAsc(!sortAsc)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs sm:text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            title="Đổi thứ tự sắp xếp"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+            title={`Sắp xếp: ${sortAsc ? 'A → Z (Tăng dần)' : 'Z → A (Giảm dần)'}`}
           >
             <ArrowUpDown className="w-3.5 h-3.5 opacity-70" />
-            <span className="hidden sm:inline">{sortAsc ? 'Cũ trước' : 'Mới trước'}</span>
+            <span>{sortAsc ? 'A → Z' : 'Z → A'}</span>
           </button>
         </div>
       </div>
@@ -101,7 +111,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({
             Không tìm thấy chương nào phù hợp với từ khóa
           </div>
         ) : (
-          processedVolumes.map((volume) => {
+          orderedVolumes.map((volume) => {
             if (searchChapterQuery && volume.filteredChapters.length === 0) {
               return null;
             }
