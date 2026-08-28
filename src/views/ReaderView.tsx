@@ -45,15 +45,31 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 
   const [activeContent, setActiveContent] = useState<string>(currentChapter?.content || '');
 
+  const scrollToTop = () => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    if (document.documentElement) {
+      document.documentElement.scrollTop = 0;
+    }
+    if (document.body) {
+      document.body.scrollTop = 0;
+    }
+  };
+
   useEffect(() => {
     if (!currentChapter) return;
     if (currentChapter.content && currentChapter.content.trim().length > 0) {
       setActiveContent(currentChapter.content);
+      scrollToTop();
     } else {
       storyStorage.getChapter(story.id, currentChapter.id).then((ch) => {
         if (ch && ch.content) {
           currentChapter.content = ch.content;
           setActiveContent(ch.content);
+          scrollToTop();
         }
       });
     }
@@ -86,9 +102,24 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     };
   }, [chapterId, currentChapter?.id, story?.id]);
 
-  // Scroll to top on chapter change
+  // Instant scroll to top on chapter change (for responsive & desktop)
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
+    const rafId = requestAnimationFrame(() => {
+      scrollToTop();
+    });
+    const timer1 = setTimeout(() => {
+      scrollToTop();
+    }, 30);
+    const timer2 = setTimeout(() => {
+      scrollToTop();
+    }, 100);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, [chapterId]);
 
   // Handle keyboard shortcuts (← for prev, → for next)
@@ -100,9 +131,11 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
 
       if (e.key === 'ArrowLeft' && hasPrev) {
         e.preventDefault();
+        scrollToTop();
         onNavigateChapter(flatChapters[currentIndex - 1].id);
       } else if (e.key === 'ArrowRight' && hasNext) {
         e.preventDefault();
+        scrollToTop();
         onNavigateChapter(flatChapters[currentIndex + 1].id);
       } else if (e.key === 'Escape') {
         setTocOpen(false);
@@ -115,11 +148,22 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   }, [currentIndex, flatChapters, hasPrev, hasNext, onNavigateChapter]);
 
   const handlePrev = () => {
-    if (hasPrev) onNavigateChapter(flatChapters[currentIndex - 1].id);
+    if (hasPrev) {
+      scrollToTop();
+      onNavigateChapter(flatChapters[currentIndex - 1].id);
+    }
   };
 
   const handleNext = () => {
-    if (hasNext) onNavigateChapter(flatChapters[currentIndex + 1].id);
+    if (hasNext) {
+      scrollToTop();
+      onNavigateChapter(flatChapters[currentIndex + 1].id);
+    }
+  };
+
+  const handleSelectChapterDirect = (chapId: string) => {
+    scrollToTop();
+    onNavigateChapter(chapId);
   };
 
   if (!currentChapter) {
@@ -170,7 +214,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         onClose={() => setTocOpen(false)}
         story={story}
         currentChapterId={currentChapter.id}
-        onSelectChapter={onNavigateChapter}
+        onSelectChapter={handleSelectChapterDirect}
       />
 
       {/* Settings Modal (Font Size, Font Family, Theme, Spacing) */}
@@ -189,7 +233,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
         hasNext={hasNext}
         onPrevChapter={handlePrev}
         onNextChapter={handleNext}
-        onSelectChapter={onNavigateChapter}
+        onSelectChapter={handleSelectChapterDirect}
         settings={settings}
       />
     </div>
