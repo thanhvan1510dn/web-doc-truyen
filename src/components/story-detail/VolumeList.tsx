@@ -143,18 +143,17 @@ export const VolumeList: React.FC<VolumeListProps> = ({
                   </div>
                 </div>
 
-                {/* Compact Chapters List */}
+                {/* Chapters List */}
                 {isExpanded && (
                   <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 dark:border-zinc-800 ml-3 my-1">
                     {volume.filteredChapters.map((chapter) => (
                       <div
                         key={chapter.id}
                         onClick={() => onSelectChapter(chapter.id)}
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        className="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group text-sm sm:text-base text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium"
                       >
-                        <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
-                          <span className="font-normal truncate">
+                        <div className="min-w-0 flex-1 truncate">
+                          <span className="truncate">
                             {chapter.title}
                           </span>
                         </div>

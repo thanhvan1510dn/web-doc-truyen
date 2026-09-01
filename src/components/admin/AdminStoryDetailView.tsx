@@ -848,9 +848,7 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                                     <GripVertical className="w-3 h-3" />
                                   </div>
 
-                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 flex-shrink-0" />
-
-                                  <span className="font-normal text-xs text-zinc-800 hover:text-black truncate">
+                                  <span className="font-medium text-sm text-zinc-800 hover:text-black truncate">
                                     {chapter.title}
                                   </span>
                                 </div>

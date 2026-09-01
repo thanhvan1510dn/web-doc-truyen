@@ -671,9 +671,8 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                             key={chapter.number + "-" + idx}
                             className="px-2 py-1.5 rounded-lg flex items-center justify-between gap-2 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 group transition-colors"
                           >
-                            <div className="flex items-center gap-2 truncate">
-                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
-                              <span className="font-normal text-xs text-zinc-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white truncate">
+                            <div className="flex items-center truncate">
+                              <span className="font-medium text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white truncate">
                                 {chapter.title}
                               </span>
                             </div>

@@ -119,21 +119,18 @@ export const ReaderTOCModal: React.FC<ReaderTOCModalProps> = ({
                             onSelectChapter(chapter.id);
                             onClose();
                           }}
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs ${
+                          className={`flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors cursor-pointer text-sm sm:text-[15px] ${
                             isCurrent
                               ? 'bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-white'
-                              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 font-normal'
+                              : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 font-medium'
                           }`}
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1 truncate pr-2">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                              isCurrent ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-zinc-300 dark:bg-zinc-700'
-                            }`} />
+                          <div className="min-w-0 flex-1 truncate pr-2">
                             <span className="truncate">{chapter.title}</span>
                           </div>
 
                           {isCurrent && (
-                            <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 flex-shrink-0 ml-2">
+                            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 flex-shrink-0 ml-2">
                               Đang đọc
                             </span>
                           )}
