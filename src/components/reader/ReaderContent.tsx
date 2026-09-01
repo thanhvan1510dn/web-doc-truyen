@@ -70,46 +70,15 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
     }
   };
 
-  // Smart Paragraph Splitter & Formatter
-  const parseStoryParagraphs = (rawContent: string): string[] => {
-    if (!rawContent || typeof rawContent !== 'string') return [];
+  // Strictly preserve line breaks & paragraphs from the uploaded text
+  const rawContent = (chapter.content || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
 
-    let text = rawContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-    if (!text) return [];
-
-    // Split by any consecutive newlines
-    let rawBlocks = text.split(/\n+/).map((b) => b.trim()).filter(Boolean);
-
-    const formattedParagraphs: string[] = [];
-
-    rawBlocks.forEach((block) => {
-      let b = block;
-
-      // 1. Fix glued quotes at end of sentence followed by uppercase letter: e.g. hắn."Ninh Thư -> hắn."\n\nNinh Thư
-      b = b.replace(/([.!?…]["”'])\s*([A-ZÀ-ỸĐ])/g, '$1\n\n$2');
-
-      // 2. Fix glued sentences without space: e.g. nữa.Vì vậy -> nữa.\n\nVì vậy
-      b = b.replace(/([.!?…])([A-ZÀ-ỸĐ])/g, '$1\n\n$2');
-
-      // 3. Fix glued dialogue opening quotes after punctuation: e.g. nữa."Cái này -> nữa.\n\n"Cái này
-      b = b.replace(/([.!?…])(["“'«])/g, '$1\n\n$2');
-
-      // 4. Split dialogue dashes if glued: e.g. nữa.— Ta -> nữa.\n\n— Ta
-      b = b.replace(/([.!?…])([—–-]\s*)/g, '$1\n\n$2');
-
-      // Split again by \n+
-      const subParagraphs = b
-        .split(/\n+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      formattedParagraphs.push(...subParagraphs);
-    });
-
-    return formattedParagraphs.length > 0 ? formattedParagraphs : [text];
-  };
-
-  const paragraphs = parseStoryParagraphs(chapter.content);
+  const paragraphs = rawContent.includes('\n\n')
+    ? rawContent.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+    : rawContent.split(/\n+/).map((p) => p.trim()).filter(Boolean);
 
   return (
     <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>
@@ -137,7 +106,7 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
           {paragraphs.map((p, index) => (
             <p 
               key={index}
-              className="tracking-normal transition-all duration-100"
+              className="whitespace-pre-line tracking-normal transition-all duration-100"
             >
               {p}
             </p>

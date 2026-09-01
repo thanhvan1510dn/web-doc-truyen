@@ -82,8 +82,35 @@ export class DocumentParserService {
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       const page = await pdfDoc.getPage(pageNum);
       const textContent = await page.getTextContent();
-      const text = textContent.items.map((item: any) => item.str || "").join(" ");
-      pageTexts.push(text);
+
+      let pageLines = "";
+      let lastY: number | null = null;
+
+      for (const item of textContent.items as any[]) {
+        const str = item.str || "";
+        if (!str && !item.hasEOL) continue;
+
+        const currentY = item.transform ? item.transform[5] : null;
+
+        if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 4) {
+          // Line break in PDF
+          if (Math.abs(currentY - lastY) > 16) {
+            pageLines += "\n\n" + str;
+          } else {
+            pageLines += "\n" + str;
+          }
+        } else if (item.hasEOL) {
+          pageLines += str + "\n";
+        } else {
+          pageLines += (pageLines.endsWith("\n") || pageLines === "" ? "" : " ") + str;
+        }
+
+        if (currentY !== null) {
+          lastY = currentY;
+        }
+      }
+
+      pageTexts.push(pageLines);
 
       const percent = Math.round(25 + (pageNum / numPages) * 55);
       onProgress?.(percent, "Đang trích xuất trang " + pageNum + "/" + numPages + "...");
@@ -167,14 +194,7 @@ export class DocumentParserService {
 
     const flushChapter = () => {
       if (currentChapter) {
-        let text = currentChapterLines.join("\n\n").trim();
-        // Fix glued sentences if present in parsed text
-        text = text
-          .replace(/([.!?…]["”'])\s*([A-ZÀ-ỸĐ])/g, "$1\n\n$2")
-          .replace(/([.!?…])([A-ZÀ-ỸĐ])/g, "$1\n\n$2")
-          .replace(/([.!?…])(["“'«])/g, "$1\n\n$2");
-
-        currentChapter.content = text;
+        currentChapter.content = currentChapterLines.join("\n").trim();
         currentChapter.wordCount = currentChapter.content.split(/\s+/).filter(Boolean).length;
         if (currentVolume) {
           currentVolume.chapters.push(currentChapter);
