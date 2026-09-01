@@ -70,15 +70,84 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
     }
   };
 
-  // Strictly render paragraphs by the actual newlines of the uploaded content
-  const rawContent = (chapter.content || '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .trim();
+  // Smart Paragraph Splitter & Formatter for Vietnamese Novel Content
+  const parseStoryParagraphs = (content: string): string[] => {
+    if (!content || typeof content !== 'string') return [];
 
-  const paragraphs = rawContent.includes('\n\n')
-    ? rawContent.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
-    : rawContent.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+    let text = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    if (!text) return [];
+
+    // 1. Two consecutive quotes (End of dialogue 1 and Start of dialogue 2)
+    // e.g. à?""Ta -> à?"\n\n"Ta, Quân.""Có -> Quân."\n\n"Có, "Chưa có.""Vậy -> "Chưa có."\n\n"Vậy
+    text = text.replace(/([”"'])\s*([“"'])/g, '$1\n\n$2');
+
+    // 2. Break glued dialogue quotes & sentences by tracking quote context:
+    const isQuote = (c: string) => c === '"' || c === '“' || c === '”' || c === "'";
+    const isPunctuation = (c: string) => c === '.' || c === '!' || c === '?' || c === '…';
+    const isUpper = (c: string) => /[A-ZÀ-ỸĐ]/.test(c);
+
+    let result = '';
+    let insideQuote = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const prev = i > 0 ? text[i - 1] : '';
+      const next = i < text.length - 1 ? text[i + 1] : '';
+
+      if (isQuote(ch)) {
+        if (insideQuote) {
+          // Closing quote
+          insideQuote = false;
+          result += ch;
+          // If immediately followed by uppercase letter without space, e.g. hắn."Ninh Thư or đấy?"Ninh Thư
+          if (isUpper(next)) {
+            result += '\n\n';
+          }
+        } else {
+          // Opening quote
+          insideQuote = true;
+          // If preceded by punctuation without newline, e.g. nữa."Cái này or hắn."Chưa có
+          if (isPunctuation(prev)) {
+            result += '\n\n';
+          }
+          result += ch;
+        }
+      } else if (isPunctuation(ch)) {
+        result += ch;
+        // If outside quotes and immediately followed by uppercase letter (glued sentence without space)
+        // e.g. nữa.Vì vậy or rồi.Có lẽ or lắm.Hắn
+        if (!insideQuote && isUpper(next) && !isQuote(next)) {
+          result += '\n\n';
+        }
+      } else {
+        result += ch;
+      }
+    }
+
+    // Split by newlines into clean paragraph blocks
+    const rawParagraphs = result
+      .split(/\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    const cleanParagraphs: string[] = [];
+    for (let i = 0; i < rawParagraphs.length; i++) {
+      const current = rawParagraphs[i];
+      if (/^["'“”«»]+$/.test(current)) {
+        if (cleanParagraphs.length > 0) {
+          cleanParagraphs[cleanParagraphs.length - 1] += current;
+        }
+      } else if (cleanParagraphs.length > 0 && /^["'“”«»]+$/.test(cleanParagraphs[cleanParagraphs.length - 1])) {
+        cleanParagraphs[cleanParagraphs.length - 1] += current;
+      } else {
+        cleanParagraphs.push(current);
+      }
+    }
+
+    return cleanParagraphs.length > 0 ? cleanParagraphs : [text];
+  };
+
+  const paragraphs = parseStoryParagraphs(chapter.content);
 
   return (
     <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>

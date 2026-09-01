@@ -192,9 +192,48 @@ export class DocumentParserService {
     let currentChapter: ParsedChapter | null = null;
     let currentChapterLines: string[] = [];
 
+    const formatChapterText = (raw: string): string => {
+      if (!raw) return "";
+      let text = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+      text = text.replace(/([”"'])\s*([“"'])/g, "$1\n\n$2");
+      const isQuote = (c: string) => c === '"' || c === '“' || c === '”' || c === "'";
+      const isPunctuation = (c: string) => c === '.' || c === '!' || c === '?' || c === '…';
+      const isUpper = (c: string) => /[A-ZÀ-ỸĐ]/.test(c);
+
+      let result = '';
+      let insideQuote = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const prev = i > 0 ? text[i - 1] : '';
+        const next = i < text.length - 1 ? text[i + 1] : '';
+
+        if (isQuote(ch)) {
+          if (insideQuote) {
+            insideQuote = false;
+            result += ch;
+            if (isUpper(next)) result += '\n\n';
+          } else {
+            insideQuote = true;
+            if (isPunctuation(prev)) result += '\n\n';
+            result += ch;
+          }
+        } else if (isPunctuation(ch)) {
+          result += ch;
+          if (!insideQuote && isUpper(next) && !isQuote(next)) {
+            result += '\n\n';
+          }
+        } else {
+          result += ch;
+        }
+      }
+
+      return result.split(/\n+/).map(p => p.trim()).filter(Boolean).join("\n\n");
+    };
+
     const flushChapter = () => {
       if (currentChapter) {
-        currentChapter.content = currentChapterLines.join("\n").trim();
+        currentChapter.content = formatChapterText(currentChapterLines.join("\n"));
         currentChapter.wordCount = currentChapter.content.split(/\s+/).filter(Boolean).length;
         if (currentVolume) {
           currentVolume.chapters.push(currentChapter);
