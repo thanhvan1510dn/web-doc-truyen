@@ -82,10 +82,10 @@ export const ReaderFooter: React.FC<ReaderFooterProps> = ({
               value={chapter.id}
               onChange={(e) => onSelectChapter(e.target.value)}
               aria-label="Chọn chương nhanh"
-              className="appearance-none w-full pl-3 pr-8 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 text-center truncate cursor-pointer shadow-sm"
+              className="appearance-none w-full pl-3.5 pr-8 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 text-left truncate cursor-pointer shadow-sm"
             >
               {allChapters.map((c) => (
-                <option key={c.id} value={c.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                <option key={c.id} value={c.id} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-left py-1">
                   {getDisplayChapterTitle(c.number, c.title)}
                 </option>
               ))}
