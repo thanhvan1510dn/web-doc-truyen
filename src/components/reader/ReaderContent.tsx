@@ -70,15 +70,27 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
     }
   };
 
-  // Strictly preserve line breaks & paragraphs from the uploaded text
-  const rawContent = (chapter.content || '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .trim();
+  // Reconstruct exact paragraphs matching the original document structure
+  const getDisplayParagraphs = (content: string): string[] => {
+    if (!content || typeof content !== 'string') return [];
 
-  const paragraphs = rawContent.includes('\n\n')
-    ? rawContent.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
-    : rawContent.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+    let text = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    if (!text) return [];
+
+    // Restore paragraph boundaries if sentences or dialogues were glued from PDF extraction
+    text = text
+      .replace(/([.!?…]["”'])\s*([A-ZÀ-ỸĐ])/g, '$1\n\n$2')
+      .replace(/([.!?…])([A-ZÀ-ỸĐ])/g, '$1\n\n$2')
+      .replace(/([.!?…]["”']?)\s*(["“'«][A-ZÀ-ỸĐ])/g, '$1\n\n$2')
+      .replace(/([.!?…])(["“'«])/g, '$1\n\n$2')
+      .replace(/([”"'])\s*([A-ZÀ-ỸĐ])/g, '$1\n\n$2');
+
+    // Split by newlines into clean paragraph blocks
+    const blocks = text.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+    return blocks.length > 0 ? blocks : [text];
+  };
+
+  const paragraphs = getDisplayParagraphs(chapter.content);
 
   return (
     <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>
