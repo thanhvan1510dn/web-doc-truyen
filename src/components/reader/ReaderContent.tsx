@@ -70,8 +70,46 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
     }
   };
 
-  // Split text by paragraphs
-  const paragraphs = chapter.content.split('\n\n').filter(p => p.trim() !== '');
+  // Smart Paragraph Splitter & Formatter
+  const parseStoryParagraphs = (rawContent: string): string[] => {
+    if (!rawContent || typeof rawContent !== 'string') return [];
+
+    let text = rawContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    if (!text) return [];
+
+    // Split by any consecutive newlines
+    let rawBlocks = text.split(/\n+/).map((b) => b.trim()).filter(Boolean);
+
+    const formattedParagraphs: string[] = [];
+
+    rawBlocks.forEach((block) => {
+      let b = block;
+
+      // 1. Fix glued quotes at end of sentence followed by uppercase letter: e.g. hắn."Ninh Thư -> hắn."\n\nNinh Thư
+      b = b.replace(/([.!?…]["”'])\s*([A-ZÀ-ỸĐ])/g, '$1\n\n$2');
+
+      // 2. Fix glued sentences without space: e.g. nữa.Vì vậy -> nữa.\n\nVì vậy
+      b = b.replace(/([.!?…])([A-ZÀ-ỸĐ])/g, '$1\n\n$2');
+
+      // 3. Fix glued dialogue opening quotes after punctuation: e.g. nữa."Cái này -> nữa.\n\n"Cái này
+      b = b.replace(/([.!?…])(["“'«])/g, '$1\n\n$2');
+
+      // 4. Split dialogue dashes if glued: e.g. nữa.— Ta -> nữa.\n\n— Ta
+      b = b.replace(/([.!?…])([—–-]\s*)/g, '$1\n\n$2');
+
+      // Split again by \n+
+      const subParagraphs = b
+        .split(/\n+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      formattedParagraphs.push(...subParagraphs);
+    });
+
+    return formattedParagraphs.length > 0 ? formattedParagraphs : [text];
+  };
+
+  const paragraphs = parseStoryParagraphs(chapter.content);
 
   return (
     <div className={`min-h-[80vh] pt-6 sm:pt-10 pb-28 sm:pb-32 transition-colors ${getThemeBackgroundClass()}`}>
@@ -90,7 +128,7 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
 
         {/* Chapter Paragraphs Content */}
         <div 
-          className={`space-y-6 ${getFontFamilyClass()} ${getLineHeightClass()}`}
+          className={`space-y-6 sm:space-y-7 ${getFontFamilyClass()} ${getLineHeightClass()}`}
           style={{
             fontSize: `${settings.fontSize}px`,
             textAlign: settings.textAlign === 'justify' ? 'justify' : 'left',

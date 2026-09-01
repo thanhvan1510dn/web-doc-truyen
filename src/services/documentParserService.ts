@@ -167,7 +167,14 @@ export class DocumentParserService {
 
     const flushChapter = () => {
       if (currentChapter) {
-        currentChapter.content = currentChapterLines.join("\n").trim();
+        let text = currentChapterLines.join("\n\n").trim();
+        // Fix glued sentences if present in parsed text
+        text = text
+          .replace(/([.!?…]["”'])\s*([A-ZÀ-ỸĐ])/g, "$1\n\n$2")
+          .replace(/([.!?…])([A-ZÀ-ỸĐ])/g, "$1\n\n$2")
+          .replace(/([.!?…])(["“'«])/g, "$1\n\n$2");
+
+        currentChapter.content = text;
         currentChapter.wordCount = currentChapter.content.split(/\s+/).filter(Boolean).length;
         if (currentVolume) {
           currentVolume.chapters.push(currentChapter);
