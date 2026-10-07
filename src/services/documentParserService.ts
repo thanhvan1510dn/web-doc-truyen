@@ -559,9 +559,10 @@ export class DocumentParserService {
             volumes.push(currentVolume);
           }
 
+          const volTitle = (item.title || "").trim();
           currentVolume = {
             number: volumes.length + 1,
-            title: item.title.trim(),
+            title: volTitle || ("Mục lục " + (volumes.length + 1)),
             chapters: [],
           };
         } else {
@@ -660,6 +661,22 @@ export class DocumentParserService {
 
     volumes.forEach((vol, vIdx) => {
       vol.number = vIdx + 1;
+
+      // Smart naming for volume if title is missing, empty, or generic fallback ("Mục lục X")
+      const hasSpecificTitle = vol.title && vol.title.trim().length > 0 && !/^Mục\s*lục\s*\d+$/i.test(vol.title.trim());
+      if (!hasSpecificTitle && vol.chapters.length > 0) {
+        const chapNumbers = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
+        if (chapNumbers.length > 0) {
+          const minCh = Math.min(...chapNumbers);
+          const maxCh = Math.max(...chapNumbers);
+          vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
+        } else {
+          vol.title = `Mục lục ${vIdx + 1}`;
+        }
+      } else if (!vol.title || !vol.title.trim()) {
+        vol.title = `Mục lục ${vIdx + 1}`;
+      }
+
       vol.chapters.forEach((chap) => {
         chap.wordCount = chap.content.trim().split(/\s+/).filter(Boolean).length;
         totalWords += chap.wordCount;

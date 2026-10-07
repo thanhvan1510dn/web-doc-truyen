@@ -137,12 +137,21 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     const keptChapters = sourceVol.chapters.slice(0, splitIdx);
     const movedChapters = sourceVol.chapters.slice(splitIdx);
 
+    const suggestedTitle = movedChapters.length > 0
+      ? `(${movedChapters[0].number}-${movedChapters[movedChapters.length - 1].number})`
+      : `Mục lục ${parseResult.volumes.length + 1}`;
+
     const newVolTitle = window.prompt(
       "Nhập tên Mục lục mới cho các chương từ #" + chapNumber + ":",
-      "Mục lục " + (parseResult.volumes.length + 1)
+      suggestedTitle
     );
 
     if (!newVolTitle || !newVolTitle.trim()) return;
+
+    let updatedKeptTitle = sourceVol.title;
+    if (keptChapters.length > 0 && /^\(\d+-\d+\)/.test(sourceVol.title)) {
+      updatedKeptTitle = `(${keptChapters[0].number}-${keptChapters[keptChapters.length - 1].number})`;
+    }
 
     const newVol: ParsedVolume = {
       number: volNumber + 1,
@@ -155,7 +164,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
       if (v.number < volNumber) {
         newVolumes.push(v);
       } else if (v.number === volNumber) {
-        newVolumes.push({ ...v, chapters: keptChapters });
+        newVolumes.push({ ...v, title: updatedKeptTitle, chapters: keptChapters });
         newVolumes.push(newVol);
       } else {
         newVolumes.push({ ...v, number: v.number + 1 });
@@ -609,7 +618,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                               onClick={() => toggleVolumeCollapse(volume.number)}
                               className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors truncate cursor-pointer"
                             >
-                              {volume.title}
+                              {volume.title || `Mục lục ${volume.number}`}
                             </span>
                             <span className="text-[11px] font-normal text-zinc-400 flex-shrink-0">
                               ({volume.chapters.length})
