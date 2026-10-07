@@ -1,6 +1,7 @@
 import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 import { ParsedVolume } from "./documentParserService";
+import { findCanonArc } from "../data/storyArcRegistry";
 import { MOCK_STORIES } from "../data/mockStories";
 import { db } from "./firebase";
 import { 
@@ -907,10 +908,38 @@ class StoryStorageService {
       parsedVolumes.forEach((pv, vIdx) => {
         const normalizedPvTitle = (pv.title || "").trim().toLowerCase();
         
-        // 1. Tìm xem có Mục lục cũ nào trùng tiêu đề không
-        const existingVolIndex = currentVolumes.findIndex(
-          (v) => (v.title || "").trim().toLowerCase() === normalizedPvTitle && normalizedPvTitle.length > 0
-        );
+        // 1. Tìm xem có Mục lục cũ nào trùng tiêu đề hoặc trùng dải chương không
+        const pvRange = (pv.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
+        const pvFrom = pvRange ? parseInt(pvRange[1], 10) : (pv.chapters.length > 0 ? Math.min(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
+        const pvTo = pvRange ? parseInt(pvRange[2], 10) : (pv.chapters.length > 0 ? Math.max(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
+        const isPvBare = !pv.title || /^Mục\s*lục\s*\d+$/i.test(pv.title.trim()) || /^\(\d+-\d+\)$/.test(pv.title.trim());
+
+        const existingVolIndex = currentVolumes.findIndex((v) => {
+          const vNorm = (v.title || "").trim().toLowerCase();
+          if (vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
+
+          // Match by chapter range (e.g. (3372-3398) matches (3372-3398) Fan cuồng bá đạo)
+          const vRange = (v.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
+          if (vRange && pvFrom > 0 && pvTo > 0) {
+            const vFrom = parseInt(vRange[1], 10);
+            const vTo = parseInt(vRange[2], 10);
+            if (vFrom === pvFrom && vTo === pvTo) return true;
+          }
+
+          // Match by chapter overlap (> 50%)
+          if (Array.isArray(v.chapters) && v.chapters.length > 0 && Array.isArray(pv.chapters) && pv.chapters.length > 0) {
+            const vNums = new Set(v.chapters.map((c) => c.number).filter((n) => n > 0));
+            let overlap = 0;
+            for (const pc of pv.chapters) {
+              if (pc.number > 0 && vNums.has(pc.number)) overlap++;
+            }
+            if (overlap >= Math.min(v.chapters.length, pv.chapters.length) * 0.5 && overlap > 0) {
+              return true;
+            }
+          }
+
+          return false;
+        });
 
         if (existingVolIndex !== -1) {
           // Trùng Mục lục: Ghi đè các chương con trùng số/tiêu đề và bổ sung chương mới vào Mục lục này
@@ -969,7 +998,14 @@ class StoryStorageService {
             });
           });
 
-          existingVol.title = pv.title || existingVol.title;
+          // Preserve rich title if existing title was rich and incoming pv.title was bare!
+          const isExistingRich = existingVol.title && !/^Mục\s*lục\s*\d+$/i.test(existingVol.title.trim()) && !/^\(\d+-\d+\)$/.test(existingVol.title.trim());
+
+          if (isExistingRich && isPvBare) {
+            // Giữ nguyên tiêu đề phong phú đã có trong cơ sở dữ liệu
+          } else {
+            existingVol.title = pv.title || existingVol.title;
+          }
           existingVol.chapters = updatedChapters;
         } else {
           // 2. Mục lục mới (không trùng tên):
@@ -987,10 +1023,12 @@ class StoryStorageService {
           });
 
           const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
+          const canonTitle = (pvFrom > 0 && pvTo > 0) ? findCanonArc(pvFrom, pvTo) : null;
+          const assignedTitle = (isPvBare && canonTitle) ? canonTitle : (pv.title || `Mục lục ${currentVolumes.length + 1}`);
           const newVol: Volume = {
             id: volumeId,
             number: currentVolumes.length + 1,
-            title: pv.title,
+            title: assignedTitle,
             chapters: pv.chapters.map((ch, cIdx) => ({
               id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
               number: ch.number || cIdx + 1,
@@ -998,7 +1036,7 @@ class StoryStorageService {
               wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
               content: ch.content || "",
               volumeId: volumeId,
-              volumeTitle: pv.title,
+              volumeTitle: assignedTitle,
               createdAt: now,
               updatedAt: now,
               isActive: true,

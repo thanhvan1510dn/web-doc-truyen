@@ -1,6 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 import JSZip from "jszip";
+import { findCanonArc, partitionChaptersByCanonArcs } from "../data/storyArcRegistry";
 
 if (typeof window !== "undefined" && "Worker" in window) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -126,10 +127,14 @@ export class DocumentParserService {
       volumes = this.parseFromPDFBookmarks(resolvedOutline, pageTexts, numPages);
     }
 
-    if (volumes.length === 0 || (volumes.length === 1 && volumes[0].chapters.length > 50)) {
-      const parsedFromText = this.parseDocumentLines(pageTexts.join("\n"));
-      if (parsedFromText.length > 1) {
-        volumes = parsedFromText;
+    if (volumes.length === 1 && volumes[0].chapters.length > 20) {
+      const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
+      if (partitioned && partitioned.length > 1) {
+        volumes = partitioned.map((p, idx) => ({
+          number: idx + 1,
+          title: p.title,
+          chapters: p.chapters,
+        }));
       }
     }
 
@@ -207,7 +212,10 @@ export class DocumentParserService {
               const minNum = Math.min(...allChaps.map((c) => c.number));
               const maxNum = Math.max(...allChaps.map((c) => c.number));
               let secTitle = `(${minNum}-${maxNum})`;
-              if (parsedVols.length === 1 && parsedVols[0].title && !parsedVols[0].title.startsWith("Mục lục")) {
+              const canon = findCanonArc(minNum, maxNum);
+              if (canon) {
+                secTitle = canon;
+              } else if (parsedVols.length === 1 && parsedVols[0].title && !parsedVols[0].title.startsWith("Mục lục")) {
                 secTitle = parsedVols[0].title;
               }
               volumes.push({
@@ -861,18 +869,35 @@ export class DocumentParserService {
     let totalWords = 0;
     let totalChapters = 0;
 
+    if (volumes.length === 1 && volumes[0].chapters.length > 20) {
+      const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
+      if (partitioned && partitioned.length > 1) {
+        volumes = partitioned.map((p, idx) => ({
+          number: idx + 1,
+          title: p.title,
+          chapters: p.chapters,
+        }));
+      }
+    }
+
     volumes.forEach((vol, vIdx) => {
       vol.number = vIdx + 1;
 
-      // Smart naming for volume if title is missing, empty, or generic fallback ("Mục lục X")
-      const hasSpecificTitle = vol.title && vol.title.trim().length > 0 && !/^Mục\s*lục\s*\d+$/i.test(vol.title.trim());
-      if (!hasSpecificTitle && vol.chapters.length > 0) {
+      // Smart naming for volume if title is missing, empty, or generic fallback ("Mục lục X", bare "(min-max)")
+      if (vol.chapters.length > 0) {
         const chapNumbers = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
         if (chapNumbers.length > 0) {
           const minCh = Math.min(...chapNumbers);
           const maxCh = Math.max(...chapNumbers);
-          vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
-        } else {
+          const canonTitle = findCanonArc(minCh, maxCh);
+          const isBare = !vol.title || /^Mục\s*lục\s*\d+$/i.test(vol.title.trim()) || /^\(\d+-\d+\)$/.test(vol.title.trim());
+
+          if (canonTitle && (isBare || !vol.title.includes(" "))) {
+            vol.title = canonTitle;
+          } else if (isBare) {
+            vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
+          }
+        } else if (!vol.title || !vol.title.trim()) {
           vol.title = `Mục lục ${vIdx + 1}`;
         }
       } else if (!vol.title || !vol.title.trim()) {

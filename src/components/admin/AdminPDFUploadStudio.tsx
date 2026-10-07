@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FileUp, CheckCircle2, RefreshCw, 
-  Plus, Minus, X, Edit3, Check, Scissors, Trash2
+  Plus, Minus, X, Edit3, Check, Scissors, Trash2, Sparkles
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
 import { documentParserService, DocumentParseResult, ParsedVolume } from "../../services/documentParserService";
+import { findCanonArc } from "../../data/storyArcRegistry";
 import { useToast } from "../common/Toast";
 
 interface AdminPDFUploadStudioProps {
@@ -64,6 +65,80 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     }
   }, [storyId]);
 
+  const enrichVolumes = (
+    vols: ParsedVolume[],
+    targetStoryId: string
+  ): { enriched: ParsedVolume[]; enrichedCount: number; arcNames: string[] } => {
+    const targetStory = stories.find((s) => s.id === targetStoryId);
+    let enrichedCount = 0;
+    const arcNames: string[] = [];
+
+    const enriched = vols.map((vol) => {
+      const chapNumbers = vol.chapters
+        .map((c) => c.number)
+        .filter((n) => typeof n === "number" && n > 0);
+      const minCh = chapNumbers.length > 0 ? Math.min(...chapNumbers) : 0;
+      const maxCh = chapNumbers.length > 0 ? Math.max(...chapNumbers) : 0;
+
+      // 1. Kiểm tra Mục lục đã có sẵn trong cơ sở dữ liệu truyện đích
+      if (targetStory && Array.isArray(targetStory.volumes)) {
+        const matched = targetStory.volumes.find((ev) => {
+          const evRange = (ev.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
+          if (evRange && minCh > 0 && maxCh > 0) {
+            return parseInt(evRange[1], 10) === minCh && parseInt(evRange[2], 10) === maxCh;
+          }
+          if (Array.isArray(ev.chapters) && ev.chapters.length > 0) {
+            const evNums = new Set(ev.chapters.map((c) => c.number).filter((n) => n > 0));
+            let overlap = 0;
+            chapNumbers.forEach((n) => {
+              if (evNums.has(n)) overlap++;
+            });
+            return overlap >= Math.min(ev.chapters.length, chapNumbers.length) * 0.5 && overlap > 0;
+          }
+          return false;
+        });
+
+        if (matched && matched.title && matched.title.includes(" ") && !matched.title.startsWith("Mục lục")) {
+          if (vol.title !== matched.title) {
+            enrichedCount++;
+            arcNames.push(matched.title);
+          }
+          return { ...vol, title: matched.title };
+        }
+      }
+
+      // 2. Tra cứu Từ điển Vị diện Canon
+      if (minCh > 0 && maxCh > 0) {
+        const canon = findCanonArc(minCh, maxCh);
+        if (canon && canon.includes(" ")) {
+          if (vol.title !== canon) {
+            enrichedCount++;
+            arcNames.push(canon);
+          }
+          return { ...vol, title: canon };
+        }
+      }
+
+      return vol;
+    });
+
+    return { enriched, enrichedCount, arcNames };
+  };
+
+  const handleAutoEnrichTitles = () => {
+    if (!parseResult) return;
+    const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes, selectedStoryId);
+    setParseResult({
+      ...parseResult,
+      volumes: enriched,
+    });
+    if (enrichedCount > 0) {
+      toast.success(`✨ Đã tự động nhận diện và gán ${enrichedCount} tên Mục lục: ${arcNames.join(", ")}`);
+    } else {
+      toast.info("Các mục lục đã ở trạng thái chuẩn.");
+    }
+  };
+
   const handleFileChange = async (file: File) => {
     if (!file) return;
     const ext = file.name.split(".").pop()?.toLowerCase();
@@ -83,13 +158,21 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
         setParseStatus(status);
       });
 
+      const targetId = selectedStoryId || storyId || (stories.length > 0 ? stories[0].id : "");
+      const { enriched, enrichedCount, arcNames } = enrichVolumes(result.volumes, targetId);
+      result.volumes = enriched;
+
       setParseResult(result);
       if (result.detectedTitle) {
         setNewStoryTitle(result.detectedTitle);
         setNewStoryDesc("Tác phẩm gồm " + result.totalVolumes + " Mục lục trích xuất từ " + file.name);
       }
 
-      toast.success("Đã nhận diện: " + result.totalVolumes + " Mục lục & " + result.totalChapters + " chương!");
+      if (enrichedCount > 0) {
+        toast.success(`✨ Nhận diện thông minh: ${result.totalVolumes} Mục lục (khớp ${enrichedCount} tên vị diện: ${arcNames.slice(0, 2).join(", ")}${arcNames.length > 2 ? "..." : ""})!`);
+      } else {
+        toast.success("Đã nhận diện: " + result.totalVolumes + " Mục lục & " + result.totalChapters + " chương!");
+      }
     } catch (err: any) {
       toast.error(err.message || "Không thể đọc tệp");
     } finally {
@@ -525,7 +608,20 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                       </label>
                       <select
                         value={selectedStoryId}
-                        onChange={(e) => setSelectedStoryId(e.target.value)}
+                        onChange={(e) => {
+                          const newStoryId = e.target.value;
+                          setSelectedStoryId(newStoryId);
+                          if (parseResult) {
+                            const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes, newStoryId);
+                            if (enrichedCount > 0) {
+                              setParseResult({
+                                ...parseResult,
+                                volumes: enriched,
+                              });
+                              toast.success(`✨ Tự động nhận diện ${enrichedCount} tên Mục lục: ${arcNames.join(", ")}`);
+                            }
+                          }
+                        }}
                         className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white"
                       >
                         {stories.map((s) => (
@@ -572,9 +668,24 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
           {/* Volumes & Chapters Tree (Flat Minimalist) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">
-              <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
-                Mục lục bóc tách ({parseResult.volumes.length})
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
+                  Mục lục bóc tách ({parseResult.volumes.length})
+                </h4>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Tự động nhận diện tên
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAutoEnrichTitles}
+                className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                title="Quét lại tên vị diện theo cơ sở dữ liệu truyện"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Nhận diện lại</span>
+              </button>
             </div>
 
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
