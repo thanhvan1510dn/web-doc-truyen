@@ -1,5 +1,6 @@
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
+import JSZip from "jszip";
 
 if (typeof window !== "undefined" && "Worker" in window) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -146,20 +147,95 @@ export class DocumentParserService {
     file: File,
     onProgress?: (progress: number, status: string) => void
   ): Promise<DocumentParseResult> {
-    onProgress?.(20, "Đang đọc tệp Word DOCX...");
+    onProgress?.(15, "Đang đọc tệp DOCX...");
     const arrayBuffer = await file.arrayBuffer();
 
-    onProgress?.(50, "Đang trích xuất nội dung và Document Tabs...");
-    const rawResult = await mammoth.extractRawText({ arrayBuffer });
-    const fullText = rawResult.value || "";
+    onProgress?.(40, "Đang kiểm tra phân đoạn Sections và Document Tabs...");
+    let volumes: ParsedVolume[] = [];
 
-    onProgress?.(80, "Đang ánh xạ Tabs lớn thành Mục lục & Tabs nhỏ thành Chương...");
-    let volumes = this.parseDocumentLines(fullText);
+    try {
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const docFile = zip.file("word/document.xml");
+      if (docFile) {
+        const docXml = await docFile.async("text");
+        const pRegex = /<w:p[\s>][\s\S]*?<\/w:p>/g;
+        let pMatch;
+        let currentSecLines: string[] = [];
+        const sectionTexts: string[] = [];
+
+        while ((pMatch = pRegex.exec(docXml)) !== null) {
+          const pXml = pMatch[0];
+          const convertedP = pXml
+            .replace(/<w:br[^>]*\/?>/gi, "\n")
+            .replace(/<w:tab[^>]*\/?>/gi, "\t");
+          const tRegex = /<w:t(?:\s+[^>]*)?>([\s\S]*?)<\/w:t>/g;
+          let tMatch;
+          let pText = "";
+          while ((tMatch = tRegex.exec(convertedP)) !== null) {
+            pText += tMatch[1];
+          }
+          pText = pText
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .trim();
+
+          if (pText) {
+            currentSecLines.push(pText);
+          }
+
+          if (pXml.includes("<w:sectPr")) {
+            if (currentSecLines.length > 0) {
+              sectionTexts.push(currentSecLines.join("\n\n"));
+              currentSecLines = [];
+            }
+          }
+        }
+        if (currentSecLines.length > 0) {
+          sectionTexts.push(currentSecLines.join("\n\n"));
+        }
+
+        // If multiple sections detected (e.g. Google Docs Document Tabs or multi-section Word)
+        if (sectionTexts.length > 1) {
+          onProgress?.(60, `Đã tìm thấy ${sectionTexts.length} Document Tabs. Đang xử lý từng tab...`);
+          sectionTexts.forEach((secText) => {
+            const parsedVols = this.parseDocumentLines(secText);
+            const allChaps = parsedVols.flatMap((v) => v.chapters);
+            if (allChaps.length > 0) {
+              const minNum = Math.min(...allChaps.map((c) => c.number));
+              const maxNum = Math.max(...allChaps.map((c) => c.number));
+              let secTitle = `(${minNum}-${maxNum})`;
+              if (parsedVols.length === 1 && parsedVols[0].title && !parsedVols[0].title.startsWith("Mục lục")) {
+                secTitle = parsedVols[0].title;
+              }
+              volumes.push({
+                number: volumes.length + 1,
+                title: secTitle,
+                chapters: allChaps,
+              });
+            }
+          });
+        }
+      }
+    } catch (zipErr) {
+      console.warn("Could not parse DOCX sections via JSZip, falling back to standard extraction:", zipErr);
+    }
 
     if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
-      const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
-      const plainText = (htmlResult.value || "").replace(/<[^>]+>/g, "\n");
-      volumes = this.parseDocumentLines(plainText);
+      onProgress?.(60, "Đang trích xuất nội dung văn bản DOCX...");
+      const rawResult = await mammoth.extractRawText({ arrayBuffer });
+      const fullText = rawResult.value || "";
+
+      onProgress?.(80, "Đang phân tích Mục lục & Chương...");
+      volumes = this.parseDocumentLines(fullText);
+
+      if (volumes.length === 0 || volumes.every((v) => v.chapters.length === 0)) {
+        const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+        const plainText = (htmlResult.value || "").replace(/<[^>]+>/g, "\n");
+        volumes = this.parseDocumentLines(plainText);
+      }
     }
 
     return this.finalizeResult("docx", file.name, volumes, onProgress);
@@ -252,19 +328,22 @@ export class DocumentParserService {
 
     const isMajorTab = (line: string): string | null => {
       const trimmed = normalizeLine(line);
-      if (!trimmed || trimmed.length > 120) return null;
+      if (!trimmed || trimmed.length > 80) return null;
+
+      // Discard sentences, dialogues, or quotes (never volume titles)
+      if (/^["'“«「『]/.test(trimmed) || /["'”»」』]$/.test(trimmed)) return null;
+      if (/[.!?…]$/.test(trimmed)) return null;
 
       // Ignore standard chapter headings
       if (/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet)\s*\d+/i.test(trimmed)) {
         return null;
       }
 
-      // 1. Chapter Range: matches anywhere in the line!
-      // Matches "✅ (3344-3371)", "(3344-3371)", "[✅] (3372-3398) Fan cuồng...", "Tab 1: (3399-3422)", "Vợ yêu trăm tỷ (3423-3456)", etc.
+      // Strip leading/trailing symbols, checkmarks, emojis, but preserve letters/digits/brackets
       const cleanSymbols = (s: string) =>
         (s || "")
-          .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-:\.]+\s*/u, "")
-          .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-:\.]+$/u, "")
+          .replace(/^[^\p{L}\p{N}\(\[【\s]+/u, "")
+          .replace(/[^\p{L}\p{N}\)\]】\s]+$/u, "")
           .trim();
 
       const cleanPrefix = (s: string) => {
@@ -273,6 +352,8 @@ export class DocumentParserService {
         return cleanSymbols(c);
       };
 
+      // 1. Chapter Range: matches anywhere in the short line!
+      // Matches "✅ (3344-3371)", "(3344-3371)", "[✅] (3372-3398) Fan cuồng...", "Tab 1: (3399-3422)", "Vợ yêu trăm tỷ (3423-3456)", etc.
       const rangeMatch =
         trimmed.match(/^(.*?)(?:[\(\[【]\s*)(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])(?:\s*[:\-\._\s]\s*(.*))?$/i) ||
         trimmed.match(/(?:[\(\[【]\s*)?(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])?(?:\s*[:\-\._\s]\s*(.*))?$/i);
@@ -298,18 +379,15 @@ export class DocumentParserService {
         }
       }
 
-      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Document Tabs / Arc / Vol
-      const keywordMatch = trimmed.match(/(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Document\s*Tabs?|Tabs?|Arc|Vol(?:ume)?\.?)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?$/i);
+      // 2. Keyword Volume: MUST start at beginning of line and MUST have a volume number/roman numeral!
+      const cleaned = cleanSymbols(trimmed);
+      const keywordMatch = cleaned.match(/^(?:Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Arc|Vol(?:ume)?\.?|Document\s*Tabs?|Tab)\s*(\d+|[IVXLCDM]+)(?:[:\-\._\s]+(.*))?$/i);
       if (keywordMatch) {
-        const cleaned = trimmed
-          .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+\s*/u, "")
-          .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+$/u, "")
-          .trim();
-        return cleaned || trimmed;
+        return cleaned;
       }
 
-      // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...] or 【Vị diện 1: ...】
-      const bracketMatch = trimmed.match(/[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol|Tab)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]/i);
+      // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...]
+      const bracketMatch = trimmed.match(/^[【\[]\s*(?:Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol|Tab)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]$/i);
       if (bracketMatch) {
         return bracketMatch[0].replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
       }
