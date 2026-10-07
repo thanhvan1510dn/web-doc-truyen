@@ -254,37 +254,64 @@ export class DocumentParserService {
       const trimmed = normalizeLine(line);
       if (!trimmed || trimmed.length > 120) return null;
 
-      // Strip leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, 🔹, 🔸, etc.)
-      // and bracketed indicators like [✅], [v], (v), [x]
-      const cleaned = trimmed
-        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
-        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•\s]+\s*[】\]\)]\s*/u, "")
-        .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+$/u, "")
-        .trim();
+      // Ignore standard chapter headings
+      if (/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet)\s*\d+/i.test(trimmed)) {
+        return null;
+      }
 
-      const targetStr = cleaned.length > 0 ? cleaned : trimmed;
+      // 1. Chapter Range: matches anywhere in the line!
+      // Matches "✅ (3344-3371)", "(3344-3371)", "[✅] (3372-3398) Fan cuồng...", "Tab 1: (3399-3422)", "Vợ yêu trăm tỷ (3423-3456)", etc.
+      const cleanSymbols = (s: string) =>
+        (s || "")
+          .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-:\.]+\s*/u, "")
+          .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-:\.]+$/u, "")
+          .trim();
 
-      // 1. Chapter Range: (2904-2934), [2904-2934], 【2904-2934】 with optional title
-      const rangeMatch = targetStr.match(/^(?:[\(\[【]\s*)?(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])?(?:\s*[:\-\._]?\s*(.*))?$/i);
+      const cleanPrefix = (s: string) => {
+        let c = cleanSymbols(s);
+        c = c.replace(/^(?:Document\s*Tabs?|Tabs?|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap)\s*\d*[:\.\-]?\s*/i, "").trim();
+        return cleanSymbols(c);
+      };
+
+      const rangeMatch =
+        trimmed.match(/^(.*?)(?:[\(\[【]\s*)(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])(?:\s*[:\-\._\s]\s*(.*))?$/i) ||
+        trimmed.match(/(?:[\(\[【]\s*)?(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])?(?:\s*[:\-\._\s]\s*(.*))?$/i);
+
       if (rangeMatch) {
-        const from = parseInt(rangeMatch[1], 10);
-        const to = parseInt(rangeMatch[2], 10);
-        if (to >= from && to - from <= 800) {
-          const extra = rangeMatch[3] ? " " + rangeMatch[3].trim() : "";
-          return `(${from}-${to})${extra}`;
+        let prefix = "";
+        let from = 0;
+        let to = 0;
+        let suffix = "";
+        if (rangeMatch.length === 5) {
+          prefix = cleanPrefix(rangeMatch[1]);
+          from = parseInt(rangeMatch[2], 10);
+          to = parseInt(rangeMatch[3], 10);
+          suffix = cleanSymbols(rangeMatch[4]);
+        } else {
+          from = parseInt(rangeMatch[1], 10);
+          to = parseInt(rangeMatch[2], 10);
+          suffix = cleanSymbols(rangeMatch[3]);
+        }
+        if (to >= from && to - from <= 1000) {
+          const extraTitle = [prefix, suffix].filter(Boolean).join(" ");
+          return extraTitle ? `(${from}-${to}) ${extraTitle}` : `(${from}-${to})`;
         }
       }
 
-      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Arc / Vol (MUST have number or roman numeral)
-      const keywordMatch = targetStr.match(/^(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Arc|Vol(?:ume)?\.?)\s+(\d+|[IVXLCDM]+)(?:[:\-\._\s]+(.*))?$/i);
+      // 2. Keyword Volume / Vị diện / Thế giới / Quyển / Mục lục / Tập / Phần / Document Tabs / Arc / Vol
+      const keywordMatch = trimmed.match(/(?:Vị\s*diện|Vi\s*dien|Thế\s*giới|The\s*gioi|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Document\s*Tabs?|Tabs?|Arc|Vol(?:ume)?\.?)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?$/i);
       if (keywordMatch) {
-        return targetStr;
+        const cleaned = trimmed
+          .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+\s*/u, "")
+          .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+$/u, "")
+          .trim();
+        return cleaned || trimmed;
       }
 
       // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...] or 【Vị diện 1: ...】
-      const bracketMatch = targetStr.match(/^[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]$/i);
+      const bracketMatch = trimmed.match(/[【\[]\s*(?:Vị\s*diện|Thế\s*giới|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol|Tab)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]/i);
       if (bracketMatch) {
-        return targetStr.replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
+        return bracketMatch[0].replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
       }
 
       return null;
@@ -351,12 +378,25 @@ export class DocumentParserService {
       return null;
     };
 
-    for (let i = 0; i < rawLines.length; i++) {
-      const line = rawLines[i];
+    const processedLines: string[] = [];
+    for (const rawL of rawLines) {
+      const trimmed = normalizeLine(rawL);
+      const combinedMatch = trimmed.match(/^(.+?)\s+((?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|C)\s*\d+.*)$/i);
+      if (combinedMatch && isMajorTab(combinedMatch[1])) {
+        processedLines.push(combinedMatch[1]);
+        processedLines.push(combinedMatch[2]);
+      } else {
+        processedLines.push(rawL);
+      }
+    }
+
+    for (let i = 0; i < processedLines.length; i++) {
+      const line = processedLines[i];
       const majorTabTitle = isMajorTab(line);
       const chapInfo = isChapterHeading(line);
 
       if (majorTabTitle) {
+        console.log("[Parser] Phóng thích Mục lục mới:", majorTabTitle);
         flushChapter();
         currentVolume = {
           number: volumes.length + 1,
