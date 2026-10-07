@@ -401,8 +401,8 @@ export class DocumentParserService {
 
       // Clean leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, etc.)
       const cleaned = trimmed
-        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
-        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•]\s*[】\]\)]\s*/u, "")
+        .replace(/^[^\p{L}\p{N}\(\[【\s]+/u, "")
+        .replace(/[^\p{L}\p{N}\)\]】\s]+$/u, "")
         .trim();
 
       const targetStr = cleaned.length > 0 ? cleaned : trimmed;
@@ -432,18 +432,22 @@ export class DocumentParserService {
       }
 
       // Pattern 3: Numbered chapter headings like "2376. Tiêu đề" or "2376: Tiêu đề" or "2376 - Tiêu đề"
-      // (Strictly avoid dialogue lines starting or ending with quotes)
-      if (!/^["'“«「『]/.test(targetStr) && !/["'”»」』]$/.test(targetStr)) {
+      // (Must be short, not dialogue, not running narrative sentences ending with punctuation)
+      if (
+        !/^["'“«「『]/.test(targetStr) &&
+        !/["'”»」』]$/.test(targetStr) &&
+        !/[.!?…]$/.test(targetStr) &&
+        !targetStr.includes(",") &&
+        !targetStr.includes(";") &&
+        targetStr.length < 60
+      ) {
         const numMatch = targetStr.match(/^(\d{1,5})[ \t]*[:\-\._\)\/][ \t]+([^\d"“'«\.\?].+)$/);
         if (
           numMatch &&
-          targetStr.length < 90 &&
           !targetStr.includes("http") &&
           !targetStr.includes('"') &&
           !targetStr.includes('“') &&
-          !targetStr.includes('”') &&
-          !targetStr.includes('...') &&
-          !targetStr.includes('…')
+          !targetStr.includes('”')
         ) {
           const num = parseInt(numMatch[1], 10);
           return {

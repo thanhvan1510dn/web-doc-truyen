@@ -630,10 +630,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                                 setEditingVolNumber(volume.number);
                                 setEditingVolTitle(volume.title);
                               }}
-                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded transition-colors inline-flex items-center ml-1"
                               title="Sửa tên mục lục"
                             >
-                              <Edit3 className="w-3 h-3" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
 
                             {volume.number > 1 && (
