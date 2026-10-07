@@ -258,7 +258,8 @@ export class DocumentParserService {
       // and bracketed indicators like [✅], [v], (v), [x]
       const cleaned = trimmed
         .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
-        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•]\s*[】\]\)]\s*/u, "")
+        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•\s]+\s*[】\]\)]\s*/u, "")
+        .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+$/u, "")
         .trim();
 
       const targetStr = cleaned.length > 0 ? cleaned : trimmed;
@@ -467,7 +468,18 @@ export class DocumentParserService {
 
       if (pageIndex < 0 && title.length > 3) {
         const found = pageTexts.findIndex((pText) => pText.includes(title));
-        if (found >= 0) pageIndex = found;
+        if (found >= 0) {
+          pageIndex = found;
+        } else {
+          // If title has a chapter range like (3344-3371), find the first chapter in pageTexts
+          const rangeMatch = title.match(/(\d{1,5})\s*[-–—~]\s*(\d{1,5})/);
+          if (rangeMatch) {
+            const firstChap = parseInt(rangeMatch[1], 10);
+            const chapRegex = new RegExp(`(?:Chương|Chuong|Chapter|Chap|C)\\s*${firstChap}\\b`, "i");
+            const chapFound = pageTexts.findIndex((pText) => chapRegex.test(pText));
+            if (chapFound >= 0) pageIndex = chapFound;
+          }
+        }
       }
 
       const children = item.items && item.items.length > 0
@@ -491,21 +503,76 @@ export class DocumentParserService {
   ): ParsedVolume[] {
     const volumes: ParsedVolume[] = [];
 
+    const cleanVolumeTitle = (title: string): string => {
+      const trimmed = (title || "")
+        .normalize("NFKC")
+        .replace(/[\u00A0\u1680\u180e\u2000-\u200b\u202f\u205f\u3000\ufeff]/g, " ")
+        .trim();
+
+      const cleaned = trimmed
+        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
+        .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•\s]+\s*[】\]\)]\s*/u, "")
+        .replace(/[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]+$/u, "")
+        .trim();
+
+      return cleaned.length > 0 ? cleaned : trimmed;
+    };
+
     const isChapter = (title: string): boolean => {
-      const t = title.trim().toLowerCase();
-      return /^(?:chương|chuong|chapter|tiết|tiet|c\d+|q\d+c\d+)\b/i.test(t);
+      const clean = cleanVolumeTitle(title).toLowerCase();
+      return /^(?:chương|chuong|chapter|tiết|tiet|c\d+|q\d+c\d+)\b/i.test(clean);
     };
 
     const extractChapNumber = (title: string, fallback: number): number => {
-      const match = title.match(/(?:chương|chuong|chapter|c|tiết)\s*(\d+)/i) || title.match(/\b(\d+)\b/);
+      const clean = cleanVolumeTitle(title);
+      const match = clean.match(/(?:chương|chuong|chapter|c|tiết)\s*(\d+)/i) || clean.match(/\b(\d+)\b/);
       return match ? parseInt(match[1], 10) : fallback;
     };
 
     const hasNestedChildren = outline.some((item) => item.items && item.items.length > 0);
 
+    // Case 1: Outline items are Document Tabs / Major Volumes (e.g. Google Docs Document Tabs with checkmarks)
+    // where each tab represents a volume, and chapters are in the page body text rather than nested outline
+    const nonChapCount = outline.filter((item) => !isChapter(item.title)).length;
+    const isDocumentTabsOutline = outline.length > 0 && nonChapCount >= Math.ceil(outline.length / 2) && outline.every((item) => (!item.items || item.items.length === 0));
+
+    if (isDocumentTabsOutline) {
+      outline.forEach((tabItem, idx) => {
+        const rawTitle = (tabItem.title || "").trim();
+        const tabTitle = cleanVolumeTitle(rawTitle) || `Mục lục ${idx + 1}`;
+
+        const startPage = tabItem.pageIndex >= 0 ? tabItem.pageIndex : 0;
+        let endPage = numPages - 1;
+        if (idx < outline.length - 1 && outline[idx + 1].pageIndex >= 0) {
+          endPage = outline[idx + 1].pageIndex - 1;
+        }
+        if (endPage < startPage) endPage = startPage;
+
+        const tabText = pageTexts.slice(startPage, endPage + 1).join("\n\n");
+        const parsedVols = this.parseDocumentLines(tabText);
+        const chapters = parsedVols.flatMap((v) => v.chapters);
+
+        if (chapters.length > 0) {
+          volumes.push({
+            number: volumes.length + 1,
+            title: tabTitle,
+            chapters,
+          });
+        }
+      });
+
+      if (volumes.length > 0) {
+        volumes.forEach((v, idx) => {
+          v.number = idx + 1;
+        });
+        return volumes;
+      }
+    }
+
     if (hasNestedChildren) {
       outline.forEach((parentItem, pIdx) => {
-        const parentTitle = (parentItem.title || "").trim() || ("Mục lục " + (pIdx + 1));
+        const rawParentTitle = (parentItem.title || "").trim();
+        const parentTitle = cleanVolumeTitle(rawParentTitle) || ("Mục lục " + (pIdx + 1));
         const chapters: ParsedChapter[] = [];
 
         if (parentItem.items && parentItem.items.length > 0) {
@@ -539,6 +606,18 @@ export class DocumentParserService {
           });
         }
 
+        if (chapters.length === 0) {
+          const startPage = parentItem.pageIndex >= 0 ? parentItem.pageIndex : 0;
+          let endPage = numPages - 1;
+          if (pIdx < outline.length - 1 && outline[pIdx + 1].pageIndex >= 0) {
+            endPage = outline[pIdx + 1].pageIndex - 1;
+          }
+          if (endPage < startPage) endPage = startPage;
+          const tabText = pageTexts.slice(startPage, endPage + 1).join("\n\n");
+          const parsedVols = this.parseDocumentLines(tabText);
+          chapters.push(...parsedVols.flatMap((v) => v.chapters));
+        }
+
         if (chapters.length > 0) {
           volumes.push({
             number: volumes.length + 1,
@@ -559,7 +638,8 @@ export class DocumentParserService {
             volumes.push(currentVolume);
           }
 
-          const volTitle = (item.title || "").trim();
+          const rawVolTitle = (item.title || "").trim();
+          const volTitle = cleanVolumeTitle(rawVolTitle);
           currentVolume = {
             number: volumes.length + 1,
             title: volTitle || ("Mục lục " + (volumes.length + 1)),
