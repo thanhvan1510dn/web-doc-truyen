@@ -884,6 +884,9 @@ export class DocumentParserService {
       vol.number = vIdx + 1;
 
       // Smart naming for volume if title is missing, empty, or generic fallback ("Mục lục X", bare "(min-max)")
+      const cleanBaseName = fileName.replace(/\.(pdf|docx|txt)$/i, "").trim();
+      const fileNameHasInfo = cleanBaseName && !/^(?:document|untitled|tài liệu|tệp|file)\b/i.test(cleanBaseName);
+
       if (vol.chapters.length > 0) {
         const chapNumbers = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
         if (chapNumbers.length > 0) {
@@ -892,16 +895,20 @@ export class DocumentParserService {
           const canonTitle = findCanonArc(minCh, maxCh);
           const isBare = !vol.title || /^Mục\s*lục\s*\d+$/i.test(vol.title.trim()) || /^\(\d+-\d+\)$/.test(vol.title.trim());
 
-          if (canonTitle && (isBare || !vol.title.includes(" "))) {
+          if (canonTitle && canonTitle.includes(" ")) {
+            vol.title = canonTitle;
+          } else if (volumes.length === 1 && isBare && fileNameHasInfo) {
+            vol.title = cleanBaseName;
+          } else if (canonTitle) {
             vol.title = canonTitle;
           } else if (isBare) {
             vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
           }
         } else if (!vol.title || !vol.title.trim()) {
-          vol.title = `Mục lục ${vIdx + 1}`;
+          vol.title = (volumes.length === 1 && fileNameHasInfo) ? cleanBaseName : `Mục lục ${vIdx + 1}`;
         }
       } else if (!vol.title || !vol.title.trim()) {
-        vol.title = `Mục lục ${vIdx + 1}`;
+        vol.title = (volumes.length === 1 && fileNameHasInfo) ? cleanBaseName : `Mục lục ${vIdx + 1}`;
       }
 
       vol.chapters.forEach((chap) => {

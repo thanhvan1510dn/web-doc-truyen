@@ -916,7 +916,8 @@ class StoryStorageService {
 
         const existingVolIndex = currentVolumes.findIndex((v) => {
           const vNorm = (v.title || "").trim().toLowerCase();
-          if (vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
+          const isGenericTitle = /^mục\s*lục\s*\d+$/i.test(vNorm) || /^mục\s*lục\s*\d+$/i.test(normalizedPvTitle);
+          if (!isGenericTitle && vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
 
           // Match by chapter range (e.g. (3372-3398) matches (3372-3398) Fan cuồng bá đạo)
           const vRange = (v.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);

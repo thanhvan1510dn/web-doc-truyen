@@ -288,6 +288,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
         if (done.length === 1 && merged.detectedTitle) {
           setNewStoryTitle(merged.detectedTitle);
           setNewStoryDesc(`Tác phẩm gồm ${merged.totalVolumes} Mục lục trích xuất từ ${done[0].file.name}`);
+        } else if (done.length > 1 && !newStoryTitle.trim()) {
+          const commonTitle = stories.length > 0 ? stories[0].title : (merged.detectedTitle || "Bút Ký Phản Công");
+          setNewStoryTitle(commonTitle);
+          setNewStoryDesc(`Tác phẩm gồm ${merged.totalVolumes} Mục lục gộp từ ${done.length} tệp.`);
         }
 
         if (enrichedCount > 0) {
@@ -453,8 +457,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
       {/* Upload Zone — always visible until user clicks reset */}
       {fileEntries.length === 0 ? (
-        <div
-          onClick={() => fileInputRef.current?.click()}
+        <label
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -462,10 +465,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               addFiles(Array.from(e.dataTransfer.files));
             }
           }}
-          className="p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 shadow-sm"
+          className="p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 shadow-sm block"
         >
           <input
-            ref={fileInputRef}
             type="file"
             accept=".pdf,.docx,.txt"
             multiple
@@ -473,6 +475,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
                 addFiles(Array.from(e.target.files));
+                e.target.value = "";
               }
             }}
           />
@@ -485,7 +488,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
           <p className="text-xs text-zinc-500 mt-1">
             Hỗ trợ .PDF · .DOCX · .TXT · Có thể chọn nhiều file cùng lúc
           </p>
-        </div>
+        </label>
       ) : (
         /* File list panel */
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
@@ -515,13 +518,21 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
             <div className="flex items-center gap-2">
               {/* Add more files button */}
               {!isAnyParsing && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium transition-colors flex items-center gap-1"
-                >
+                <label className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium transition-colors flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        addFiles(Array.from(e.target.files));
+                        e.target.value = "";
+                      }
+                    }}
+                  />
                   <Plus className="w-3.5 h-3.5" /> Thêm tệp
-                </button>
+                </label>
               )}
               <button
                 type="button"
@@ -532,19 +543,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               </button>
             </div>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx,.txt"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) {
-                addFiles(Array.from(e.target.files));
-                e.target.value = "";
-              }
-            }}
-          />
 
           {/* file rows */}
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
