@@ -54,7 +54,14 @@ export const BKP_CANON_ARCS: CanonArc[] = [
   { from: 3579, to: 3632, title: "(3579-3632)", arcName: "" },
   { from: 3633, to: 3667, title: "(3633-3667) Giản La", arcName: "Giản La" },
   { from: 3668, to: 3699, title: "(3668-3699)", arcName: "" },
-  { from: 3700, to: 3728, title: "(3700-3728) Ma pháp sư", arcName: "Ma pháp sư" }
+  { from: 3700, to: 3728, title: "(3700-3728) Ma pháp sư", arcName: "Ma pháp sư" },
+  { from: 3729, to: 3769, title: "(3729-3769)", arcName: "" },
+  { from: 3770, to: 3787, title: "(3770-3787) Lưỡng nan", arcName: "Lưỡng nan" },
+  { from: 3788, to: 3810, title: "(3788-3810) Si nữ", arcName: "Si nữ" },
+  { from: 3811, to: 3846, title: "(3811-3846)", arcName: "" },
+  { from: 3847, to: 3862, title: "(3847-3862) Cướp lấy", arcName: "Cướp lấy" },
+  { from: 3863, to: 3872, title: "(3863-3872)", arcName: "" },
+  { from: 3873, to: 3910, title: "(3873-3910) Di", arcName: "Di" }
 ];
 
 export function findCanonArc(from: number, to: number): string | null {
