@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  CheckCircle2, RefreshCw, Files,
-  Plus, Minus, X, Edit3, Check, Scissors, Trash2, Sparkles, AlertCircle
+  CheckCircle2, RefreshCw, Files, ChevronDown, ChevronUp,
+  Plus, X, Edit3, Check, Scissors, Trash2, Sparkles, AlertCircle, ArrowRight
 } from "lucide-react";
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
@@ -27,47 +27,51 @@ interface FileEntry {
   error?: string;
 }
 
-// Merge multiple DocumentParseResult into one, re-numbering volumes sequentially
-// and deduplicating chapters by chapter number (higher file index wins)
+// Helper: lấy số chương bắt đầu của một Volume để sắp xếp tự nhiên
+function getVolumeStartChapter(vol: ParsedVolume): number {
+  const chaps = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
+  if (chaps.length > 0) return Math.min(...chaps);
+  const match = (vol.title || "").match(/\b(\d{1,5})\b/);
+  return match ? parseInt(match[1], 10) : 999999;
+}
+
+// Merge multiple DocumentParseResult into one, tự động sắp xếp theo thứ tự chương tăng dần
 function mergeResults(entries: FileEntry[]): DocumentParseResult | null {
   const doneEntries = entries.filter((e) => e.status === "done" && e.result);
   if (doneEntries.length === 0) return null;
 
-  let allVolumes: ParsedVolume[] = [];
-  let volOffset = 0;
-
+  // Thu thập toàn bộ volumes từ các file đã hoàn thành
+  const rawVolumes: ParsedVolume[] = [];
   for (const entry of doneEntries) {
-    const vols = entry.result!.volumes;
-    for (const vol of vols) {
-      allVolumes.push({ ...vol, number: volOffset + vol.number });
+    if (entry.result?.volumes) {
+      for (const vol of entry.result.volumes) {
+        const sortedChaps = [...vol.chapters].sort((a, b) => a.number - b.number);
+        rawVolumes.push({ ...vol, chapters: sortedChaps });
+      }
     }
-    volOffset += vols.length;
   }
 
-  // Re-number sequentially
-  allVolumes = allVolumes.map((v, i) => ({ ...v, number: i + 1 }));
+  // TỰ ĐỘNG SẮP XẾP TẤT CẢ MỤC LỤC THEO SỐ CHƯƠNG TĂNG DẦN (3344 -> 3372 -> ... -> 3873)
+  rawVolumes.sort((a, b) => getVolumeStartChapter(a) - getVolumeStartChapter(b));
 
-  // Dedup chapters across volumes: keep latest by chapter number
-  // (later file wins for same chap number)
+  // Loại bỏ chương trùng lặp (nếu trùng số chương, ưu tiên file xuất hiện sau)
   const chapSeen = new Map<number, boolean>();
   const dedupedVolumes: ParsedVolume[] = [];
 
-  // Process in reverse so later files' chapters take precedence;
-  // then reverse back
-  for (let i = allVolumes.length - 1; i >= 0; i--) {
-    const vol = allVolumes[i];
+  for (let i = rawVolumes.length - 1; i >= 0; i--) {
+    const vol = rawVolumes[i];
     const dedupedChapters = vol.chapters.filter((c) => {
       if (chapSeen.has(c.number)) return false;
       chapSeen.set(c.number, true);
       return true;
     });
-    dedupedVolumes.unshift({ ...vol, chapters: dedupedChapters });
+    if (dedupedChapters.length > 0) {
+      dedupedVolumes.unshift({ ...vol, chapters: dedupedChapters });
+    }
   }
 
-  // Remove empty volumes
-  const finalVolumes = dedupedVolumes
-    .filter((v) => v.chapters.length > 0)
-    .map((v, i) => ({ ...v, number: i + 1 }));
+  // Đánh số thứ tự tuần tự chuẩn 1, 2, 3...
+  const finalVolumes = dedupedVolumes.map((v, i) => ({ ...v, number: i + 1 }));
 
   const totalChapters = finalVolumes.reduce((s, v) => s + v.chapters.length, 0);
   const totalWords = finalVolumes.reduce(
@@ -92,11 +96,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
   const [stories, setStories] = useState<Story[]>([]);
 
-  // Multi-file list
+  // Multi-file state
   const [fileEntries, setFileEntries] = useState<FileEntry[]>([]);
   const [isAnyParsing, setIsAnyParsing] = useState(false);
+  const [showFileDetail, setShowFileDetail] = useState(false);
 
-  // Merged result after all files parsed
+  // Merged result
   const [parseResult, setParseResult] = useState<DocumentParseResult | null>(null);
 
   // Target Mode
@@ -104,7 +109,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   const [selectedStoryId, setSelectedStoryId] = useState<string>(storyId || "");
   const [replaceExisting, setReplaceExisting] = useState(false);
 
-  // New Story Form
+  // New Story Form (khi không có storyId)
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryAuthor, setNewStoryAuthor] = useState("");
   const [newStoryGenre, setNewStoryGenre] = useState<StoryGenre>("Huyền Huyễn");
@@ -114,6 +119,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   const [newStoryDesc, setNewStoryDesc] = useState("");
 
   const [expandedVolIds, setExpandedVolIds] = useState<Record<number, boolean>>({});
+  const [allExpanded, setAllExpanded] = useState(false);
   const [editingVolNumber, setEditingVolNumber] = useState<number | null>(null);
   const [editingVolTitle, setEditingVolTitle] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
@@ -139,7 +145,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     }
   }, [storyId]);
 
-  // --- Enrich logic (unchanged) ---
+  // Làm giàu tên vị diện theo Canon Arcs
   const enrichVolumes = (
     vols: ParsedVolume[],
     targetStoryIdArg: string
@@ -158,35 +164,33 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
       if (targetStory && Array.isArray(targetStory.volumes)) {
         const matched = targetStory.volumes.find((ev) => {
           const evRange = (ev.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
-          if (evRange && minCh > 0 && maxCh > 0) {
-            return parseInt(evRange[1], 10) === minCh && parseInt(evRange[2], 10) === maxCh;
-          }
-          if (Array.isArray(ev.chapters) && ev.chapters.length > 0) {
-            const evNums = new Set(ev.chapters.map((c) => c.number).filter((n) => n > 0));
-            let overlap = 0;
-            chapNumbers.forEach((n) => { if (evNums.has(n)) overlap++; });
-            return overlap >= Math.min(ev.chapters.length, chapNumbers.length) * 0.5 && overlap > 0;
+          if (evRange) {
+            const evMin = parseInt(evRange[1], 10);
+            const evMax = parseInt(evRange[2], 10);
+            return minCh >= evMin && maxCh <= evMax && ev.title.trim().length > evRange[0].length;
           }
           return false;
         });
-
-        if (matched && matched.title && matched.title.includes(" ") && !matched.title.startsWith("Mục lục")) {
-          if (vol.title !== matched.title) {
+        if (matched && matched.title) {
+          const currentClean = vol.title.trim();
+          const targetClean = matched.title.trim();
+          if (currentClean !== targetClean && currentClean.length <= 15) {
             enrichedCount++;
-            arcNames.push(matched.title);
+            arcNames.push(targetClean);
+            return { ...vol, title: targetClean };
           }
-          return { ...vol, title: matched.title };
         }
       }
 
       if (minCh > 0 && maxCh > 0) {
-        const canon = findCanonArc(minCh, maxCh);
-        if (canon && canon.includes(" ")) {
-          if (vol.title !== canon) {
+        const canonTitle = findCanonArc(minCh, maxCh);
+        if (canonTitle) {
+          const currentClean = vol.title.trim();
+          if (currentClean !== canonTitle && currentClean.length <= 15) {
             enrichedCount++;
-            arcNames.push(canon);
+            arcNames.push(canonTitle);
+            return { ...vol, title: canonTitle };
           }
-          return { ...vol, title: canon };
         }
       }
 
@@ -201,13 +205,13 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes, selectedStoryId);
     setParseResult({ ...parseResult, volumes: enriched });
     if (enrichedCount > 0) {
-      toast.success(`✨ Đã tự động nhận diện và gán ${enrichedCount} tên Mục lục: ${arcNames.join(", ")}`);
+      toast.success(`✨ Đã nhận diện và gán ${enrichedCount} tên vị diện: ${arcNames.slice(0, 3).join(", ")}${arcNames.length > 3 ? "..." : ""}`);
     } else {
-      toast.info("Các mục lục đã ở trạng thái chuẩn.");
+      toast.info("Tên các mục lục đã ở trạng thái tối ưu.");
     }
   };
 
-  // --- Multi-file add ---
+  // Thêm tệp tải lên
   const addFiles = async (newFiles: File[]) => {
     const valid: File[] = [];
     for (const file of newFiles) {
@@ -220,7 +224,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     }
     if (valid.length === 0) return;
 
-    // Reset preview if there was one
     setParseResult(null);
 
     const newEntries: FileEntry[] = valid.map((f) => ({
@@ -234,11 +237,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     setFileEntries((prev) => [...prev, ...newEntries]);
     setIsAnyParsing(true);
 
-    // Parse them sequentially (to avoid memory spikes with large PDFs)
     for (const entry of newEntries) {
       setFileEntries((prev) =>
         prev.map((e) =>
-          e.id === entry.id ? { ...e, status: "parsing", progress: 0, progressMsg: "Bắt đầu..." } : e
+          e.id === entry.id ? { ...e, status: "parsing", progress: 0, progressMsg: "Đang đọc..." } : e
         )
       );
 
@@ -273,7 +275,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     setIsAnyParsing(false);
   };
 
-  // After fileEntries change, auto-merge and show preview if all done
+  // Khi fileEntries thay đổi, tự động hợp nhất và sắp xếp
   useEffect(() => {
     const pending = fileEntries.filter((e) => e.status === "pending" || e.status === "parsing");
     const done = fileEntries.filter((e) => e.status === "done");
@@ -296,10 +298,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
         if (enrichedCount > 0) {
           toast.success(
-            `✨ ${done.length} file · ${merged.totalVolumes} Mục lục · Khớp ${enrichedCount} tên vị diện: ${arcNames.slice(0, 2).join(", ")}${arcNames.length > 2 ? "..." : ""}`
+            `✨ ${done.length} tệp · ${merged.totalVolumes} Mục lục (đã tự sắp xếp thứ tự) · Khớp ${enrichedCount} vị diện: ${arcNames.slice(0, 2).join(", ")}${arcNames.length > 2 ? "..." : ""}`
           );
         } else {
-          toast.success(`Đã đọc ${done.length} file · ${merged.totalVolumes} Mục lục · ${merged.totalChapters} chương`);
+          toast.success(`Đã nạp ${done.length} tệp · ${merged.totalVolumes} Mục lục · ${merged.totalChapters} chương`);
         }
       }
     }
@@ -308,7 +310,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   const removeFile = (id: string) => {
     setFileEntries((prev) => {
       const updated = prev.filter((e) => e.id !== id);
-      // Rebuild merged result
       if (updated.length === 0) {
         setParseResult(null);
       } else {
@@ -320,8 +321,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
             const { enriched } = enrichVolumes(merged.volumes, targetId);
             merged.volumes = enriched;
             setParseResult(merged);
-          } else {
-            setParseResult(null);
           }
         }
       }
@@ -332,21 +331,35 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   const resetAll = () => {
     setFileEntries([]);
     setParseResult(null);
-    setIsAnyParsing(false);
+    setExpandedVolIds({});
+    setEditingVolNumber(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    toast.info("Đã làm mới khu vực tải lên.");
   };
 
-  // --- Volume editing helpers (unchanged) ---
   const toggleVolumeCollapse = (volNumber: number) => {
     setExpandedVolIds((prev) => ({ ...prev, [volNumber]: !prev[volNumber] }));
   };
 
+  const handleToggleExpandAll = () => {
+    if (!parseResult) return;
+    const nextState = !allExpanded;
+    setAllExpanded(nextState);
+    const newMap: Record<number, boolean> = {};
+    if (nextState) {
+      parseResult.volumes.forEach((v) => {
+        newMap[v.number] = true;
+      });
+    }
+    setExpandedVolIds(newMap);
+  };
+
   const handleSaveVolTitle = (volNumber: number) => {
-    if (!parseResult || !editingVolTitle.trim()) { setEditingVolNumber(null); return; }
-    const updatedVolumes = parseResult.volumes.map((v) =>
+    if (!parseResult || !editingVolTitle.trim()) return;
+    const updated = parseResult.volumes.map((v) =>
       v.number === volNumber ? { ...v, title: editingVolTitle.trim() } : v
     );
-    setParseResult({ ...parseResult, volumes: updatedVolumes });
+    setParseResult({ ...parseResult, volumes: updated });
     setEditingVolNumber(null);
     toast.success("Đã đổi tên Mục lục!");
   };
@@ -427,13 +440,21 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
           },
           parseResult.volumes
         );
-        if (res.success) { toast.success("Đã lưu truyện " + res.data.title + " thành công!"); if (onSuccess) onSuccess(res.data.id); }
-        else toast.error(res.error || "Không thể nạp truyện");
+        if (res.success) {
+          toast.success("Đã lưu truyện " + res.data.title + " thành công!");
+          if (onSuccess) onSuccess(res.data.id);
+        } else {
+          toast.error(res.error || "Không thể nạp truyện");
+        }
       } else {
         if (!selectedStoryId) { toast.error("Vui lòng chọn truyện đích"); setIsSaving(false); return; }
         const res = await storyApi.importParsedVolumes(selectedStoryId, parseResult.volumes, replaceExisting);
-        if (res.success) { toast.success("Đã nạp nội dung vào truyện thành công!"); if (onSuccess) onSuccess(selectedStoryId); }
-        else toast.error(res.error || "Không thể nạp dữ liệu");
+        if (res.success) {
+          toast.success(`Đã nạp ${parseResult.totalVolumes} Mục lục vào truyện thành công!`);
+          if (onSuccess) onSuccess(selectedStoryId);
+        } else {
+          toast.error(res.error || "Không thể nạp dữ liệu");
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Có lỗi xảy ra khi lưu");
@@ -445,17 +466,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
   const doneCount = fileEntries.filter((e) => e.status === "done").length;
   const errorCount = fileEntries.filter((e) => e.status === "error").length;
   const parsingCount = fileEntries.filter((e) => e.status === "parsing").length;
+  const currentStoryObj = stories.find((s) => s.id === (selectedStoryId || storyId));
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Page Header */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-          Nạp file
-        </h2>
-      </div>
-
-      {/* Upload Zone — always visible until user clicks reset */}
+    <div className="space-y-5 max-w-4xl mx-auto">
+      {/* 1. KHU VỰC TẢI LÊN (Chưa có file hoặc muốn nạp mới) */}
       {fileEntries.length === 0 ? (
         <label
           onDragOver={(e) => e.preventDefault()}
@@ -465,9 +480,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               addFiles(Array.from(e.dataTransfer.files));
             }
           }}
-          className="p-8 sm:p-14 rounded-2xl border border-dashed text-center cursor-pointer transition-all border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-700 shadow-sm block"
+          className="p-10 sm:p-14 rounded-2xl border-2 border-dashed text-center cursor-pointer transition-all border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900 block group"
         >
           <input
+            ref={fileInputRef}
             type="file"
             accept=".pdf,.docx,.txt"
             multiple
@@ -479,46 +495,62 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               }
             }}
           />
-          <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mx-auto mb-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center mx-auto mb-3 shadow-sm border border-zinc-200/80 dark:border-zinc-700 group-hover:scale-105 transition-transform">
             <Files className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-            Kéo thả hoặc bấm để chọn nhiều tệp
+          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
+            Kéo thả hoặc bấm để chọn tệp truyện
           </h3>
-          <p className="text-xs text-zinc-500 mt-1">
-            Hỗ trợ .PDF · .DOCX · .TXT · Có thể chọn nhiều file cùng lúc
+          <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
+            Hỗ trợ nạp cùng lúc nhiều file <b>.PDF</b> · <b>.DOCX</b> · <b>.TXT</b> (Hệ thống tự động sắp xếp theo thứ tự chương)
           </p>
         </label>
       ) : (
-        /* File list panel */
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
-          {/* header */}
-          <div className="px-4 py-3 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
-            <div className="flex items-center gap-2">
-              <Files className="w-4 h-4 text-zinc-500" />
-              <span className="text-sm font-semibold text-zinc-900 dark:text-white">
-                {fileEntries.length} tệp
-              </span>
-              {doneCount > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                  {doneCount} xong
-                </span>
-              )}
-              {parsingCount > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
-                  <RefreshCw className="w-2.5 h-2.5 animate-spin" /> {parsingCount} đang đọc
-                </span>
-              )}
-              {errorCount > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                  {errorCount} lỗi
-                </span>
-              )}
+        /* 2. THANH QUẢN LÝ TỆP NGUỒN GỌN GÀNG (FILE HUB - 1 HÀNG DUY NHẤT) */
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden text-xs">
+          <div className="p-3.5 flex items-center justify-between gap-3">
+            {/* Tóm tắt ngắn gọn */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-zinc-900 dark:text-white">
+                    {doneCount}/{fileEntries.length} tệp đã nạp
+                  </span>
+                  {parseResult && (
+                    <span className="text-zinc-500 font-medium">
+                      • {parseResult.totalVolumes} Mục lục • {parseResult.totalChapters} chương
+                    </span>
+                  )}
+                  {parsingCount > 0 && (
+                    <span className="text-blue-500 flex items-center gap-1 font-medium animate-pulse">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Đang đọc {parsingCount} tệp...
+                    </span>
+                  )}
+                  {errorCount > 0 && (
+                    <span className="text-rose-500 font-medium">
+                      ({errorCount} lỗi)
+                    </span>
+                  )}
+                </div>
+                {/* Nút bấm xem danh sách tệp nguồn */}
+                <button
+                  type="button"
+                  onClick={() => setShowFileDetail(!showFileDetail)}
+                  className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 font-medium flex items-center gap-1 mt-0.5"
+                >
+                  {showFileDetail ? "Thu gọn danh sách tệp" : "Xem chi tiết tệp"}
+                  {showFileDetail ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Add more files button */}
+
+            {/* Các nút hành động nhanh */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {!isAnyParsing && (
-                <label className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium transition-colors flex items-center gap-1 cursor-pointer">
+                <label className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium transition-colors flex items-center gap-1 cursor-pointer">
                   <input
                     type="file"
                     accept=".pdf,.docx,.txt"
@@ -537,239 +569,225 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
               <button
                 type="button"
                 onClick={resetAll}
-                className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-400 hover:text-rose-500 hover:border-rose-200 font-medium transition-colors"
+                className="px-2.5 py-1.5 rounded-lg text-zinc-400 hover:text-rose-500 font-medium transition-colors"
+                title="Làm mới lại từ đầu"
               >
                 Đặt lại
               </button>
             </div>
           </div>
 
-          {/* file rows */}
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {fileEntries.map((entry) => (
-              <div key={entry.id} className="px-4 py-3 flex items-center gap-3 text-xs">
-                {/* status icon */}
-                <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                  {entry.status === "done" && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />}
-                  {entry.status === "parsing" && <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />}
-                  {entry.status === "pending" && <div className="w-3 h-3 rounded-full border-2 border-zinc-300 dark:border-zinc-600" />}
-                  {entry.status === "error" && <AlertCircle className="w-4 h-4 text-rose-500" />}
-                </div>
-
-                {/* file name + info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                      {entry.file.name}
-                    </span>
-                    {entry.status === "done" && entry.result && (
-                      <span className="flex-shrink-0 text-zinc-400">
-                        {entry.result.totalVolumes}ML · {entry.result.totalChapters}ch
-                      </span>
-                    )}
-                    {entry.status === "error" && (
-                      <span className="flex-shrink-0 text-rose-500">{entry.error}</span>
+          {/* Chi tiết từng file (Thu gọn mặc định, cuộn mượt max-h-44) */}
+          {showFileDetail && (
+            <div className="border-t border-zinc-100 dark:border-zinc-800 p-2 max-h-44 overflow-y-auto space-y-1 bg-zinc-50/50 dark:bg-zinc-900/50">
+              {fileEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-800/80 border border-zinc-100 dark:border-zinc-700/60 flex items-center justify-between gap-2 text-[11px]"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    {entry.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
+                    {entry.status === "parsing" && <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500 flex-shrink-0" />}
+                    {entry.status === "error" && <AlertCircle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />}
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate">{entry.file.name}</span>
+                    {entry.result && (
+                      <span className="text-zinc-400 flex-shrink-0">({entry.result.totalChapters} ch)</span>
                     )}
                   </div>
-                  {entry.status === "parsing" && (
-                    <div className="mt-1.5 space-y-1">
-                      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
-                        <div
-                          className="bg-blue-500 h-full rounded-full transition-all duration-200"
-                          style={{ width: entry.progress + "%" }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-zinc-400 font-mono">{entry.progress}% · {entry.progressMsg}</p>
-                    </div>
+                  {!isAnyParsing && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(entry.id)}
+                      className="text-zinc-400 hover:text-rose-500 p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
-
-                {/* remove */}
-                {!isAnyParsing && (
-                  <button
-                    type="button"
-                    onClick={() => removeFile(entry.id)}
-                    className="flex-shrink-0 p-1 text-zinc-300 hover:text-rose-500 rounded transition-colors"
-                    title="Xóa tệp này"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Parse Result & Setup Form */}
+      {/* 3. KHU VỰC CẤU HÌNH & XEM TRƯỚC MỤC LỤC */}
       {parseResult && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Summary Top Bar */}
-          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-sm text-zinc-900 dark:text-white">
-                  {doneCount} tệp · {parseResult.totalVolumes} Mục lục · {parseResult.totalChapters} chương
-                </h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  {fileEntries.filter((e) => e.status === "done").map((e) => e.file.name).join(" + ")}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={handleConfirmImport}
-                disabled={isSaving}
-                className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center disabled:opacity-50"
-              >
-                <span>{isSaving ? "Đang lưu..." : "Lưu & Nạp vào hệ thống"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Import Mode Form */}
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
-            {storyId ? (
-              <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">Truyện đích tiếp nhận chương</span>
-                  <p className="font-bold text-zinc-900 dark:text-white text-sm mt-0.5">
-                    {stories.find((s) => s.id === storyId)?.title || "Truyện hiện tại"}
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input type="radio" name="importMode" checked={!replaceExisting} onChange={() => setReplaceExisting(false)} className="text-zinc-900 focus:ring-0" />
-                    <span className={!replaceExisting ? "font-bold text-emerald-600 dark:text-emerald-400" : "text-zinc-500"}>➕ Gộp tiếp nối (File tiếp theo)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium">
-                    <input type="radio" name="importMode" checked={replaceExisting} onChange={() => setReplaceExisting(true)} className="text-zinc-900 focus:ring-0" />
-                    <span className={replaceExisting ? "font-bold text-rose-600 dark:text-rose-400" : "text-zinc-500"}>⚠️ Ghi đè toàn bộ</span>
-                  </label>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit text-xs font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setTargetMode("new")}
-                    className={"px-3 py-1.5 rounded-md transition-all " + (targetMode === "new" ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white")}
-                  >
-                    Tạo truyện mới
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTargetMode("existing")}
-                    className={"px-3 py-1.5 rounded-md transition-all " + (targetMode === "existing" ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white")}
-                  >
-                    Nạp vào truyện có sẵn ({stories.length})
-                  </button>
-                </div>
-
-                {targetMode === "new" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tên truyện</label>
-                      <input type="text" value={newStoryTitle} onChange={(e) => setNewStoryTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400" required />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tác giả</label>
-                      <input type="text" value={newStoryAuthor} onChange={(e) => setNewStoryAuthor(e.target.value)} placeholder="Chưa rõ" className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Thể loại</label>
-                      <select value={newStoryGenre} onChange={(e) => setNewStoryGenre(e.target.value as StoryGenre)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400">
-                        <option value="Huyền Huyễn">Huyền Huyễn</option>
-                        <option value="Tiên Hiệp">Tiên Hiệp</option>
-                        <option value="Khoa Huyễn">Khoa Huyễn</option>
-                        <option value="Đô Thị">Đô Thị</option>
-                        <option value="Dị Giới">Dị Giới</option>
-                        <option value="Hệ Thống">Hệ Thống</option>
-                        <option value="Ngôn Tình">Ngôn Tình</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Ảnh bìa (URL)</label>
-                      <input type="text" value={newStoryCover} onChange={(e) => setNewStoryCover(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Chọn truyện nhận file tiếp theo</label>
-                      <select
-                        value={selectedStoryId}
-                        onChange={(e) => {
-                          const newId = e.target.value;
-                          setSelectedStoryId(newId);
-                          if (parseResult) {
-                            const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes, newId);
-                            if (enrichedCount > 0) {
-                              setParseResult({ ...parseResult, volumes: enriched });
-                              toast.success(`✨ Tự động nhận diện ${enrichedCount} tên Mục lục: ${arcNames.join(", ")}`);
-                            }
-                          }
-                        }}
-                        className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-900 dark:text-white"
-                      >
-                        {stories.map((s) => (
-                          <option key={s.id} value={s.id}>{s.title} ({s.volumes.length} mục lục)</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 flex flex-col sm:flex-row gap-4 text-xs">
-                      <label className="flex items-center gap-2 cursor-pointer font-medium">
-                        <input type="radio" name="importModeExisting" checked={!replaceExisting} onChange={() => setReplaceExisting(false)} className="text-zinc-900 focus:ring-0" />
-                        <span className={!replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>Gộp thông minh (Đè nội dung lên mục lục trùng tên, thêm tiếp nối mục lục mới)</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer font-medium">
-                        <input type="radio" name="importModeExisting" checked={replaceExisting} onChange={() => setReplaceExisting(true)} className="text-zinc-900 focus:ring-0" />
-                        <span className={replaceExisting ? "font-semibold text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}>Ghi đè toàn bộ truyện (Xoá hết mục lục cũ)</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Volumes & Chapters Tree */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="space-y-4">
+          {/* Cấu hình chế độ nạp (Tinh gọn, không lặp lại tên truyện) */}
+          {storyId ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 text-xs">
               <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-xs text-zinc-900 dark:text-white">
+                <span className="font-semibold text-zinc-500">Chế độ nạp:</span>
+                <div className="inline-flex rounded-lg border border-zinc-200 dark:border-zinc-700 p-0.5 bg-white dark:bg-zinc-900">
+                  <button
+                    type="button"
+                    onClick={() => setReplaceExisting(false)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      !replaceExisting
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Gộp tiếp nối (Khuyên dùng)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReplaceExisting(true)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      replaceExisting
+                        ? "bg-rose-500 text-white shadow-sm"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
+                    }`}
+                  >
+                    <AlertCircle className="w-3.5 h-3.5" /> Ghi đè toàn bộ
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                {!replaceExisting
+                  ? `Nối ${parseResult.totalVolumes} mục lục mới vào sau các mục lục hiện có.`
+                  : "⚠️ Sẽ thay thế toàn bộ mục lục và chương cũ."}
+              </p>
+            </div>
+          ) : (
+            /* Khi không có storyId sẵn */
+            <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3 text-xs">
+              <div className="flex items-center p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 w-fit font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setTargetMode("new")}
+                  className={`px-3 py-1.5 rounded-md transition-all ${
+                    targetMode === "new" ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500"
+                  }`}
+                >
+                  Tạo truyện mới
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTargetMode("existing")}
+                  className={`px-3 py-1.5 rounded-md transition-all ${
+                    targetMode === "existing" ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm" : "text-zinc-500"
+                  }`}
+                >
+                  Nạp vào truyện có sẵn ({stories.length})
+                </button>
+              </div>
+
+              {targetMode === "new" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Tên truyện</label>
+                    <input
+                      type="text"
+                      value={newStoryTitle}
+                      onChange={(e) => setNewStoryTitle(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Tác giả</label>
+                    <input
+                      type="text"
+                      value={newStoryAuthor}
+                      onChange={(e) => setNewStoryAuthor(e.target.value)}
+                      placeholder="Chưa rõ"
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Thể loại</label>
+                    <select
+                      value={newStoryGenre}
+                      onChange={(e) => setNewStoryGenre(e.target.value as StoryGenre)}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium"
+                    >
+                      <option value="Huyền Huyễn">Huyền Huyễn</option>
+                      <option value="Tiên Hiệp">Tiên Hiệp</option>
+                      <option value="Khoa Huyễn">Khoa Huyễn</option>
+                      <option value="Đô Thị">Đô Thị</option>
+                      <option value="Dị Giới">Dị Giới</option>
+                      <option value="Hệ Thống">Hệ Thống</option>
+                      <option value="Ngôn Tình">Ngôn Tình</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Ảnh bìa (URL)</label>
+                    <input
+                      type="text"
+                      value={newStoryCover}
+                      onChange={(e) => setNewStoryCover(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  <select
+                    value={selectedStoryId}
+                    onChange={(e) => setSelectedStoryId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs font-medium"
+                  >
+                    {stories.map((s) => (
+                      <option key={s.id} value={s.id}>{s.title} ({s.volumes.length} mục lục)</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. DANH SÁCH MỤC LỤC BÓC TÁCH (Đã tự động sắp xếp chuẩn từ bé đến lớn) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-1 pt-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white">
                   Mục lục bóc tách ({parseResult.volumes.length})
                 </h4>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Tự động nhận diện tên
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-200 dark:border-emerald-800">
+                  {parseResult.totalChapters} chương
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleAutoEnrichTitles}
-                className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                title="Quét lại tên vị diện theo cơ sở dữ liệu truyện"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Nhận diện lại</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoEnrichTitles}
+                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium flex items-center gap-1 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  title="Tự động nhận diện tên vị diện theo cơ sở dữ liệu"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Nhận diện vị diện</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleExpandAll}
+                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  {allExpanded ? "Thu gọn hết" : "Mở rộng hết"}
+                </button>
+              </div>
             </div>
 
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+            {/* List Volumes */}
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
               {parseResult.volumes.map((volume) => {
                 const isExpanded = !!expandedVolIds[volume.number];
                 const isEditingThis = editingVolNumber === volume.number;
+                const chapCount = volume.chapters.length;
+                const minC = chapCount > 0 ? volume.chapters[0].number : 0;
+                const maxC = chapCount > 0 ? volume.chapters[chapCount - 1].number : 0;
 
                 return (
-                  <div key={volume.number} className="py-1">
-                    <div className="py-2 px-2 rounded-lg hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 flex items-center justify-between select-none text-xs group transition-colors">
-                      <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                        <span className="text-[11px] font-semibold text-zinc-400 flex-shrink-0">#{volume.number}</span>
+                  <div key={volume.number} className="text-xs">
+                    <div className="py-2.5 px-3 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 select-none group transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                        {/* STT */}
+                        <span className="w-5 text-[11px] font-mono text-zinc-400 font-semibold flex-shrink-0">
+                          #{volume.number}
+                        </span>
 
+                        {/* Inline edit or Title */}
                         {isEditingThis ? (
                           <div className="flex items-center gap-1.5 flex-1 max-w-md" onClick={(e) => e.stopPropagation()}>
                             <input
@@ -787,22 +805,35 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Dải chương */}
+                            <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono text-[11px] font-semibold flex-shrink-0">
+                              Ch. {minC}–{maxC}
+                            </span>
+
+                            {/* Tên mục lục */}
                             <span
                               onClick={() => toggleVolumeCollapse(volume.number)}
-                              className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors truncate cursor-pointer"
+                              className="font-semibold text-zinc-900 dark:text-zinc-100 truncate cursor-pointer hover:underline"
                             >
                               {volume.title || `Mục lục ${volume.number}`}
                             </span>
-                            <span className="text-[11px] font-normal text-zinc-400 flex-shrink-0">({volume.chapters.length})</span>
+
+                            <span className="text-[11px] text-zinc-400 flex-shrink-0">
+                              ({chapCount} ch)
+                            </span>
+
+                            {/* Nút sửa */}
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setEditingVolNumber(volume.number); setEditingVolTitle(volume.title); }}
-                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded transition-colors inline-flex items-center ml-1"
+                              className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded transition-colors"
                               title="Sửa tên mục lục"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
+
+                            {/* Nút gộp lên */}
                             {volume.number > 1 && (
                               <button
                                 type="button"
@@ -813,6 +844,8 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                                 Gộp lên
                               </button>
                             )}
+
+                            {/* Nút xóa */}
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleDeleteVolume(volume.number); }}
@@ -825,40 +858,37 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                         )}
                       </div>
 
-                      <div
+                      {/* Icon mở rộng */}
+                      <button
+                        type="button"
                         onClick={() => toggleVolumeCollapse(volume.number)}
-                        className="text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 p-1 flex items-center justify-center cursor-pointer transition-colors"
+                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 p-1 flex items-center justify-center transition-colors"
                       >
-                        {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                      </div>
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
                     </div>
 
+                    {/* Danh sách chương bên trong khi mở rộng */}
                     {isExpanded && (
-                      <div className="pl-3 sm:pl-4 py-1 space-y-0.5 border-l-2 border-zinc-200/70 dark:border-zinc-800 ml-3 my-1">
+                      <div className="pl-8 pr-3 py-2 space-y-1 bg-zinc-50/50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800/60 max-h-60 overflow-y-auto">
                         {volume.chapters.map((chapter, idx) => (
                           <div
                             key={chapter.number + "-" + idx}
-                            className="px-2 py-1.5 rounded-lg flex items-center justify-between gap-2 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 group transition-colors"
+                            className="px-2 py-1 rounded flex items-center justify-between gap-2 hover:bg-white dark:hover:bg-zinc-800 transition-colors text-[11px]"
                           >
-                            <div className="flex items-center truncate">
-                              <span className="font-medium text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white truncate">
-                                {chapter.title}
-                              </span>
-                            </div>
-                            <div className="flex items-center flex-shrink-0">
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {idx > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
-                                    className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                                    title="Tách thành Mục lục mới từ chương này"
-                                  >
-                                    <Scissors className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                              {chapter.title}
+                            </span>
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleSplitVolumeAtChapter(volume.number, chapter.number)}
+                                className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-0.5"
+                                title="Tách thành Mục lục mới từ chương này"
+                              >
+                                <Scissors className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -869,15 +899,43 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
             </div>
           </div>
 
-          {/* Action Button */}
-          <div className="pt-2">
-            <button
-              onClick={handleConfirmImport}
-              disabled={isSaving}
-              className="w-full py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-900 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center disabled:opacity-50"
-            >
-              <span>{isSaving ? "Đang lưu..." : `Xác nhận nạp ${parseResult.totalVolumes} Mục lục`}</span>
-            </button>
+          {/* 5. NÚT XÁC NHẬN NẠP DUY NHẤT (STICKY BOTTOM BAR) */}
+          <div className="pt-2 sticky bottom-3 z-10">
+            <div className="p-3.5 rounded-2xl bg-zinc-900/95 dark:bg-white/95 backdrop-blur-md shadow-xl text-white dark:text-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-zinc-800 dark:border-zinc-200">
+              <div className="text-xs">
+                <div className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+                  <span>Sẵn sàng nạp {parseResult.totalVolumes} Mục lục ({parseResult.totalChapters} chương)</span>
+                </div>
+                <p className="text-zinc-400 dark:text-zinc-600 text-[11px] mt-0.5">
+                  {storyId ? (
+                    !replaceExisting ? (
+                      `✓ Sẽ gộp tiếp nối vào "${currentStoryObj?.title || "truyện"}" (an toàn)`
+                    ) : (
+                      `⚠️ Cảnh báo: Sẽ ghi đè toàn bộ truyện "${currentStoryObj?.title || "truyện"}"`
+                    )
+                  ) : (
+                    targetMode === "new" ? "Tạo truyện mới trên hệ thống" : "Nạp vào truyện đích đã chọn"
+                  )}
+                </p>
+              </div>
+
+              <button
+                onClick={handleConfirmImport}
+                disabled={isSaving}
+                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50 flex-shrink-0"
+              >
+                {isSaving ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-3.5 h-3.5" /> Xác nhận nạp {parseResult.totalVolumes} Mục lục
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
