@@ -304,16 +304,22 @@ class StoryStorageService {
     }
   }
 
-  public async saveStoryToFirestore(story: Story): Promise<void> {
+  public async saveStoryToFirestore(
+    story: Story,
+    onProgress?: (percent: number, msg: string) => void
+  ): Promise<void> {
     try {
       const sanitized = sanitizeStory(story);
       if (!sanitized) return;
+
+      onProgress?.(45, "Đang mã hóa dữ liệu truyện...");
 
       const firestoreData = toFirestoreData(sanitized);
       const jsonStr = JSON.stringify(firestoreData);
 
       // If document payload is larger than 600KB, split chapter contents into subcollections to prevent hitting Firestore 1MB limit
       if (jsonStr.length > 600000) {
+        onProgress?.(50, "Dung lượng dữ liệu lớn, đang chia nhỏ để lưu trữ an toàn...");
         const lightweightStory = JSON.parse(jsonStr);
         const chaptersWithContent: any[] = [];
 
@@ -339,11 +345,21 @@ class StoryStorageService {
         });
 
         // 1. Save lightweight TOC main doc (< 50KB)
+        onProgress?.(55, "Đang lưu mục lục chính lên máy chủ...");
         await setDoc(doc(db, "stories", story.id), lightweightStory);
 
         // 2. Save individual chapter documents to subcollection in batches of 200
         const chunkSize = 200;
+        const totalBatches = Math.ceil(chaptersWithContent.length / chunkSize);
         for (let i = 0; i < chaptersWithContent.length; i += chunkSize) {
+          const currentBatchIdx = Math.floor(i / chunkSize) + 1;
+          const currentChapNum = Math.min(i + chunkSize, chaptersWithContent.length);
+          const percent = 55 + Math.round((currentChapNum / chaptersWithContent.length) * 40); // 55% -> 95%
+          onProgress?.(
+            percent,
+            `Đang đồng bộ chương ${currentChapNum}/${chaptersWithContent.length} (Đợt ${currentBatchIdx}/${totalBatches})...`
+          );
+
           const chunk = chaptersWithContent.slice(i, i + chunkSize);
           const batch = writeBatch(db);
           for (const ch of chunk) {
@@ -351,9 +367,12 @@ class StoryStorageService {
           }
           await batch.commit();
         }
+        onProgress?.(98, "Đang hoàn tất kiểm tra tính toàn vẹn dữ liệu...");
       } else {
         // Under 600KB: Save directly in 1 doc
+        onProgress?.(65, "Đang lưu dữ liệu truyện lên máy chủ...");
         await setDoc(doc(db, "stories", story.id), firestoreData);
+        onProgress?.(95, "Đã lưu xong vào máy chủ...");
       }
     } catch (err) {
       console.error("Firestore saveStoryToFirestore error:", err);
@@ -860,8 +879,10 @@ class StoryStorageService {
   public async importParsedVolumes(
     storyId: string,
     parsedVolumes: ParsedVolume[],
-    replaceExisting = false
+    replaceExisting = false,
+    onProgress?: (percent: number, msg: string) => void
   ): Promise<Story | null> {
+    onProgress?.(5, "Đang kiểm tra thông tin truyện đích...");
     let story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) {
       const localList = this.loadFromLocalStorage();
@@ -875,6 +896,8 @@ class StoryStorageService {
       console.error("Story not found:", storyId);
       throw new Error(`Không tìm thấy truyện đích (ID: ${storyId})`);
     }
+
+    onProgress?.(15, `Đang xử lý ${parsedVolumes.length} Mục lục...`);
 
     const now = new Date().toISOString();
 
@@ -1060,7 +1083,9 @@ class StoryStorageService {
     story.updatedAt = now;
     this.broadcastChange();
 
-    await this.saveStoryToFirestore(story);
+    onProgress?.(40, "Đang chuẩn hóa mục lục và chuẩn bị lưu máy chủ...");
+    await this.saveStoryToFirestore(story, onProgress);
+    onProgress?.(100, "Hoàn tất nạp dữ liệu!");
 
     return story;
   }
@@ -1077,14 +1102,16 @@ class StoryStorageService {
       originalStatus?: string;
       editStatus?: string;
     },
-    parsedVolumes: ParsedVolume[]
+    parsedVolumes: ParsedVolume[],
+    onProgress?: (percent: number, msg: string) => void
   ): Promise<Story> {
+    onProgress?.(10, "Đang khởi tạo truyện mới...");
     const normalizedNewTitle = (metadata.title || "").trim().toLowerCase();
     const existingStory = this.cachedStories.find(
       (s) => !s.isDeleted && s.title.trim().toLowerCase() === normalizedNewTitle
     );
     if (existingStory) {
-      const updated = await this.importParsedVolumes(existingStory.id, parsedVolumes, false);
+      const updated = await this.importParsedVolumes(existingStory.id, parsedVolumes, false, onProgress);
       if (updated) return updated;
     }
 
@@ -1139,7 +1166,9 @@ class StoryStorageService {
     this.cachedStories.unshift(newStory);
     this.broadcastChange();
 
-    await this.saveStoryToFirestore(newStory);
+    onProgress?.(45, "Đang chuẩn bị lưu truyện mới lên máy chủ...");
+    await this.saveStoryToFirestore(newStory, onProgress);
+    onProgress?.(100, "Tạo truyện mới và nạp dữ liệu thành công!");
 
     return newStory;
   }

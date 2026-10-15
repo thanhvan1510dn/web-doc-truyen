@@ -380,10 +380,11 @@ export const storyApi = {
   async importParsedVolumes(
     storyId: string,
     parsedVolumes: any[],
-    replaceExisting = false
+    replaceExisting = false,
+    onProgress?: (percent: number, msg: string) => void
   ): Promise<ApiResponse<Story>> {
     try {
-      const story = await storyStorage.importParsedVolumes(storyId, parsedVolumes, replaceExisting);
+      const story = await storyStorage.importParsedVolumes(storyId, parsedVolumes, replaceExisting, onProgress);
       if (!story) {
         return {
           success: false,
@@ -410,10 +411,11 @@ export const storyApi = {
    */
   async importAsNewStory(
     dto: CreateStoryDto,
-    parsedVolumes: any[]
+    parsedVolumes: any[],
+    onProgress?: (percent: number, msg: string) => void
   ): Promise<ApiResponse<Story>> {
     try {
-      const story = await storyStorage.importAsNewStory(dto, parsedVolumes);
+      const story = await storyStorage.importAsNewStory(dto, parsedVolumes, onProgress);
       return {
         success: true,
         data: story,
