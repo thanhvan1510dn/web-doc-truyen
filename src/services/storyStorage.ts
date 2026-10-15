@@ -348,8 +348,8 @@ class StoryStorageService {
         onProgress?.(55, "Đang lưu mục lục chính lên máy chủ...");
         await setDoc(doc(db, "stories", story.id), lightweightStory);
 
-        // 2. Save individual chapter documents to subcollection in batches of 200
-        const chunkSize = 200;
+        // 2. Save individual chapter documents to subcollection in small batches of 50 for smooth real-time progress
+        const chunkSize = 50;
         const totalBatches = Math.ceil(chaptersWithContent.length / chunkSize);
         for (let i = 0; i < chaptersWithContent.length; i += chunkSize) {
           const currentBatchIdx = Math.floor(i / chunkSize) + 1;
@@ -889,6 +889,22 @@ class StoryStorageService {
       story = localList.find((s) => s.id === storyId && !s.isDeleted);
       if (story) {
         this.cachedStories.push(story);
+      }
+    }
+
+    if (!story) {
+      try {
+        const snap = await getDoc(doc(db, "stories", storyId));
+        if (snap.exists()) {
+          const raw = { id: snap.id, ...snap.data() };
+          const sanitized = sanitizeStory(raw);
+          if (sanitized && !sanitized.isDeleted) {
+            story = sanitized;
+            this.cachedStories.push(story);
+          }
+        }
+      } catch (err) {
+        console.warn("Firestore fallback fetch failed:", err);
       }
     }
 
