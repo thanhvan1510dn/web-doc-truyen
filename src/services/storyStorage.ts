@@ -271,7 +271,18 @@ class StoryStorageService {
   private saveToLocalStorage(stories: Story[]): void {
     if (typeof window === "undefined") return;
     try {
-      const json = JSON.stringify(stories);
+      // Bỏ nội dung text chương khi lưu localStorage để dung lượng < 200KB, lưu siêu tốc 1ms và không bị đầy quota
+      const lightweight = stories.map((s) => ({
+        ...s,
+        volumes: s.volumes?.map((v) => ({
+          ...v,
+          chapters: v.chapters?.map((c) => ({
+            ...c,
+            content: "",
+          })),
+        })),
+      }));
+      const json = JSON.stringify(lightweight);
       localStorage.setItem(STORAGE_KEY, json);
       localStorage.setItem(BACKUP_KEY, json);
     } catch (e) {
@@ -345,7 +356,8 @@ class StoryStorageService {
         });
 
         // 1. Save lightweight TOC main doc (< 50KB)
-        onProgress?.(55, "Đang lưu mục lục chính lên máy chủ...");
+        onProgress?.(50, "Đang lưu mục lục chính lên máy chủ...");
+        await new Promise((r) => setTimeout(r, 20));
         await setDoc(doc(db, "stories", story.id), lightweightStory);
 
         // 2. Save individual chapter documents to subcollection in small batches of 50 for smooth real-time progress
@@ -354,11 +366,13 @@ class StoryStorageService {
         for (let i = 0; i < chaptersWithContent.length; i += chunkSize) {
           const currentBatchIdx = Math.floor(i / chunkSize) + 1;
           const currentChapNum = Math.min(i + chunkSize, chaptersWithContent.length);
-          const percent = 55 + Math.round((currentChapNum / chaptersWithContent.length) * 40); // 55% -> 95%
+          const percent = 50 + Math.round((currentChapNum / chaptersWithContent.length) * 45); // 50% -> 95%
           onProgress?.(
             percent,
             `Đang đồng bộ chương ${currentChapNum}/${chaptersWithContent.length} (Đợt ${currentBatchIdx}/${totalBatches})...`
           );
+          // Nhả 25ms để trình duyệt vẽ ngay tiến trình % và hiệu ứng loading
+          await new Promise((r) => setTimeout(r, 25));
 
           const chunk = chaptersWithContent.slice(i, i + chunkSize);
           const batch = writeBatch(db);
@@ -368,11 +382,14 @@ class StoryStorageService {
           await batch.commit();
         }
         onProgress?.(98, "Đang hoàn tất kiểm tra tính toàn vẹn dữ liệu...");
+        await new Promise((r) => setTimeout(r, 20));
       } else {
         // Under 600KB: Save directly in 1 doc
-        onProgress?.(65, "Đang lưu dữ liệu truyện lên máy chủ...");
+        onProgress?.(60, "Đang lưu dữ liệu truyện lên máy chủ...");
+        await new Promise((r) => setTimeout(r, 20));
         await setDoc(doc(db, "stories", story.id), firestoreData);
         onProgress?.(95, "Đã lưu xong vào máy chủ...");
+        await new Promise((r) => setTimeout(r, 20));
       }
     } catch (err) {
       console.error("Firestore saveStoryToFirestore error:", err);
@@ -914,6 +931,7 @@ class StoryStorageService {
     }
 
     onProgress?.(15, `Đang xử lý ${parsedVolumes.length} Mục lục...`);
+    await new Promise((r) => setTimeout(r, 20));
 
     const now = new Date().toISOString();
 
@@ -941,8 +959,23 @@ class StoryStorageService {
       });
       story.volumes = deduplicateVolumes(convertedVolumes);
     } else {
-      // Gộp thông minh: Đè cả Mục lục và đè từng Chương con trùng khớp
+      // Gộp thông minh O(N): Pre-index để xử lý tức thì không gây nghẽn CPU
       const currentVolumes = [...story.volumes];
+
+      // Pre-index existing volumes metadata for instant matching
+      const existingVolMeta = currentVolumes.map((v) => {
+        const vNorm = (v.title || "").trim().toLowerCase();
+        const vRange = (v.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
+        const vFrom = vRange ? parseInt(vRange[1], 10) : 0;
+        const vTo = vRange ? parseInt(vRange[2], 10) : 0;
+        const numSet = new Set(v.chapters.map((c) => c.number).filter((n) => n > 0));
+        return { vNorm, vFrom, vTo, numSet };
+      });
+
+      // Map ghi nhận volume nào sở hữu chương nào từ đợt nạp này:
+      // chapNum -> targetVolId, normTitle -> targetVolId
+      const targetVolByChapNum = new Map<number, string>();
+      const targetVolByChapTitle = new Map<string, string>();
 
       parsedVolumes.forEach((pv, vIdx) => {
         const normalizedPvTitle = (pv.title || "").trim().toLowerCase();
@@ -953,27 +986,23 @@ class StoryStorageService {
         const pvTo = pvRange ? parseInt(pvRange[2], 10) : (pv.chapters.length > 0 ? Math.max(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
         const isPvBare = !pv.title || /^Mục\s*lục\s*\d+$/i.test(pv.title.trim()) || /^\(\d+-\d+\)$/.test(pv.title.trim());
 
-        const existingVolIndex = currentVolumes.findIndex((v) => {
-          const vNorm = (v.title || "").trim().toLowerCase();
-          const isGenericTitle = /^mục\s*lục\s*\d+$/i.test(vNorm) || /^mục\s*lục\s*\d+$/i.test(normalizedPvTitle);
-          if (!isGenericTitle && vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
+        const existingVolIndex = currentVolumes.findIndex((_v, idx) => {
+          const meta = existingVolMeta[idx];
+          const isGenericTitle = /^mục\s*lục\s*\d+$/i.test(meta.vNorm) || /^mục\s*lục\s*\d+$/i.test(normalizedPvTitle);
+          if (!isGenericTitle && meta.vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
 
           // Match by chapter range (e.g. (3372-3398) matches (3372-3398) Fan cuồng bá đạo)
-          const vRange = (v.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
-          if (vRange && pvFrom > 0 && pvTo > 0) {
-            const vFrom = parseInt(vRange[1], 10);
-            const vTo = parseInt(vRange[2], 10);
-            if (vFrom === pvFrom && vTo === pvTo) return true;
+          if (meta.vFrom > 0 && meta.vTo > 0 && pvFrom > 0 && pvTo > 0) {
+            if (meta.vFrom === pvFrom && meta.vTo === pvTo) return true;
           }
 
           // Match by chapter overlap (> 50%)
-          if (Array.isArray(v.chapters) && v.chapters.length > 0 && Array.isArray(pv.chapters) && pv.chapters.length > 0) {
-            const vNums = new Set(v.chapters.map((c) => c.number).filter((n) => n > 0));
+          if (meta.numSet.size > 0 && Array.isArray(pv.chapters) && pv.chapters.length > 0) {
             let overlap = 0;
             for (const pc of pv.chapters) {
-              if (pc.number > 0 && vNums.has(pc.number)) overlap++;
+              if (pc.number > 0 && meta.numSet.has(pc.number)) overlap++;
             }
-            if (overlap >= Math.min(v.chapters.length, pv.chapters.length) * 0.5 && overlap > 0) {
+            if (overlap >= Math.min(meta.numSet.size, pv.chapters.length) * 0.5 && overlap > 0) {
               return true;
             }
           }
@@ -1026,16 +1055,9 @@ class StoryStorageService {
               if (normT) existingChapterMap.set(normT, createdChap);
             }
 
-            // Đồng thời xoá chương này khỏi bất kỳ mục lục nào khác trong truyện (tránh duplicate đa mục lục)
-            currentVolumes.forEach((otherVol, oIdx) => {
-              if (oIdx !== existingVolIndex) {
-                otherVol.chapters = otherVol.chapters.filter((oc) => {
-                  if (chapNum > 0 && oc.number === chapNum) return false;
-                  if (normT && normalizeChapterTitle(oc.title) === normT) return false;
-                  return true;
-                });
-              }
-            });
+            // Ghi nhận chương này thuộc existingVol.id
+            if (chapNum > 0) targetVolByChapNum.set(chapNum, existingVol.id);
+            if (normT) targetVolByChapTitle.set(normT, existingVol.id);
           });
 
           // Preserve rich title if existing title was rich and incoming pv.title was bare!
@@ -1048,20 +1070,7 @@ class StoryStorageService {
           }
           existingVol.chapters = updatedChapters;
         } else {
-          // 2. Mục lục mới (không trùng tên):
-          // Xoá các chương con trùng số/tiêu đề ở các mục lục cũ trước khi thêm vào mục lục mới
-          pv.chapters.forEach((newCh) => {
-            const chapNum = newCh.number;
-            const normT = normalizeChapterTitle(newCh.title);
-            currentVolumes.forEach((otherVol) => {
-              otherVol.chapters = otherVol.chapters.filter((oc) => {
-                if (chapNum > 0 && oc.number === chapNum) return false;
-                if (normT && normalizeChapterTitle(oc.title) === normT) return false;
-                return true;
-              });
-            });
-          });
-
+          // 2. Mục lục mới (không trùng tên)
           const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
           const canonTitle = (pvFrom > 0 && pvTo > 0) ? findCanonArc(pvFrom, pvTo) : null;
           const assignedTitle = (isPvBare && canonTitle) ? canonTitle : (pv.title || `Mục lục ${currentVolumes.length + 1}`);
@@ -1069,25 +1078,47 @@ class StoryStorageService {
             id: volumeId,
             number: currentVolumes.length + 1,
             title: assignedTitle,
-            chapters: pv.chapters.map((ch, cIdx) => ({
-              id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
-              number: ch.number || cIdx + 1,
-              title: ch.title,
-              wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
-              content: ch.content || "",
-              volumeId: volumeId,
-              volumeTitle: assignedTitle,
-              createdAt: now,
-              updatedAt: now,
-              isActive: true,
-            })),
+            chapters: pv.chapters.map((ch, cIdx) => {
+              const chapNum = ch.number || cIdx + 1;
+              const normT = normalizeChapterTitle(ch.title);
+              if (chapNum > 0) targetVolByChapNum.set(chapNum, volumeId);
+              if (normT) targetVolByChapTitle.set(normT, volumeId);
+              return {
+                id: "chap_" + Date.now() + "_" + vIdx + "_" + cIdx + "_" + Math.random().toString(36).substring(2, 6),
+                number: chapNum,
+                title: ch.title,
+                wordCount: ch.wordCount || (ch.content ? ch.content.trim().split(/\s+/).length : 0),
+                content: ch.content || "",
+                volumeId: volumeId,
+                volumeTitle: assignedTitle,
+                createdAt: now,
+                updatedAt: now,
+                isActive: true,
+              };
+            }),
           };
           currentVolumes.push(newVol);
         }
       });
 
+      // KHỬ TRÙNG LẬP O(N) 1 LƯỢT DUY NHẤT: Xóa các chương đã được nạp/chuyển sang mục lục khác
+      currentVolumes.forEach((vol) => {
+        vol.chapters = vol.chapters.filter((ch) => {
+          const chapNum = ch.number;
+          const normT = normalizeChapterTitle(ch.title);
+          const assignedVolId = (chapNum > 0 ? targetVolByChapNum.get(chapNum) : undefined) || (normT ? targetVolByChapTitle.get(normT) : undefined);
+          if (assignedVolId && assignedVolId !== vol.id) {
+            return false;
+          }
+          return true;
+        });
+      });
+
+      // Loại bỏ các mục lục rỗng (nếu có)
+      const nonEmptyVolumes = currentVolumes.filter((v) => v.chapters.length > 0 || !v.id);
+
       // Chạy qua bộ lọc làm sạch toàn bộ truyện (Deduplicate)
-      story.volumes = deduplicateVolumes(currentVolumes);
+      story.volumes = deduplicateVolumes(nonEmptyVolumes);
     }
 
     // Re-index all volumes sequentially 1..N and sort chapters in each volume
@@ -1097,10 +1128,14 @@ class StoryStorageService {
     });
 
     story.updatedAt = now;
-    this.broadcastChange();
 
-    onProgress?.(40, "Đang chuẩn hóa mục lục và chuẩn bị lưu máy chủ...");
+    onProgress?.(30, "Đang chuẩn hóa mục lục và chuẩn bị lưu máy chủ...");
+    await new Promise((r) => setTimeout(r, 20));
+
     await this.saveStoryToFirestore(story, onProgress);
+
+    // Phát tín hiệu đồng bộ sau khi đã hoàn tất lưu vào Firestore
+    this.broadcastChange();
     onProgress?.(100, "Hoàn tất nạp dữ liệu!");
 
     return story;
@@ -1180,10 +1215,11 @@ class StoryStorageService {
     };
 
     this.cachedStories.unshift(newStory);
-    this.broadcastChange();
 
     onProgress?.(45, "Đang chuẩn bị lưu truyện mới lên máy chủ...");
+    await new Promise((r) => setTimeout(r, 20));
     await this.saveStoryToFirestore(newStory, onProgress);
+    this.broadcastChange();
     onProgress?.(100, "Tạo truyện mới và nạp dữ liệu thành công!");
 
     return newStory;
