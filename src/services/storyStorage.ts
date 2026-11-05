@@ -988,6 +988,7 @@ class StoryStorageService {
 
         const existingVolIndex = currentVolumes.findIndex((_v, idx) => {
           const meta = existingVolMeta[idx];
+          if (!meta) return false;
           const isGenericTitle = /^mục\s*lục\s*\d+$/i.test(meta.vNorm) || /^mục\s*lục\s*\d+$/i.test(normalizedPvTitle);
           if (!isGenericTitle && meta.vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
 
@@ -1098,6 +1099,12 @@ class StoryStorageService {
             }),
           };
           currentVolumes.push(newVol);
+          const newVNorm = (assignedTitle || "").trim().toLowerCase();
+          const newVRange = (assignedTitle || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
+          const newVFrom = newVRange ? parseInt(newVRange[1], 10) : (newVol.chapters.length > 0 ? Math.min(...newVol.chapters.map(c => c.number).filter(n => n > 0)) : 0);
+          const newVTo = newVRange ? parseInt(newVRange[2], 10) : (newVol.chapters.length > 0 ? Math.max(...newVol.chapters.map(c => c.number).filter(n => n > 0)) : 0);
+          const newNumSet = new Set(newVol.chapters.map((c) => c.number).filter((n) => n > 0));
+          existingVolMeta.push({ vNorm: newVNorm, vFrom: newVFrom, vTo: newVTo, numSet: newNumSet });
         }
       });
 
