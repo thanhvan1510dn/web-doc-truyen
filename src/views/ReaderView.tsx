@@ -64,16 +64,19 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     if (currentChapter.content && currentChapter.content.trim().length > 0) {
       setActiveContent(currentChapter.content);
       scrollToTop();
-    } else {
-      storyStorage.getChapter(story.id, currentChapter.id).then((ch) => {
-        if (ch && ch.content) {
-          currentChapter.content = ch.content;
-          setActiveContent(ch.content);
+    }
+    
+    // Đồng bộ hoặc làm mới nội dung chương từ Cloud
+    storyStorage.getChapter(story.id, currentChapter.id).then((ch) => {
+      if (ch && ch.content && ch.content !== currentChapter.content) {
+        currentChapter.content = ch.content;
+        setActiveContent(ch.content);
+        if (!currentChapter.content) {
           scrollToTop();
         }
-      });
-    }
-  }, [currentChapter?.id, story?.id]);
+      }
+    });
+  }, [currentChapter?.id, story?.id, story?.updatedAt]);
 
   // Track analytics event when chapter is loaded
   useEffect(() => {

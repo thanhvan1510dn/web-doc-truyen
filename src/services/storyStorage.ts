@@ -53,14 +53,15 @@ export function deduplicateVolumes(volumes: Volume[]): Volume[] {
       const hasDuplicateTitle = normTitle.length > 0 && seenChapterTitles.has(normTitle);
 
       if (hasDuplicateNum || hasDuplicateTitle) {
-        // If the current chapter has content and the previous one was empty, update previous chapter content
+        // Luôn cập nhật nội dung mới nhất nếu bản ghi mới có nội dung (tránh giữ lại file cũ)
         const prevRef = (hasDuplicateNum ? seenChapterNums.get(num) : seenChapterTitles.get(normTitle))!;
         const prevVol = cleanedVolumes[prevRef.volIdx];
         if (prevVol && prevVol.chapters[prevRef.chapIdx]) {
           const prevChap = prevVol.chapters[prevRef.chapIdx];
-          if (!prevChap.content && ch.content) {
+          if (ch.content && ch.content.trim().length > 0) {
             prevChap.content = ch.content;
-            prevChap.wordCount = ch.wordCount;
+            prevChap.wordCount = ch.wordCount || ch.content.trim().split(/\s+/).length;
+            prevChap.updatedAt = new Date().toISOString();
           }
           if (ch.title) prevChap.title = ch.title;
         }
@@ -197,14 +198,15 @@ class StoryStorageService {
               const data = docSnap.data();
               const sanitized = sanitizeStory({ ...data, id: docSnap.id });
               if (sanitized) {
-                // If local memory cache has existing chapter contents, preserve only the content text for matching active chapters
+                // If local memory cache has existing chapter contents, preserve only the content text if story was not updated on server
                 const existing = this.cachedStories.find((s) => s.id === sanitized.id);
                 if (existing && Array.isArray(existing.volumes)) {
+                  const isServerNewer = !!(sanitized.updatedAt && existing.updatedAt && sanitized.updatedAt > existing.updatedAt);
                   sanitized.volumes.forEach((rVol) => {
                     const lVol = existing.volumes.find((v) => v.id === rVol.id);
                     if (lVol && Array.isArray(lVol.chapters)) {
                       rVol.chapters.forEach((rCh) => {
-                        if (!rCh.content) {
+                        if (!rCh.content && !isServerNewer) {
                           const lCh = lVol.chapters.find((c) => c.id === rCh.id);
                           if (lCh && lCh.content) {
                             rCh.content = lCh.content;

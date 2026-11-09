@@ -249,7 +249,11 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
       progressMsg: "",
     }));
 
-    setFileEntries((prev) => [...prev, ...newEntries]);
+    const newFileNames = new Set(valid.map((f) => f.name.toLowerCase()));
+    setFileEntries((prev) => {
+      const filteredPrev = prev.filter((e) => !newFileNames.has(e.file.name.toLowerCase()));
+      return [...filteredPrev, ...newEntries];
+    });
     setIsAnyParsing(true);
 
     for (const entry of newEntries) {
@@ -621,7 +625,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
             {/* Chế độ nạp & Các nút hành động nhanh */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
-              {storyId && (
+              {(storyId || targetMode === "existing" || selectedStoryId) && (
                 <div className="inline-flex rounded-lg border border-zinc-200 dark:border-zinc-700 p-0.5 bg-zinc-100 dark:bg-zinc-800">
                   <button
                     type="button"
@@ -631,9 +635,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                         ? "bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
                         : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                     }`}
-                    title="Nối các mục lục mới vào sau các mục lục hiện có"
+                    title="Gộp và cập nhật nội dung mới vào các chương trùng khớp"
                   >
-                    Gộp tiếp nối
+                    Gộp & Cập nhật
                   </button>
                   <button
                     type="button"
@@ -643,9 +647,9 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                         ? "bg-rose-500 text-white shadow-sm"
                         : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
                     }`}
-                    title="Thay thế toàn bộ mục lục và chương cũ"
+                    title="Thay thế toàn bộ mục lục và chương cũ của truyện"
                   >
-                    Ghi đè
+                    Ghi đè tất cả
                   </button>
                 </div>
               )}
@@ -1023,12 +1027,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           Xác nhận nạp {parseResult.totalVolumes} Mục lục ({parseResult.totalChapters} chương)
                         </div>
                         <p className="text-zinc-400 text-xs mt-0.5 truncate">
-                          {storyId ? (
-                            !replaceExisting
-                              ? `Chế độ: Gộp tiếp nối vào "${currentStoryObj?.title || "truyện"}"`
-                              : `Chế độ: Ghi đè toàn bộ "${currentStoryObj?.title || "truyện"}"`
+                          {targetMode === "new" && !selectedStoryId && !storyId ? (
+                            "Tạo truyện mới trên hệ thống"
+                          ) : !replaceExisting ? (
+                            `Chế độ: Gộp & Cập nhật nội dung mới vào "${currentStoryObj?.title || "truyện"}"`
                           ) : (
-                            targetMode === "new" ? "Tạo truyện mới trên hệ thống" : "Nạp vào truyện đã chọn"
+                            `Chế độ: Ghi đè toàn bộ "${currentStoryObj?.title || "truyện"}"`
                           )}
                         </p>
                       </div>
