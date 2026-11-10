@@ -248,24 +248,31 @@ export const AppContent: React.FC = () => {
           />
         )}
 
-        {userView === "reader" && activeStory && (
-          <ReaderView
-            story={activeStory}
-            chapterId={activeChapterId || activeStory.volumes[0]?.chapters[0]?.id || ""}
-            onNavigateChapter={(chapId) => {
-              setActiveChapterId(chapId);
-              try {
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-              } catch {
-                window.scrollTo(0, 0);
-              }
-              if (document.documentElement) document.documentElement.scrollTop = 0;
-              if (document.body) document.body.scrollTop = 0;
-            }}
-            onBackToStory={() => setUserView("story-detail")}
-            settings={readerSettings}
-            onUpdateSettings={handleUpdateReaderSettings}
-          />
+        {userView === "reader" && (
+          activeStory ? (
+            <ReaderView
+              story={activeStory}
+              chapterId={activeChapterId || activeStory.volumes[0]?.chapters[0]?.id || ""}
+              onNavigateChapter={(chapId) => {
+                setActiveChapterId(chapId);
+                try {
+                  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+                } catch {
+                  window.scrollTo(0, 0);
+                }
+                if (document.documentElement) document.documentElement.scrollTop = 0;
+                if (document.body) document.body.scrollTop = 0;
+              }}
+              onBackToStory={() => setUserView("story-detail")}
+              settings={readerSettings}
+              onUpdateSettings={handleUpdateReaderSettings}
+            />
+          ) : (
+            <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-xs sm:text-sm font-medium opacity-60">Đang tải dữ liệu truyện...</p>
+            </div>
+          )
         )}
       </div>
 

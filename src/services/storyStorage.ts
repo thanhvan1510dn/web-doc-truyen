@@ -852,8 +852,56 @@ class StoryStorageService {
   }
 
   public async getChapter(storyId: string, chapterId: string, includeInactive = false): Promise<Chapter | null> {
-    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
-    if (!story) return null;
+    let story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) {
+      const localList = this.loadFromLocalStorage();
+      story = localList.find((s) => s.id === storyId && !s.isDeleted);
+      if (story) {
+        this.cachedStories.push(story);
+      }
+    }
+
+    if (!story) {
+      try {
+        const snap = await getDoc(doc(db, "stories", storyId));
+        if (snap.exists()) {
+          const raw = { id: snap.id, ...snap.data() };
+          const sanitized = sanitizeStory(raw);
+          if (sanitized && !sanitized.isDeleted) {
+            story = sanitized;
+            this.cachedStories.push(story);
+          }
+        }
+      } catch (err) {
+        console.warn("getChapter story fallback fetch failed:", err);
+      }
+    }
+
+    if (!story) {
+      try {
+        const snap = await getDoc(doc(db, "stories", storyId, "chapters", chapterId));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data?.content) {
+            return {
+              id: chapterId,
+              number: data.number || 1,
+              title: data.title || "",
+              content: data.content,
+              wordCount: data.wordCount || (data.content ? data.content.trim().split(/\s+/).length : 0),
+              volumeId: data.volumeId || "",
+              volumeTitle: data.volumeTitle || "",
+              createdAt: data.createdAt || "",
+              updatedAt: data.updatedAt || "",
+              isActive: data.isActive !== false,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("Direct chapter fallback failed:", e);
+      }
+      return null;
+    }
 
     for (const vol of story.volumes) {
       const ch = vol.chapters.find((c) => c.id === chapterId);
@@ -880,6 +928,30 @@ class StoryStorageService {
         return ch;
       }
     }
+
+    try {
+      const snap = await getDoc(doc(db, "stories", storyId, "chapters", chapterId));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data?.content) {
+          return {
+            id: chapterId,
+            number: data.number || 1,
+            title: data.title || "",
+            content: data.content,
+            wordCount: data.wordCount || (data.content ? data.content.trim().split(/\s+/).length : 0),
+            volumeId: data.volumeId || "",
+            volumeTitle: data.volumeTitle || "",
+            createdAt: data.createdAt || "",
+            updatedAt: data.updatedAt || "",
+            isActive: data.isActive !== false,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch subcollection chapter:", e);
+    }
+
     return null;
   }
 

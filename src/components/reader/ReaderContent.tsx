@@ -1,18 +1,22 @@
 import React from 'react';
 import { Story, Chapter, ReaderSettings } from '../../types/story';
-import { Clock } from 'lucide-react';
+import { Clock, Loader2, RotateCcw, FileText } from 'lucide-react';
 import { formatDate } from '../../utils/format';
 
 interface ReaderContentProps {
   story: Story;
   chapter: Chapter;
   settings: ReaderSettings;
+  isLoading?: boolean;
+  onRetry?: () => void;
 }
 
 export const ReaderContent: React.FC<ReaderContentProps> = ({
   story,
   chapter,
   settings,
+  isLoading = false,
+  onRetry,
 }) => {
   const getFontFamilyClass = () => {
     switch (settings.fontFamily) {
@@ -164,23 +168,66 @@ export const ReaderContent: React.FC<ReaderContentProps> = ({
           </div>
         </div>
 
-        {/* Chapter Paragraphs Content */}
-        <div 
-          className={`space-y-6 sm:space-y-7 ${getFontFamilyClass()} ${getLineHeightClass()}`}
-          style={{
-            fontSize: `${settings.fontSize}px`,
-            textAlign: settings.textAlign === 'justify' ? 'justify' : 'left',
-          }}
-        >
-          {paragraphs.map((p, index) => (
-            <p 
-              key={index}
-              className="whitespace-pre-line tracking-normal transition-all duration-100"
-            >
-              {p}
+        {/* Chapter Paragraphs Content or Loading / Empty States */}
+        {isLoading ? (
+          <div className="space-y-6 animate-pulse py-4">
+            <div className="flex items-center justify-center gap-2 text-xs font-medium opacity-60 mb-8">
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+              <span>Đang tải nội dung chương từ máy chủ...</span>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-11/12"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-full"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-4/5"></div>
+            </div>
+            <div className="space-y-3 pt-4">
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-full"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-10/12"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-3/4"></div>
+            </div>
+            <div className="space-y-3 pt-4">
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-11/12"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-full"></div>
+              <div className="h-4 bg-black/10 dark:bg-white/10 rounded-md w-2/3"></div>
+            </div>
+          </div>
+        ) : paragraphs.length === 0 ? (
+          <div className="text-center py-16 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center mx-auto opacity-60">
+              <FileText className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-medium opacity-70">
+              Nội dung chương này đang được tải hoặc cập nhật...
             </p>
-          ))}
-        </div>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-sm hover:opacity-90 transition-opacity"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Thử tải lại</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div 
+            className={`space-y-6 sm:space-y-7 ${getFontFamilyClass()} ${getLineHeightClass()}`}
+            style={{
+              fontSize: `${settings.fontSize}px`,
+              textAlign: settings.textAlign === 'justify' ? 'justify' : 'left',
+            }}
+          >
+            {paragraphs.map((p, index) => (
+              <p 
+                key={index}
+                className="whitespace-pre-line tracking-normal transition-all duration-100"
+              >
+                {p}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -44,6 +44,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
   const hasNext = currentIndex < flatChapters.length - 1;
 
   const [activeContent, setActiveContent] = useState<string>(currentChapter?.content || '');
+  const [isLoadingContent, setIsLoadingContent] = useState<boolean>(!currentChapter?.content || currentChapter.content.trim().length === 0);
 
   const scrollToTop = () => {
     try {
@@ -59,24 +60,45 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     }
   };
 
-  useEffect(() => {
+  const loadChapterText = (force = false) => {
     if (!currentChapter) return;
-    if (currentChapter.content && currentChapter.content.trim().length > 0) {
+
+    // Nếu đã có sẵn nội dung trong bộ nhớ và không ép tải lại
+    if (!force && currentChapter.content && currentChapter.content.trim().length > 0) {
       setActiveContent(currentChapter.content);
+      setIsLoadingContent(false);
       scrollToTop();
+      return;
     }
-    
-    // Đồng bộ hoặc làm mới nội dung chương từ Cloud
+
+    setIsLoadingContent(true);
+    let isCancelled = false;
+
     storyStorage.getChapter(story.id, currentChapter.id).then((ch) => {
-      if (ch && ch.content && ch.content !== currentChapter.content) {
+      if (isCancelled) return;
+      if (ch && ch.content && ch.content.trim().length > 0) {
         currentChapter.content = ch.content;
         setActiveContent(ch.content);
-        if (!currentChapter.content) {
-          scrollToTop();
-        }
+      }
+      setIsLoadingContent(false);
+    }).catch((err) => {
+      console.error("Lỗi tải nội dung chương:", err);
+      if (!isCancelled) {
+        setIsLoadingContent(false);
       }
     });
-  }, [currentChapter?.id, story?.id, story?.updatedAt]);
+
+    return () => {
+      isCancelled = true;
+    };
+  };
+
+  useEffect(() => {
+    const cleanup = loadChapterText();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [currentChapter?.id, story?.id]);
 
   // Track analytics event when chapter is loaded
   useEffect(() => {
@@ -207,6 +229,8 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           story={story}
           chapter={effectiveChapter}
           settings={settings}
+          isLoading={isLoadingContent}
+          onRetry={() => loadChapterText(true)}
         />
       </main>
 
