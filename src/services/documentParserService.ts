@@ -265,8 +265,11 @@ export class DocumentParserService {
                 const maxNum = Math.max(...sec.chapters.map((c) => c.number));
                 let secTitle = `(${minNum}-${maxNum})`;
                 const canon = findCanonArc(minNum, maxNum);
+                const fromChaps = this.detectArcNameFromChapters(sec.chapters);
                 if (canon) {
                   secTitle = canon;
+                } else if (fromChaps) {
+                  secTitle = `(${minNum}-${maxNum}) ${fromChaps}`;
                 } else if (sec.parsedVols.length === 1 && sec.parsedVols[0].title && !sec.parsedVols[0].title.startsWith("Mục lục")) {
                   secTitle = sec.parsedVols[0].title;
                 }
@@ -938,6 +941,19 @@ export class DocumentParserService {
       .join("\n\n");
   }
 
+  public detectArcNameFromChapters(chapters: ParsedChapter[]): string | null {
+    if (!chapters || chapters.length === 0) return null;
+    for (const chap of chapters.slice(0, 5)) {
+      const rawTitle = (chap.title || "").replace(/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap)\s*\d+[:\-\._\s]*/i, "").trim();
+      const arcMatch = rawTitle.match(/^(.+?)\s*[\(\[【]\s*(?:1|01)\s*[\)\]】]$/);
+      if (arcMatch) {
+        const arc = arcMatch[1].trim();
+        if (arc.length >= 2 && arc.length <= 50) return arc;
+      }
+    }
+    return null;
+  }
+
   private finalizeResult(
     fileType: "pdf" | "docx" | "txt",
     fileName: string,
@@ -971,10 +987,13 @@ export class DocumentParserService {
           const minCh = Math.min(...chapNumbers);
           const maxCh = Math.max(...chapNumbers);
           const canonTitle = findCanonArc(minCh, maxCh);
+          const fromChaps = this.detectArcNameFromChapters(vol.chapters);
           const isBare = !vol.title || /^Mục\s*lục\s*\d+$/i.test(vol.title.trim()) || /^\(\d+-\d+\)$/.test(vol.title.trim());
 
           if (canonTitle && canonTitle.includes(" ")) {
             vol.title = canonTitle;
+          } else if (fromChaps && isBare) {
+            vol.title = `(${minCh}-${maxCh}) ${fromChaps}`;
           } else if (volumes.length === 1 && isBare && fileNameHasInfo) {
             vol.title = cleanBaseName;
           } else if (canonTitle) {

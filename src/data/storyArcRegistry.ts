@@ -67,15 +67,25 @@ export const BKP_CANON_ARCS: CanonArc[] = [
 export function findCanonArc(from: number, to: number): string | null {
   // 1. Exact range match
   const exact = BKP_CANON_ARCS.find((a) => a.from === from && a.to === to);
-  if (exact) return exact.title;
+  if (exact) {
+    if (exact.arcName) return `(${from}-${to}) ${exact.arcName}`;
+    return exact.title;
+  }
 
-  // 2. High overlap match (if at least one of the endpoints matches and length is close)
+  // 2. High overlap match (độ lệch từ 1-3 chương giữa các nguồn dịch/biên tập khác nhau)
   const close = BKP_CANON_ARCS.find((a) => {
-    if (a.from === from && Math.abs(a.to - to) <= 2) return true;
-    if (a.to === to && Math.abs(a.from - from) <= 2) return true;
+    if (!a.arcName) return false;
+    const fromDiff = Math.abs(a.from - from);
+    const toDiff = Math.abs(a.to - to);
+    if (fromDiff <= 3 && toDiff <= 3) return true;
+    if (from === a.from && toDiff <= 5) return true;
+    if (to === a.to && fromDiff <= 5) return true;
     return false;
   });
-  if (close && close.title.includes(" ")) return close.title;
+
+  if (close && close.arcName) {
+    return `(${from}-${to}) ${close.arcName}`;
+  }
 
   return null;
 }

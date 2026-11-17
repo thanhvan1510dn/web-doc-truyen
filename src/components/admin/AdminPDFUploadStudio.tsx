@@ -204,12 +204,14 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
       if (minCh > 0 && maxCh > 0) {
         const canonTitle = findCanonArc(minCh, maxCh);
-        if (canonTitle) {
+        const fromChaps = documentParserService.detectArcNameFromChapters(vol.chapters);
+        const bestTitle = canonTitle || (fromChaps ? `(${minCh}-${maxCh}) ${fromChaps}` : null);
+        if (bestTitle) {
           const currentClean = vol.title.trim();
-          if (currentClean !== canonTitle && currentClean.length <= 15) {
+          if (currentClean !== bestTitle && currentClean.length <= 15) {
             enrichedCount++;
-            arcNames.push(canonTitle);
-            return { ...vol, title: canonTitle };
+            arcNames.push(bestTitle);
+            return { ...vol, title: bestTitle };
           }
         }
       }
