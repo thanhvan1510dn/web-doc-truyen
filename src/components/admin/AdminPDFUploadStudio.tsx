@@ -40,6 +40,11 @@ function mergeResults(entries: FileEntry[]): DocumentParseResult | null {
   const doneEntries = entries.filter((e) => e.status === "done" && e.result);
   if (doneEntries.length === 0) return null;
 
+  // Nếu chỉ có 1 tệp, giữ nguyên kết quả bóc tách chuẩn xác của tệp đó
+  if (doneEntries.length === 1) {
+    return doneEntries[0].result!;
+  }
+
   // Thu thập toàn bộ volumes từ các file đã hoàn thành
   const rawVolumes: ParsedVolume[] = [];
   for (const entry of doneEntries) {

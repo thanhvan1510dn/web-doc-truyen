@@ -205,26 +205,79 @@ export class DocumentParserService {
         // If multiple sections detected (e.g. Google Docs Document Tabs or multi-section Word)
         if (sectionTexts.length > 1) {
           onProgress?.(60, `Đã tìm thấy ${sectionTexts.length} Document Tabs. Đang xử lý từng tab...`);
-          sectionTexts.forEach((secText) => {
+
+          const parsedSections = sectionTexts.map((secText, secIdx) => {
             const parsedVols = this.parseDocumentLines(secText);
-            const allChaps = parsedVols.flatMap((v) => v.chapters);
+            let allChaps = parsedVols.flatMap((v) => v.chapters);
+
+            // Fallback: Nếu tab có chữ nhưng không khớp heading chuẩn, coi toàn bộ nội dung tab là 1 chương
+            if (allChaps.length === 0 && secText.trim().length > 0) {
+              const secLines = secText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+              const firstLine = secLines[0] || `Tab ${secIdx + 1}`;
+              const bodyContent = secLines.length > 1 ? secLines.slice(1).join("\n\n") : secLines.join("\n\n");
+              allChaps = [
+                {
+                  number: secIdx + 1,
+                  title: firstLine.length < 80 ? firstLine : `Chương ${secIdx + 1}`,
+                  content: bodyContent,
+                  wordCount: bodyContent.split(/\s+/).filter(Boolean).length,
+                },
+              ];
+            }
+
+            return { secText, parsedVols, chapters: allChaps };
+          });
+
+          // Kiểm tra xem các tab có phải là từng chương riêng lẻ (ví dụ Phiên ngoại 1, Phiên ngoại 2...)
+          const allTabsSingleChapter = parsedSections.every((s) => s.chapters.length <= 1);
+
+          if (allTabsSingleChapter) {
+            // Gom tất cả các tab thành 1 Mục lục chuẩn (ví dụ Mục lục "Phiên ngoại")
+            const allChaps = parsedSections.flatMap((s) => s.chapters);
+            allChaps.forEach((chap, idx) => {
+              if (!chap.number || chap.number === 1) {
+                const m = chap.title.match(/\b(\d+)\b/);
+                chap.number = m ? parseInt(m[1], 10) : idx + 1;
+              }
+            });
+
+            const cleanBaseName = file.name.replace(/\.(pdf|docx|txt)$/i, "").trim();
+            let volTitle = cleanBaseName;
             if (allChaps.length > 0) {
               const minNum = Math.min(...allChaps.map((c) => c.number));
               const maxNum = Math.max(...allChaps.map((c) => c.number));
-              let secTitle = `(${minNum}-${maxNum})`;
               const canon = findCanonArc(minNum, maxNum);
               if (canon) {
-                secTitle = canon;
-              } else if (parsedVols.length === 1 && parsedVols[0].title && !parsedVols[0].title.startsWith("Mục lục")) {
-                secTitle = parsedVols[0].title;
+                volTitle = canon;
               }
-              volumes.push({
-                number: volumes.length + 1,
-                title: secTitle,
-                chapters: allChaps,
-              });
             }
-          });
+
+            volumes.push({
+              number: 1,
+              title: volTitle,
+              chapters: allChaps,
+            });
+          } else {
+            // Mỗi tab là một Mục lục độc lập (chứa nhiều chương, như từng Vị diện)
+            parsedSections.forEach((sec) => {
+              if (sec.chapters.length > 0) {
+                const minNum = Math.min(...sec.chapters.map((c) => c.number));
+                const maxNum = Math.max(...sec.chapters.map((c) => c.number));
+                let secTitle = `(${minNum}-${maxNum})`;
+                const canon = findCanonArc(minNum, maxNum);
+                if (canon) {
+                  secTitle = canon;
+                } else if (sec.parsedVols.length === 1 && sec.parsedVols[0].title && !sec.parsedVols[0].title.startsWith("Mục lục")) {
+                  secTitle = sec.parsedVols[0].title;
+                }
+                volumes.push({
+                  number: volumes.length + 1,
+                  title: secTitle,
+                  chapters: sec.chapters,
+                });
+              }
+            });
+          }
         }
       }
     } catch (zipErr) {
@@ -342,8 +395,8 @@ export class DocumentParserService {
       if (/^["'“«「『]/.test(trimmed) || /["'”»」』]$/.test(trimmed)) return null;
       if (/[.!?…]$/.test(trimmed)) return null;
 
-      // Ignore standard chapter headings
-      if (/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet)\s*\d+/i.test(trimmed)) {
+      // Ignore standard and extra chapter headings
+      if (/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phiên\s*ngoại|Phien\s*ngoai|Ngoại\s*truyện|Ngoai\s*truyen)\s*\d+/i.test(trimmed)) {
         return null;
       }
 
@@ -403,9 +456,17 @@ export class DocumentParserService {
       return null;
     };
 
-    const isChapterHeading = (line: string): { number: number; title: string } | null => {
+    const extraKeywords =
+      "Phiên\\s*ngoại|Phien\\s*ngoai|Ngoại\\s*truyện|Ngoai\\s*truyen|Tiền\\s*truyện|Tien\\s*truyen|" +
+      "Phần\\s*đệm|Phan\\s*dem|Lời\\s*bạt|Loi\\s*bat|Vĩ\\s*thanh|Vi\\s*thanh|Tiết\\s*tử|Tiet\\s*tu|Lời\\s*mở\\s*đầu|Loi\\s*mo\\s*dau";
+
+    const isChapterHeading = (line: string): { number: number | null; title: string } | null => {
       const trimmed = normalizeLine(line);
       if (!trimmed || trimmed.length > 200) return null;
+
+      // Không khớp câu văn, đối thoại hay dấu chấm câu kết thúc
+      if (/^["'“«「『]/.test(trimmed) || /["'”»」』]$/.test(trimmed)) return null;
+      if (/[.!?…]$/.test(trimmed)) return null;
 
       // Clean leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, etc.)
       const cleaned = trimmed
@@ -415,7 +476,7 @@ export class DocumentParserService {
 
       const targetStr = cleaned.length > 0 ? cleaned : trimmed;
 
-      // Pattern 1: Explicit chapter keyword (Chương / Chuong / Chapter / Chap / Hồi / Tiết / C / C\d+)
+      // Pattern 1: Explicit chapter keyword chuẩn (Chương / Chuong / Chapter / Chap / Hồi / Tiết / Phần / C / Quyển X - Chương)
       const explicitMatch = targetStr.match(
         /^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phần|Phan|C|Quyển\s*\d+\s*[-–:]\s*Chương)\s*(\d+)(?:[\s:\-\._【\(\[|\/]+(.*))?$/i
       );
@@ -427,12 +488,30 @@ export class DocumentParserService {
         };
       }
 
-      // Pattern 2: Bracketed chapters like 【Chương 2376: ...】 or [Chương 2376] or (Chương 2376)
+      // Pattern 1b: Extra chapter keywords (Phiên ngoại, Ngoại truyện, Tiền truyện, Phần đệm, Lời bạt, Vĩ thanh...)
+      const extraMatch = targetStr.match(
+        new RegExp(`^(?:#+\\s+)?(${extraKeywords})(?:\\s+(\\d+|[IVXLCDM]+))?(?:[:\\-\\._【\\(\\[|\\/\\s]+(.*))?$`, "i")
+      );
+      if (extraMatch) {
+        if (!targetStr.includes(",") && !targetStr.includes(";") && targetStr.length < 90) {
+          const numStr = extraMatch[2];
+          let num: number | null = null;
+          if (numStr && /^\d+$/.test(numStr)) {
+            num = parseInt(numStr, 10);
+          }
+          return {
+            number: num,
+            title: targetStr.replace(/^#+\s+/, "").trim(),
+          };
+        }
+      }
+
+      // Pattern 2: Bracketed chapters like 【Chương 2376: ...】 or 【Phiên ngoại 1】
       const bracketMatch = targetStr.match(
-        /^[【\[\(]\s*(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phần|Phan|C)\s*(\d+)(?:[\s:\-\._|]+(.*))?[】\]\)]/i
+        new RegExp(`^[【\\[\\(]\\s*(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phần|Phan|C|${extraKeywords})\\s*(\\d+)?(?:[\\s:\\-\\._|]+(.*))?[】\\]\\)]`, "i")
       );
       if (bracketMatch) {
-        const num = parseInt(bracketMatch[1], 10);
+        const num = bracketMatch[1] ? parseInt(bracketMatch[1], 10) : null;
         return {
           number: num,
           title: targetStr.trim(),
@@ -440,11 +519,7 @@ export class DocumentParserService {
       }
 
       // Pattern 3: Numbered chapter headings like "2376. Tiêu đề" or "2376: Tiêu đề" or "2376 - Tiêu đề"
-      // (Must be short, not dialogue, not running narrative sentences ending with punctuation)
       if (
-        !/^["'“«「『]/.test(targetStr) &&
-        !/["'”»」』]$/.test(targetStr) &&
-        !/[.!?…]$/.test(targetStr) &&
         !targetStr.includes(",") &&
         !targetStr.includes(";") &&
         targetStr.length < 60
@@ -480,6 +555,7 @@ export class DocumentParserService {
       }
     }
 
+    let lastChapNum = 0;
     for (let i = 0; i < processedLines.length; i++) {
       const line = processedLines[i];
       const majorTabTitle = isMajorTab(line);
@@ -504,8 +580,10 @@ export class DocumentParserService {
           };
           volumes.push(currentVolume);
         }
+        const assignedNum = chapInfo.number !== null ? chapInfo.number : lastChapNum + 1;
+        lastChapNum = assignedNum;
         currentChapter = {
-          number: chapInfo.number,
+          number: assignedNum,
           title: chapInfo.title,
           content: "",
           wordCount: 0,
@@ -650,12 +728,12 @@ export class DocumentParserService {
 
     const isChapter = (title: string): boolean => {
       const clean = cleanVolumeTitle(title).toLowerCase();
-      return /^(?:chương|chuong|chapter|tiết|tiet|c\d+|q\d+c\d+)\b/i.test(clean);
+      return /^(?:chương|chuong|chapter|tiết|tiet|phiên\s*ngoại|phien\s*ngoai|ngoại\s*truyện|ngoai\s*truyen|tiền\s*truyện|tien\s*truyen|phần\s*đệm|phan\s*dem|vĩ\s*thanh|vi\s*thanh|lời\s*bạt|loi\s*bat|tiết\s*tử|tiet\s*tu|c\d+|q\d+c\d+)\b/i.test(clean);
     };
 
     const extractChapNumber = (title: string, fallback: number): number => {
       const clean = cleanVolumeTitle(title);
-      const match = clean.match(/(?:chương|chuong|chapter|c|tiết)\s*(\d+)/i) || clean.match(/\b(\d+)\b/);
+      const match = clean.match(/(?:chương|chuong|chapter|c|tiết|phiên\s*ngoại|ngoại\s*truyện)\s*(\d+)/i) || clean.match(/\b(\d+)\b/);
       return match ? parseInt(match[1], 10) : fallback;
     };
 
