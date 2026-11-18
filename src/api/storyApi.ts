@@ -292,6 +292,46 @@ export const storyApi = {
   },
 
   /**
+   * [Admin] Delete multiple volumes and all their chapters
+   */
+  async deleteVolumes(storyId: string, volumeIds: string[]): Promise<ApiResponse<boolean>> {
+    try {
+      const ok = storyStorage.deleteVolumes(storyId, volumeIds);
+      return {
+        success: ok,
+        data: ok,
+        message: ok ? "Đã xóa các mục lục đã chọn thành công" : "Không tìm thấy mục lục cần xóa",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: false,
+        error: error.message || "Failed to delete volumes",
+      };
+    }
+  },
+
+  /**
+   * [Admin] Delete all volumes of a story
+   */
+  async deleteAllVolumes(storyId: string): Promise<ApiResponse<boolean>> {
+    try {
+      const ok = storyStorage.deleteAllVolumes(storyId);
+      return {
+        success: ok,
+        data: ok,
+        message: ok ? "Đã xóa tất cả mục lục thành công" : "Không tìm thấy mục lục cần xóa",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: false,
+        error: error.message || "Failed to delete all volumes",
+      };
+    }
+  },
+
+  /**
    * [Admin] Reorder volumes
    */
   async reorderVolumes(storyId: string, orderedVolumeIds: string[]): Promise<ApiResponse<boolean>> {

@@ -616,13 +616,18 @@ class StoryStorageService {
   }
 
   public deleteVolume(storyId: string, volumeId: string): boolean {
+    return this.deleteVolumes(storyId, [volumeId]);
+  }
+
+  public deleteVolumes(storyId: string, volumeIds: string[]): boolean {
     const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
     if (!story) return false;
 
-    const volIndex = story.volumes.findIndex((v) => v.id === volumeId);
-    if (volIndex === -1) return false;
+    const idSet = new Set(volumeIds);
+    const deletedVols = story.volumes.filter((v) => idSet.has(v.id));
+    if (deletedVols.length === 0) return false;
 
-    const [deletedVol] = story.volumes.splice(volIndex, 1);
+    story.volumes = story.volumes.filter((v) => !idSet.has(v.id));
     // Re-index remaining volumes
     story.volumes.forEach((v, idx) => {
       v.number = idx + 1;
@@ -631,19 +636,28 @@ class StoryStorageService {
     this.broadcastChange();
 
     this.saveStoryToFirestore(story).catch((err) =>
-      console.error("Firestore deleteVolume error:", err)
+      console.error("Firestore deleteVolumes error:", err)
     );
 
-    // Delete subcollection chapter documents for chapters in this volume
-    if (deletedVol && Array.isArray(deletedVol.chapters)) {
-      for (const ch of deletedVol.chapters) {
-        deleteDoc(doc(db, "stories", storyId, "chapters", ch.id)).catch((err) =>
-          console.warn("Firestore subcollection deleteChapter error:", err)
-        );
+    // Delete subcollection chapter documents for chapters in these volumes
+    for (const deletedVol of deletedVols) {
+      if (Array.isArray(deletedVol.chapters)) {
+        for (const ch of deletedVol.chapters) {
+          deleteDoc(doc(db, "stories", storyId, "chapters", ch.id)).catch((err) =>
+            console.warn("Firestore subcollection deleteChapter error:", err)
+          );
+        }
       }
     }
 
     return true;
+  }
+
+  public deleteAllVolumes(storyId: string): boolean {
+    const story = this.cachedStories.find((s) => s.id === storyId && !s.isDeleted);
+    if (!story) return false;
+    const allIds = story.volumes.map((v) => v.id);
+    return this.deleteVolumes(storyId, allIds);
   }
 
   public reorderVolumes(storyId: string, orderedVolumeIds: string[]): boolean {

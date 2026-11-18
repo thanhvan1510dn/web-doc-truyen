@@ -61,19 +61,26 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
   // Delete Volume Target
   const [deleteVolumeTarget, setDeleteVolumeTarget] = useState<Volume | null>(null);
 
-  const loadStory = async () => {
-    setLoading(true);
+  // Bulk Volume Selection & Delete states
+  const [selectedVolIds, setSelectedVolIds] = useState<Set<string>>(new Set());
+  const [showDeleteBulkModal, setShowDeleteBulkModal] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+  const loadStory = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     const res = await storyApi.getStoryById(storyId, true);
     if (res.success && res.data) {
       setStory({ ...res.data });
     }
-    setLoading(false);
+    if (showLoading) setLoading(false);
   };
 
   useEffect(() => {
     loadStory();
     const unsub = storyApi.subscribe(() => {
-      loadStory();
+      // Silent background refresh to avoid unmounting active upload studio
+      loadStory(false);
     });
     return () => unsub();
   }, [storyId]);
@@ -104,21 +111,18 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
     setEditContent(chapter.content || "");
     setEditActive(chapter.isActive !== false);
 
-    // If chapter content is empty (e.g. lazy-loaded from subcollection), fetch full text from Cloud immediately!
-    if (!chapter.content || chapter.content.trim().length === 0) {
-      setIsLoadingChapterContent(true);
-      try {
-        const res = await storyApi.getChapter(storyId, chapter.id, true);
-        if (res.success && res.data?.content) {
-          setEditContent(res.data.content);
-          chapter.content = res.data.content;
-        }
-      } catch (err) {
-        console.error("Error fetching full chapter content:", err);
-      } finally {
-        setIsLoadingChapterContent(false);
+    // Luôn tải bản mới nhất từ Cloud để tránh hiển thị nội dung cũ
+    setIsLoadingChapterContent(!chapter.content);
+    storyApi.getChapter(storyId, chapter.id, true).then((res) => {
+      if (res.success && res.data?.content) {
+        setEditContent(res.data.content);
+        chapter.content = res.data.content;
       }
-    }
+    }).catch((err) => {
+      console.error("Error fetching full chapter content:", err);
+    }).finally(() => {
+      setIsLoadingChapterContent(false);
+    });
   };
 
   const handleSaveChapter = async (e: React.FormEvent) => {
@@ -164,6 +168,69 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
       loadStory();
     } else {
       toast.error(res.error || "Không thể xoá mục lục");
+    }
+  };
+
+  const toggleSelectVolume = (volumeId: string) => {
+    setSelectedVolIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(volumeId)) {
+        next.delete(volumeId);
+      } else {
+        next.add(volumeId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllVolumes = () => {
+    if (!story) return;
+    if (selectedVolIds.size === story.volumes.length) {
+      setSelectedVolIds(new Set());
+    } else {
+      setSelectedVolIds(new Set(story.volumes.map((v) => v.id)));
+    }
+  };
+
+  const handleDeleteSelectedVolumes = async () => {
+    if (!story || selectedVolIds.size === 0) return;
+    setIsDeletingBulk(true);
+    try {
+      const count = selectedVolIds.size;
+      const res = await storyApi.deleteVolumes(storyId, Array.from(selectedVolIds));
+      if (res.success) {
+        toast.success(`Đã xoá thành công ${count} mục lục`);
+        setSelectedVolIds(new Set());
+        setShowDeleteBulkModal(false);
+        loadStory();
+      } else {
+        toast.error(res.error || "Không thể xoá các mục lục đã chọn");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xoá mục lục");
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  const handleDeleteAllVolumes = async () => {
+    if (!story || story.volumes.length === 0) return;
+    setIsDeletingBulk(true);
+    try {
+      const count = story.volumes.length;
+      const res = await storyApi.deleteAllVolumes(storyId);
+      if (res.success) {
+        toast.success(`Đã xoá thành công tất cả ${count} mục lục`);
+        setSelectedVolIds(new Set());
+        setShowDeleteAllModal(false);
+        loadStory();
+      } else {
+        toast.error(res.error || "Không thể xoá tất cả mục lục");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xoá mục lục");
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -603,6 +670,52 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
             </form>
           )}
 
+          {/* Bulk Selection and Batch Action Bar */}
+          {story.volumes.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-zinc-50 border border-zinc-200/80 rounded-xl text-xs">
+              <label className="flex items-center gap-2 cursor-pointer select-none font-medium text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={selectedVolIds.size > 0 && selectedVolIds.size === story.volumes.length}
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate = selectedVolIds.size > 0 && selectedVolIds.size < story.volumes.length;
+                    }
+                  }}
+                  onChange={toggleSelectAllVolumes}
+                  className="w-4 h-4 rounded text-zinc-900 focus:ring-zinc-900 border-zinc-300 cursor-pointer"
+                />
+                <span>
+                  {selectedVolIds.size > 0
+                    ? `Đã chọn ${selectedVolIds.size} / ${story.volumes.length} mục lục`
+                    : `Chọn tất cả (${story.volumes.length} mục lục)`}
+                </span>
+              </label>
+
+              <div className="flex items-center gap-2">
+                {selectedVolIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteBulkModal(true)}
+                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Xoá đã chọn ({selectedVolIds.size})</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteAllModal(true)}
+                  className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition-all flex items-center gap-1.5"
+                  title="Xoá toàn bộ các mục lục và chương của truyện"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Xoá tất cả mục lục</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {story.volumes.length === 0 ? (
             <div className="p-12 rounded-2xl bg-white border border-zinc-200 text-center space-y-3 shadow-sm">
               <BookOpen className="w-10 h-10 text-zinc-300 mx-auto" />
@@ -653,6 +766,10 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                       handleDropVolume(vIdx);
                     }}
                     className={`py-1.5 transition-all duration-150 ${
+                      selectedVolIds.has(volume.id)
+                        ? "bg-rose-50/50 rounded-xl"
+                        : ""
+                    } ${
                       isBeingDragged
                         ? "opacity-30 bg-zinc-100 rounded-xl"
                         : isOver
@@ -666,6 +783,19 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                       className="p-2 sm:px-2.5 rounded-xl flex items-center justify-between cursor-pointer select-none hover:bg-zinc-100/70 transition-colors group/vol"
                     >
                       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 mr-2">
+                        {/* Checkbox multi-select */}
+                        <input
+                          type="checkbox"
+                          checked={selectedVolIds.has(volume.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelectVolume(volume.id);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 rounded text-zinc-900 focus:ring-zinc-900 border-zinc-300 cursor-pointer flex-shrink-0"
+                          title="Chọn mục lục này"
+                        />
+
                         {/* Drag Handle */}
                         <div
                           draggable={true}
@@ -1102,6 +1232,84 @@ export const AdminStoryDetailView: React.FC<AdminStoryDetailViewProps> = ({
                 className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm"
               >
                 Xoá cả mục lục
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Multiple Volumes Confirmation Modal */}
+      {showDeleteBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 w-full max-w-md space-y-4 shadow-xl">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-bold text-zinc-900">
+                Xác nhận xoá {selectedVolIds.size} mục lục đã chọn?
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Toàn bộ các chương thuộc {selectedVolIds.size} mục lục này sẽ bị xoá vĩnh viễn khỏi truyện. Bạn có chắc chắn muốn tiếp tục?
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={() => setShowDeleteBulkModal(false)}
+                className="flex-1 py-2 rounded-xl border border-zinc-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+              >
+                Huỷ bỏ
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={handleDeleteSelectedVolumes}
+                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingBulk ? "Đang xoá..." : `Xoá ${selectedVolIds.size} mục lục`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Volumes Confirmation Modal */}
+      {showDeleteAllModal && story && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 w-full max-w-md space-y-4 shadow-xl">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-bold text-zinc-900">
+                Xoá toàn bộ tất cả mục lục?
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Thao tác này sẽ xoá toàn bộ <strong>{story.volumes.length} mục lục</strong> và tất cả các chương bên trong của truyện. Dữ liệu sẽ không thể khôi phục!
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={() => setShowDeleteAllModal(false)}
+                className="flex-1 py-2 rounded-xl border border-zinc-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+              >
+                Huỷ bỏ
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={handleDeleteAllVolumes}
+                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingBulk ? "Đang xoá..." : "Xoá tất cả mục lục"}
               </button>
             </div>
           </div>
