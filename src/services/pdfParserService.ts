@@ -227,7 +227,7 @@ export class DocumentParserService {
 
       // Clean leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, etc.)
       const cleaned = trimmed
-        .replace(/^[\s\p{Emoji}\p{Extended_Pictographic}✔️☑️✅✓•*~_\-]{1,15}\s*/u, "")
+        .replace(/^[\s\p{Extended_Pictographic}✔️☑️✅✓•*~_—–=+#]{1,15}\s*/u, "")
         .replace(/^[【\[\(]\s*[✔️☑️✅✓vxX\-*•]\s*[】\]\)]\s*/u, "")
         .trim();
 
@@ -370,6 +370,14 @@ export class DocumentParserService {
 
     validVolumes.forEach((v, idx) => {
       v.number = idx + 1;
+      if (Array.isArray(v.chapters) && v.chapters.length > 1) {
+        v.chapters.sort((a, b) => {
+          if (a.number && b.number && a.number !== b.number) {
+            return a.number - b.number;
+          }
+          return 0;
+        });
+      }
     });
 
     return validVolumes;

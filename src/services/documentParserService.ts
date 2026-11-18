@@ -240,6 +240,12 @@ export class DocumentParserService {
                 chap.number = m ? parseInt(m[1], 10) : idx + 1;
               }
             });
+            allChaps.sort((a, b) => {
+              if (a.number && b.number && a.number !== b.number) {
+                return a.number - b.number;
+              }
+              return 0;
+            });
 
             const cleanBaseName = file.name.replace(/\.(pdf|docx|txt)$/i, "").trim();
             let volTitle = cleanBaseName;
@@ -261,6 +267,12 @@ export class DocumentParserService {
             // Mỗi tab là một Mục lục độc lập (chứa nhiều chương, như từng Vị diện)
             parsedSections.forEach((sec) => {
               if (sec.chapters.length > 0) {
+                sec.chapters.sort((a, b) => {
+                  if (a.number && b.number && a.number !== b.number) {
+                    return a.number - b.number;
+                  }
+                  return 0;
+                });
                 const minNum = Math.min(...sec.chapters.map((c) => c.number));
                 const maxNum = Math.max(...sec.chapters.map((c) => c.number));
                 let secTitle = `(${minNum}-${maxNum})`;
@@ -467,14 +479,10 @@ export class DocumentParserService {
       const trimmed = normalizeLine(line);
       if (!trimmed || trimmed.length > 200) return null;
 
-      // Không khớp câu văn, đối thoại hay dấu chấm câu kết thúc
-      if (/^["'“«「『]/.test(trimmed) || /["'”»」』]$/.test(trimmed)) return null;
-      if (/[.!?…]$/.test(trimmed)) return null;
-
-      // Clean leading emojis, checkmarks, symbols (e.g. ✅, ✔️, ☑️, 🌸, 👑, ⭐, 📌, etc.)
+      // Clean leading/trailing decorative emojis, symbols, checkmarks (e.g. ✅, 🌸, ⭐) but keep digits and punctuation (? ! " ')
       const cleaned = trimmed
-        .replace(/^[^\p{L}\p{N}\(\[【\s]+/u, "")
-        .replace(/[^\p{L}\p{N}\)\]】\s]+$/u, "")
+        .replace(/^[\s\p{Extended_Pictographic}✔️☑️✅✓•*~_—–=+#]{1,15}\s*/u, "")
+        .replace(/[\s\p{Extended_Pictographic}✔️☑️✅✓•*~_—–=+#]{1,15}$/u, "")
         .trim();
 
       const targetStr = cleaned.length > 0 ? cleaned : trimmed;
@@ -522,7 +530,11 @@ export class DocumentParserService {
       }
 
       // Pattern 3: Numbered chapter headings like "2376. Tiêu đề" or "2376: Tiêu đề" or "2376 - Tiêu đề"
+      // Strictly prevent regular sentences: must not have quotes, clauses, or end with sentence punctuation (. ! ? …)
       if (
+        !/^["'“«「『]/.test(trimmed) &&
+        !/["'”»」』]$/.test(trimmed) &&
+        !/[.!?…]$/.test(trimmed) &&
         !targetStr.includes(",") &&
         !targetStr.includes(";") &&
         targetStr.length < 60
@@ -651,6 +663,14 @@ export class DocumentParserService {
 
     validVolumes.forEach((v, idx) => {
       v.number = idx + 1;
+      if (Array.isArray(v.chapters) && v.chapters.length > 1) {
+        v.chapters.sort((a, b) => {
+          if (a.number && b.number && a.number !== b.number) {
+            return a.number - b.number;
+          }
+          return 0;
+        });
+      }
     });
 
     return validVolumes;
