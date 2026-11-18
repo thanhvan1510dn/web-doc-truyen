@@ -91,41 +91,68 @@ export function findCanonArc(from: number, to: number): string | null {
 }
 
 export function partitionChaptersByCanonArcs(chapters: Array<{ number: number; [key: string]: any }>): Array<{ title: string; chapters: any[] }> | null {
-  if (!chapters || chapters.length === 0) return null;
+  // Chỉ phân chia vị diện tự động khi tập chương đủ lớn (ít nhất 50 chương trở lên)
+  // Các tệp thông thường (10-45 chương) là các Mục lục đơn lẻ đã được người dùng phân đoạn có chủ đích
+  if (!chapters || chapters.length < 50) return null;
 
   const chapNumbers = chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
-  if (chapNumbers.length === 0) return null;
+  if (chapNumbers.length < 50) return null;
 
   const minCh = Math.min(...chapNumbers);
   const maxCh = Math.max(...chapNumbers);
 
-  // Find all arcs that fall within or intersect with [minCh, maxCh]
-  const relevantArcs = BKP_CANON_ARCS.filter((a) => a.from <= maxCh && a.to >= minCh);
-  if (relevantArcs.length <= 1) return null;
+  // Tìm các vị diện có sự giao thoa đáng kể (ít nhất 8 chương)
+  const candidateArcs = BKP_CANON_ARCS.filter((arc) => {
+    const overlapFrom = Math.max(minCh, arc.from);
+    const overlapTo = Math.min(maxCh, arc.to);
+    return overlapTo - overlapFrom + 1 >= 8;
+  });
+
+  if (candidateArcs.length <= 1) return null;
 
   const partitioned: Array<{ title: string; chapters: any[] }> = [];
 
-  relevantArcs.forEach((arc) => {
-    const arcChaps = chapters.filter((c) => c.number >= arc.from && c.number <= arc.to);
-    if (arcChaps.length > 0) {
+  for (let i = 0; i < candidateArcs.length; i++) {
+    const arc = candidateArcs[i];
+    const arcFrom = i === 0 ? minCh : arc.from;
+    const arcTo = i === candidateArcs.length - 1 ? maxCh : arc.to;
+
+    const arcChaps = chapters.filter((c) => c.number >= arcFrom && c.number <= arcTo);
+    if (arcChaps.length >= 8) {
+      const pMin = Math.min(...arcChaps.map((c) => c.number));
+      const pMax = Math.max(...arcChaps.map((c) => c.number));
+      const canon = findCanonArc(pMin, pMax);
       partitioned.push({
-        title: arc.title,
+        title: canon || arc.title || `(${pMin}-${pMax})`,
         chapters: arcChaps,
       });
     }
-  });
+  }
 
-  // Check if any chapters were left unassigned (e.g. at the edges)
+  if (partitioned.length <= 1) return null;
+
+  // Gom các chương rìa chưa được phân bổ vào phân đoạn gần nhất
   const assignedSet = new Set(partitioned.flatMap((p) => p.chapters));
   const unassigned = chapters.filter((c) => !assignedSet.has(c));
 
   if (unassigned.length > 0) {
-    // If some unassigned chapters exist, attach them or create additional section
-    const unMin = Math.min(...unassigned.map((c) => c.number));
-    const unMax = Math.max(...unassigned.map((c) => c.number));
-    partitioned.push({
-      title: `(${unMin}-${unMax})`,
-      chapters: unassigned,
+    unassigned.forEach((chap) => {
+      let nearestPart = partitioned[0];
+      let minDist = Infinity;
+      partitioned.forEach((part) => {
+        const partNums = part.chapters.map((c) => c.number);
+        const dist = Math.min(...partNums.map((n) => Math.abs(n - chap.number)));
+        if (dist < minDist) {
+          minDist = dist;
+          nearestPart = part;
+        }
+      });
+      nearestPart.chapters.push(chap);
+      nearestPart.chapters.sort((a, b) => a.number - b.number);
+      const pMin = Math.min(...nearestPart.chapters.map((c) => c.number));
+      const pMax = Math.max(...nearestPart.chapters.map((c) => c.number));
+      const canon = findCanonArc(pMin, pMax);
+      nearestPart.title = canon || `(${pMin}-${pMax})`;
     });
   }
 

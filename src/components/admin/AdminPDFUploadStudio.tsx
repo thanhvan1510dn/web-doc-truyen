@@ -35,6 +35,67 @@ function getVolumeStartChapter(vol: ParsedVolume): number {
   return match ? parseInt(match[1], 10) : 999999;
 }
 
+function extractArcName(title: string): string {
+  const m = (title || "").match(/[\(\[【]\s*\d{1,5}\s*[-–—~至到]\s*\d{1,5}\s*[\)\]】]\s*(.+)$/);
+  if (m && m[1]) return m[1].trim().toLowerCase();
+  return "";
+}
+
+function getVolumeRange(vol: ParsedVolume): { min: number; max: number } {
+  const nums = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
+  if (nums.length > 0) return { min: Math.min(...nums), max: Math.max(...nums) };
+  const m = (vol.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})\s*[\)\]】]/);
+  if (m) return { min: parseInt(m[1], 10), max: parseInt(m[2], 10) };
+  return { min: 999999, max: 999999 };
+}
+
+function consolidateAdjacentVolumes(vols: ParsedVolume[]): ParsedVolume[] {
+  if (vols.length <= 1) return vols;
+  const result: ParsedVolume[] = [];
+  let current = vols[0];
+
+  for (let i = 1; i < vols.length; i++) {
+    const next = vols[i];
+    const curRange = getVolumeRange(current);
+    const nextRange = getVolumeRange(next);
+    const curArc = extractArcName(current.title);
+    const nextArc = extractArcName(next.title);
+
+    const isSameArc = !!(curArc && nextArc && curArc === nextArc && nextRange.min - curRange.max <= 3);
+    const isOrphanMerge = (current.chapters.length <= 2 || next.chapters.length <= 2) && (nextRange.min - curRange.max <= 1);
+    const isOverlapping = nextRange.min <= curRange.max;
+
+    if (isSameArc || isOrphanMerge || isOverlapping) {
+      // Merge next into current
+      const chapterMap = new Map<number, any>();
+      current.chapters.forEach((c) => chapterMap.set(c.number, c));
+      next.chapters.forEach((c) => {
+        const existing = chapterMap.get(c.number);
+        if (!existing || (c.content && c.content.length > (existing.content || "").length)) {
+          chapterMap.set(c.number, c);
+        }
+      });
+      const mergedChapters = Array.from(chapterMap.values()).sort((a, b) => a.number - b.number);
+      const newMin = Math.min(...mergedChapters.map((c) => c.number));
+      const newMax = Math.max(...mergedChapters.map((c) => c.number));
+      const canon = findCanonArc(newMin, newMax);
+      const chosenArc = curArc || nextArc;
+      const formattedArc = chosenArc ? chosenArc.charAt(0).toUpperCase() + chosenArc.slice(1) : "";
+      const newTitle = canon || (formattedArc ? `(${newMin}-${newMax}) ${formattedArc}` : `(${newMin}-${newMax})`);
+      current = {
+        ...current,
+        title: newTitle,
+        chapters: mergedChapters,
+      };
+    } else {
+      result.push(current);
+      current = next;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
 // Merge multiple DocumentParseResult into one, tự động sắp xếp theo thứ tự chương tăng dần
 function mergeResults(entries: FileEntry[]): DocumentParseResult | null {
   const doneEntries = entries.filter((e) => e.status === "done" && e.result);
@@ -59,12 +120,15 @@ function mergeResults(entries: FileEntry[]): DocumentParseResult | null {
   // TỰ ĐỘNG SẮP XẾP TẤT CẢ MỤC LỤC THEO SỐ CHƯƠNG TĂNG DẦN (3344 -> 3372 -> ... -> 3873)
   rawVolumes.sort((a, b) => getVolumeStartChapter(a) - getVolumeStartChapter(b));
 
+  // Tự động gộp các phân đoạn mục lục liền kề thuộc cùng một vị diện hoặc chương lẻ bị tách
+  const consolidatedVolumes = consolidateAdjacentVolumes(rawVolumes);
+
   // Loại bỏ chương trùng lặp (nếu trùng số chương, ưu tiên file xuất hiện sau)
   const chapSeen = new Map<number, boolean>();
   const dedupedVolumes: ParsedVolume[] = [];
 
-  for (let i = rawVolumes.length - 1; i >= 0; i--) {
-    const vol = rawVolumes[i];
+  for (let i = consolidatedVolumes.length - 1; i >= 0; i--) {
+    const vol = consolidatedVolumes[i];
     const dedupedChapters = vol.chapters.filter((c) => {
       if (chapSeen.has(c.number)) return false;
       chapSeen.set(c.number, true);

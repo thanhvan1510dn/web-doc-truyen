@@ -127,14 +127,23 @@ export class DocumentParserService {
       volumes = this.parseFromPDFBookmarks(resolvedOutline, pageTexts, numPages);
     }
 
-    if (volumes.length === 1 && volumes[0].chapters.length > 20) {
-      const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
-      if (partitioned && partitioned.length > 1) {
-        volumes = partitioned.map((p, idx) => ({
-          number: idx + 1,
-          title: p.title,
-          chapters: p.chapters,
-        }));
+    if (volumes.length === 1 && volumes[0].chapters.length >= 50) {
+      const cleanName = file.name.replace(/\.(pdf|docx|txt)$/i, "").trim();
+      const nameRange = cleanName.match(/[\(\[【]\s*(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})\s*[\)\]】]/);
+      const chapNums = volumes[0].chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
+      const minNum = chapNums.length > 0 ? Math.min(...chapNums) : 0;
+      const maxNum = chapNums.length > 0 ? Math.max(...chapNums) : 0;
+      const isExplicitRange = !!(nameRange && Math.abs(parseInt(nameRange[1], 10) - minNum) <= 2 && Math.abs(parseInt(nameRange[2], 10) - maxNum) <= 2);
+
+      if (!isExplicitRange) {
+        const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
+        if (partitioned && partitioned.length > 1) {
+          volumes = partitioned.map((p, idx) => ({
+            number: idx + 1,
+            title: p.title,
+            chapters: p.chapters,
+          }));
+        }
       }
     }
 
@@ -983,14 +992,23 @@ export class DocumentParserService {
     let totalWords = 0;
     let totalChapters = 0;
 
-    if (volumes.length === 1 && volumes[0].chapters.length > 20) {
-      const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
-      if (partitioned && partitioned.length > 1) {
-        volumes = partitioned.map((p, idx) => ({
-          number: idx + 1,
-          title: p.title,
-          chapters: p.chapters,
-        }));
+    if (volumes.length === 1 && volumes[0].chapters.length >= 50) {
+      const cleanName = fileName.replace(/\.(pdf|docx|txt)$/i, "").trim();
+      const nameRange = cleanName.match(/[\(\[【]\s*(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})\s*[\)\]】]/);
+      const chapNums = volumes[0].chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
+      const minNum = chapNums.length > 0 ? Math.min(...chapNums) : 0;
+      const maxNum = chapNums.length > 0 ? Math.max(...chapNums) : 0;
+      const isExplicitRange = !!(nameRange && Math.abs(parseInt(nameRange[1], 10) - minNum) <= 2 && Math.abs(parseInt(nameRange[2], 10) - maxNum) <= 2);
+
+      if (!isExplicitRange) {
+        const partitioned = partitionChaptersByCanonArcs(volumes[0].chapters);
+        if (partitioned && partitioned.length > 1) {
+          volumes = partitioned.map((p, idx) => ({
+            number: idx + 1,
+            title: p.title,
+            chapters: p.chapters,
+          }));
+        }
       }
     }
 
