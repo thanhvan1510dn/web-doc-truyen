@@ -419,6 +419,12 @@ export class DocumentParserService {
       if (/^["'“«「『]/.test(trimmed) || /["'”»」』]$/.test(trimmed)) return null;
       if (/[.!?…]$/.test(trimmed)) return null;
 
+      // Discard arithmetic, equations, or stat/attribute lines (e.g. "Phiếu quyền hạn: +1-1", "Giá trị: 42+2")
+      if (/[\+\=]/.test(trimmed)) return null;
+      if (/^(?:Tên|Tuổi|Cấp\s*bậc|Thẻ\s*tích\s*phân|Giá\s*trị|Tinh\s*thần|Tư\s*chất|Lực|Công\s*đức|Cường\s*độ|Phiếu|Tâm\s*hồn|Pháp\s*tắc|Cấu\s*trúc|Đạo\s*cụ|Danh\s*hiệu|Kỹ\s*năng|Hào\s*quang|Thuộc\s*tính|Điểm|Kinh\s*nghiệm)\b/i.test(trimmed)) {
+        return null;
+      }
+
       // Ignore standard and extra chapter headings
       if (/^(?:#+\s+)?(?:Chương|Chuong|Chapter|Chap|Hồi|Hoi|Tiết|Tiet|Phiên\s*ngoại|Phien\s*ngoai|Ngoại\s*truyện|Ngoai\s*truyen)\s*\d+/i.test(trimmed)) {
         return null;
@@ -437,30 +443,42 @@ export class DocumentParserService {
         return cleanSymbols(c);
       };
 
-      // 1. Chapter Range: matches anywhere in the short line!
+      // 1. Chapter Range with brackets: MUST have enclosing brackets around the range!
       // Matches "✅ (3344-3371)", "(3344-3371)", "[✅] (3372-3398) Fan cuồng...", "Tab 1: (3399-3422)", "Vợ yêu trăm tỷ (3423-3456)", etc.
-      const rangeMatch =
-        trimmed.match(/^(.*?)(?:[\(\[【]\s*)(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])(?:\s*[:\-\._\s]\s*(.*))?$/i) ||
-        trimmed.match(/(?:[\(\[【]\s*)?(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])?(?:\s*[:\-\._\s]\s*(.*))?$/i);
+      const bracketMatch = trimmed.match(
+        /^(.*?)(?:[\(\[【]\s*)(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[\)\]】])(?:\s*[:\-\._\s]\s*(.*))?$/i
+      );
 
-      if (rangeMatch) {
-        let prefix = "";
-        let from = 0;
-        let to = 0;
-        let suffix = "";
-        if (rangeMatch.length === 5) {
-          prefix = cleanPrefix(rangeMatch[1]);
-          from = parseInt(rangeMatch[2], 10);
-          to = parseInt(rangeMatch[3], 10);
-          suffix = cleanSymbols(rangeMatch[4]);
-        } else {
-          from = parseInt(rangeMatch[1], 10);
-          to = parseInt(rangeMatch[2], 10);
-          suffix = cleanSymbols(rangeMatch[3]);
-        }
-        if (to >= from && to - from <= 1000) {
+      if (bracketMatch) {
+        const prefix = cleanPrefix(bracketMatch[1]);
+        const from = parseInt(bracketMatch[2], 10);
+        const to = parseInt(bracketMatch[3], 10);
+        const suffix = cleanSymbols(bracketMatch[4]);
+        if (to > from && to - from <= 1000) {
           const extraTitle = [prefix, suffix].filter(Boolean).join(" ");
           return extraTitle ? `(${from}-${to}) ${extraTitle}` : `(${from}-${to})`;
+        }
+      }
+
+      // 1b. Unbracketed Range: ONLY if preceded by an explicit volume keyword or the entire line is just numbers
+      const bareKeywordMatch = trimmed.match(
+        /^(?:Document\s*Tabs?|Tabs?|Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap)\s*\d*[:\.\-]?\s*(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})(?:\s*[:\-\._\s]\s*(.*))?$/i
+      );
+      if (bareKeywordMatch) {
+        const from = parseInt(bareKeywordMatch[1], 10);
+        const to = parseInt(bareKeywordMatch[2], 10);
+        const suffix = cleanSymbols(bareKeywordMatch[3]);
+        if (to > from && to - from <= 1000) {
+          return suffix ? `(${from}-${to}) ${suffix}` : `(${from}-${to})`;
+        }
+      }
+
+      const bareStandalone = trimmed.match(/^\s*(\d{1,5})\s*[-–—~至到]\s*(\d{1,5})\s*$/);
+      if (bareStandalone) {
+        const from = parseInt(bareStandalone[1], 10);
+        const to = parseInt(bareStandalone[2], 10);
+        if (to > from && to - from <= 1000) {
+          return `(${from}-${to})`;
         }
       }
 
@@ -472,9 +490,9 @@ export class DocumentParserService {
       }
 
       // 3. Bracketed Volume: 【Quyển 1: ...】 or [Mục lục 2: ...]
-      const bracketMatch = trimmed.match(/^[【\[]\s*(?:Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol|Tab)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]$/i);
-      if (bracketMatch) {
-        return bracketMatch[0].replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
+      const bracketKeywordMatch = trimmed.match(/^[【\[]\s*(?:Quyển|Quyen|Mục\s*lục|Muc\s*luc|Tập|Tap|Phần|Phan|Vol|Tab)\s*(\d+|[IVXLCDM]+)?(?:[:\-\._\s]+(.*))?[】\]]$/i);
+      if (bracketKeywordMatch) {
+        return bracketKeywordMatch[0].replace(/^[【\[]/, "").replace(/[】\]]$/, "").trim();
       }
 
       return null;
