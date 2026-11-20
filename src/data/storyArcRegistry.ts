@@ -37,7 +37,7 @@ export const BKP_CANON_ARCS: CanonArc[] = [
   { from: 3079, to: 3101, title: "(3079-3101)", arcName: "" },
   { from: 3102, to: 3119, title: "(3102-3119) Thay trời hành đạo", arcName: "Thay trời hành đạo" },
   { from: 3120, to: 3131, title: "(3120-3131)", arcName: "" },
-  { from: 3132, to: 3145, title: "(3132-3145) Đặc thù nhiệm vụ", arcName: "Đặc thù nhiệm vụ" },
+  { from: 3132, to: 3145, title: "(3132-3145) Nhiệm vụ đặc thù", arcName: "Nhiệm vụ đặc thù" },
   { from: 3146, to: 3191, title: "(3146-3191)", arcName: "" },
   { from: 3192, to: 3205, title: "(3192-3205) Mật Giai", arcName: "Mật Giai" },
   { from: 3206, to: 3255, title: "(3206-3255)", arcName: "" },

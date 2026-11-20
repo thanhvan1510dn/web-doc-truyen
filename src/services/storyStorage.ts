@@ -1149,10 +1149,13 @@ class StoryStorageService {
             if (normT) targetVolByChapTitle.set(normT, existingVol.id);
           });
 
-          // Preserve rich title if existing title was rich and incoming pv.title was bare!
+          // Update title if incoming pv.title is rich, or preserve existing rich title if incoming is bare
           const isExistingRich = existingVol.title && !/^Mục\s*lục\s*\d+$/i.test(existingVol.title.trim()) && !/^\(\d+-\d+\)$/.test(existingVol.title.trim());
+          const isPvRich = pv.title && !/^Mục\s*lục\s*\d+$/i.test(pv.title.trim()) && !/^\(\d+-\d+\)$/.test(pv.title.trim());
 
-          if (isExistingRich && isPvBare) {
+          if (isPvRich) {
+            existingVol.title = pv.title;
+          } else if (isExistingRich && isPvBare) {
             // Giữ nguyên tiêu đề phong phú đã có trong cơ sở dữ liệu
           } else {
             existingVol.title = pv.title || existingVol.title;

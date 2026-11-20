@@ -1046,12 +1046,21 @@ export class DocumentParserService {
           const fromChaps = this.detectArcNameFromChapters(vol.chapters);
           const isBare = !vol.title || /^Mục\s*lục\s*\d+$/i.test(vol.title.trim()) || /^\(\d+-\d+\)$/.test(vol.title.trim());
 
-          if (canonTitle && canonTitle.includes(" ")) {
-            vol.title = canonTitle;
-          } else if (fromChaps && isBare) {
+          const fileNameRange = cleanBaseName.match(/[\(\[【]\s*\d{1,5}\s*[-–—~至到]\s*\d{1,5}\s*[\)\]】]\s*(.+)$/);
+          const fileNameArc = fileNameRange ? fileNameRange[1].trim() : "";
+
+          // Ưu tiên 1: Tên vị diện nhận diện trực tiếp từ chính tiêu đề các chương con (ví dụ "Nhiệm vụ đặc thù (1)")
+          if (fromChaps) {
             vol.title = `(${minCh}-${maxCh}) ${fromChaps}`;
+          // Ưu tiên 2: Tên vị diện được người dùng đặt tường minh trong tên tệp (ví dụ "(3131-3144) Nhiệm vụ đặc thù.txt")
+          } else if (fileNameArc && volumes.length === 1) {
+            vol.title = `(${minCh}-${maxCh}) ${fileNameArc}`;
+          // Ưu tiên 3: Tên tệp đơn lẻ nếu tên tệp có nội dung tùy chỉnh
           } else if (volumes.length === 1 && isBare && fileNameHasInfo) {
             vol.title = cleanBaseName;
+          // Ưu tiên 4: Khớp từ điển Vị diện mẫu (Canon Arcs)
+          } else if (canonTitle && canonTitle.includes(" ")) {
+            vol.title = canonTitle;
           } else if (canonTitle) {
             vol.title = canonTitle;
           } else if (isBare) {
