@@ -6,7 +6,6 @@ import {
 import { storyApi } from "../../api";
 import { Story, StoryGenre } from "../../types/story";
 import { documentParserService, DocumentParseResult, ParsedVolume } from "../../services/documentParserService";
-import { findCanonArc } from "../../data/storyArcRegistry";
 import { useToast } from "../common/Toast";
 
 interface AdminPDFUploadStudioProps {
@@ -78,10 +77,9 @@ function consolidateAdjacentVolumes(vols: ParsedVolume[]): ParsedVolume[] {
       const mergedChapters = Array.from(chapterMap.values()).sort((a, b) => a.number - b.number);
       const newMin = Math.min(...mergedChapters.map((c) => c.number));
       const newMax = Math.max(...mergedChapters.map((c) => c.number));
-      const canon = findCanonArc(newMin, newMax);
       const chosenArc = curArc || nextArc;
       const formattedArc = chosenArc ? chosenArc.charAt(0).toUpperCase() + chosenArc.slice(1) : "";
-      const newTitle = canon || (formattedArc ? `(${newMin}-${newMax}) ${formattedArc}` : `(${newMin}-${newMax})`);
+      const newTitle = formattedArc ? `(${newMin}-${newMax}) ${formattedArc}` : `(${newMin}-${newMax})`;
       current = {
         ...current,
         title: newTitle,
@@ -230,12 +228,10 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     }
   }, [storyId]);
 
-  // Làm giàu tên vị diện theo Canon Arcs
+  // Làm giàu tên vị diện từ tiêu đề các chương con
   const enrichVolumes = (
-    vols: ParsedVolume[],
-    targetStoryIdArg: string
+    vols: ParsedVolume[]
   ): { enriched: ParsedVolume[]; enrichedCount: number; arcNames: string[] } => {
-    const targetStory = stories.find((s) => s.id === targetStoryIdArg);
     let enrichedCount = 0;
     const arcNames: string[] = [];
 
@@ -246,36 +242,14 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
       const minCh = chapNumbers.length > 0 ? Math.min(...chapNumbers) : 0;
       const maxCh = chapNumbers.length > 0 ? Math.max(...chapNumbers) : 0;
 
-      if (targetStory && Array.isArray(targetStory.volumes)) {
-        const matched = targetStory.volumes.find((ev) => {
-          const evRange = (ev.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
-          if (evRange) {
-            const evMin = parseInt(evRange[1], 10);
-            const evMax = parseInt(evRange[2], 10);
-            return minCh >= evMin && maxCh <= evMax && ev.title.trim().length > evRange[0].length;
-          }
-          return false;
-        });
-        if (matched && matched.title) {
-          const currentClean = vol.title.trim();
-          const targetClean = matched.title.trim();
-          if (currentClean !== targetClean && currentClean.length <= 15) {
-            enrichedCount++;
-            arcNames.push(targetClean);
-            return { ...vol, title: targetClean };
-          }
-        }
-      }
-
       if (minCh > 0 && maxCh > 0) {
-        const canonTitle = findCanonArc(minCh, maxCh);
         const fromChaps = documentParserService.detectArcNameFromChapters(vol.chapters);
-        const bestTitle = canonTitle || (fromChaps ? `(${minCh}-${maxCh}) ${fromChaps}` : null);
-        if (bestTitle) {
+        if (fromChaps) {
+          const bestTitle = `(${minCh}-${maxCh}) ${fromChaps}`;
           const currentClean = vol.title.trim();
-          if (currentClean !== bestTitle && currentClean.length <= 15) {
+          if (currentClean !== bestTitle) {
             enrichedCount++;
-            arcNames.push(bestTitle);
+            arcNames.push(fromChaps);
             return { ...vol, title: bestTitle };
           }
         }
@@ -289,12 +263,12 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
 
   const handleAutoEnrichTitles = () => {
     if (!parseResult) return;
-    const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes, selectedStoryId);
+    const { enriched, enrichedCount, arcNames } = enrichVolumes(parseResult.volumes);
     setParseResult({ ...parseResult, volumes: enriched });
     if (enrichedCount > 0) {
       toast.success(`✨ Đã nhận diện và gán ${enrichedCount} tên vị diện: ${arcNames.slice(0, 3).join(", ")}${arcNames.length > 3 ? "..." : ""}`);
     } else {
-      toast.info("Tên các mục lục đã ở trạng thái tối ưu.");
+      toast.info("Tên các mục lục đã ở trạng thái tối ưu (mục lục số được giữ nguyên).");
     }
   };
 
@@ -373,9 +347,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
     if (pending.length === 0 && done.length > 0) {
       const merged = mergeResults(fileEntries);
       if (merged) {
-        const targetId = selectedStoryId || storyId || (stories.length > 0 ? stories[0].id : "");
-        const { enriched, enrichedCount, arcNames } = enrichVolumes(merged.volumes, targetId);
-        merged.volumes = enriched;
         setParseResult(merged);
 
         if (done.length === 1 && merged.detectedTitle) {
@@ -387,13 +358,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
           setNewStoryDesc(`Tác phẩm gồm ${merged.totalVolumes} Mục lục gộp từ ${done.length} tệp.`);
         }
 
-        if (enrichedCount > 0) {
-          toast.success(
-            `✨ ${done.length} tệp · ${merged.totalVolumes} Mục lục (đã tự sắp xếp thứ tự) · Khớp ${enrichedCount} vị diện: ${arcNames.slice(0, 2).join(", ")}${arcNames.length > 2 ? "..." : ""}`
-          );
-        } else {
-          toast.success(`Đã nạp ${done.length} tệp · ${merged.totalVolumes} Mục lục · ${merged.totalChapters} chương`);
-        }
+        toast.success(`Đã nạp ${done.length} tệp · ${merged.totalVolumes} Mục lục · ${merged.totalChapters} chương`);
       }
     }
   }, [fileEntries]);
@@ -426,9 +391,6 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
         if (pending.length === 0) {
           const merged = mergeResults(updated);
           if (merged) {
-            const targetId = selectedStoryId || storyId || (stories.length > 0 ? stories[0].id : "");
-            const { enriched } = enrichVolumes(merged.volumes, targetId);
-            merged.volumes = enriched;
             setParseResult(merged);
           }
         }

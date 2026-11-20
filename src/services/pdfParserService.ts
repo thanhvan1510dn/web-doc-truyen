@@ -1,7 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 import JSZip from "jszip";
-import { findCanonArc, partitionChaptersByCanonArcs } from "../data/storyArcRegistry";
+import { partitionChaptersByCanonArcs } from "../data/storyArcRegistry";
 
 if (typeof window !== "undefined" && "Worker" in window) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -261,9 +261,9 @@ export class DocumentParserService {
             if (allChaps.length > 0) {
               const minNum = Math.min(...allChaps.map((c) => c.number));
               const maxNum = Math.max(...allChaps.map((c) => c.number));
-              const canon = findCanonArc(minNum, maxNum);
-              if (canon) {
-                volTitle = canon;
+              const fromChaps = this.detectArcNameFromChapters(allChaps);
+              if (fromChaps) {
+                volTitle = `(${minNum}-${maxNum}) ${fromChaps}`;
               }
             }
 
@@ -285,11 +285,8 @@ export class DocumentParserService {
                 const minNum = Math.min(...sec.chapters.map((c) => c.number));
                 const maxNum = Math.max(...sec.chapters.map((c) => c.number));
                 let secTitle = `(${minNum}-${maxNum})`;
-                const canon = findCanonArc(minNum, maxNum);
                 const fromChaps = this.detectArcNameFromChapters(sec.chapters);
-                if (canon) {
-                  secTitle = canon;
-                } else if (fromChaps) {
+                if (fromChaps) {
                   secTitle = `(${minNum}-${maxNum}) ${fromChaps}`;
                 } else if (sec.parsedVols.length === 1 && sec.parsedVols[0].title && !sec.parsedVols[0].title.startsWith("Mục lục")) {
                   secTitle = sec.parsedVols[0].title;
@@ -1042,28 +1039,27 @@ export class DocumentParserService {
         if (chapNumbers.length > 0) {
           const minCh = Math.min(...chapNumbers);
           const maxCh = Math.max(...chapNumbers);
-          const canonTitle = findCanonArc(minCh, maxCh);
           const fromChaps = this.detectArcNameFromChapters(vol.chapters);
           const isBare = !vol.title || /^Mục\s*lục\s*\d+$/i.test(vol.title.trim()) || /^\(\d+-\d+\)$/.test(vol.title.trim());
 
           const fileNameRange = cleanBaseName.match(/[\(\[【]\s*\d{1,5}\s*[-–—~至到]\s*\d{1,5}\s*[\)\]】]\s*(.+)$/);
           const fileNameArc = fileNameRange ? fileNameRange[1].trim() : "";
+          const isPureRangeFileName = /^[\(\[【]?\s*\d{1,5}\s*[-–—~至到]\s*\d{1,5}\s*[\)\]】]?$/.test(cleanBaseName);
 
-          // Ưu tiên 1: Tên vị diện nhận diện trực tiếp từ chính tiêu đề các chương con (ví dụ "Nhiệm vụ đặc thù (1)")
+          // 1. Tên vị diện nhận diện trực tiếp từ chính tiêu đề các chương con (ví dụ "Nhiệm vụ đặc thù (1)")
           if (fromChaps) {
             vol.title = `(${minCh}-${maxCh}) ${fromChaps}`;
-          // Ưu tiên 2: Tên vị diện được người dùng đặt tường minh trong tên tệp (ví dụ "(3131-3144) Nhiệm vụ đặc thù.txt")
+          // 2. Tên vị diện được người dùng đặt tường minh trong tên tệp (ví dụ "(3131-3144) Nhiệm vụ đặc thù.txt")
           } else if (fileNameArc && volumes.length === 1) {
             vol.title = `(${minCh}-${maxCh}) ${fileNameArc}`;
-          // Ưu tiên 3: Tên tệp đơn lẻ nếu tên tệp có nội dung tùy chỉnh
-          } else if (volumes.length === 1 && isBare && fileNameHasInfo) {
+          // 3. Nếu tệp hoặc mục lục chỉ thuần là số chương (ví dụ "(3078-3100)" hay "(2824-2838)"):
+          // Tuyệt đối giữ nguyên định dạng số, KHÔNG tự ý gán tên vị diện từ điển vào!
+          } else if (isPureRangeFileName || isBare) {
+            vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
+          // 4. Nếu tệp đơn lẻ có tiêu đề tùy chỉnh khác
+          } else if (volumes.length === 1 && fileNameHasInfo) {
             vol.title = cleanBaseName;
-          // Ưu tiên 4: Khớp từ điển Vị diện mẫu (Canon Arcs)
-          } else if (canonTitle && canonTitle.includes(" ")) {
-            vol.title = canonTitle;
-          } else if (canonTitle) {
-            vol.title = canonTitle;
-          } else if (isBare) {
+          } else {
             vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
           }
         } else if (!vol.title || !vol.title.trim()) {

@@ -1,7 +1,6 @@
 import { Story, Chapter, Volume } from "../types/story";
 import { CreateStoryDto, UpdateStoryDto, CreateChapterDto, UpdateChapterDto, StoryFilterParams } from "../types/api";
 import { ParsedVolume } from "./documentParserService";
-import { findCanonArc } from "../data/storyArcRegistry";
 import { MOCK_STORIES } from "../data/mockStories";
 import { db } from "./firebase";
 import { 
@@ -1072,7 +1071,6 @@ class StoryStorageService {
         const pvRange = (pv.title || "").match(/[\(\[【]\s*(\d{1,5})\s*[-–—]\s*(\d{1,5})\s*[\)\]】]/);
         const pvFrom = pvRange ? parseInt(pvRange[1], 10) : (pv.chapters.length > 0 ? Math.min(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
         const pvTo = pvRange ? parseInt(pvRange[2], 10) : (pv.chapters.length > 0 ? Math.max(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
-        const isPvBare = !pv.title || /^Mục\s*lục\s*\d+$/i.test(pv.title.trim()) || /^\(\d+-\d+\)$/.test(pv.title.trim());
 
         const existingVolIndex = currentVolumes.findIndex((_v, idx) => {
           const meta = existingVolMeta[idx];
@@ -1149,23 +1147,19 @@ class StoryStorageService {
             if (normT) targetVolByChapTitle.set(normT, existingVol.id);
           });
 
-          // Update title if incoming pv.title is rich, or preserve existing rich title if incoming is bare
-          const isExistingRich = existingVol.title && !/^Mục\s*lục\s*\d+$/i.test(existingVol.title.trim()) && !/^\(\d+-\d+\)$/.test(existingVol.title.trim());
-          const isPvRich = pv.title && !/^Mục\s*lục\s*\d+$/i.test(pv.title.trim()) && !/^\(\d+-\d+\)$/.test(pv.title.trim());
+          // Cập nhật tiêu đề Mục lục nếu tiêu đề tải lên có ý nghĩa (ví dụ: "(3078-3100)" hoặc "(3131-3144) Nhiệm vụ đặc thù")
+          const isGenericVolTitle = (t: string) => !t || /^mục\s*lục\s*\d+$/i.test(t.trim()) || /^tập\s*\d+$/i.test(t.trim()) || /^volume\s*\d+$/i.test(t.trim());
 
-          if (isPvRich) {
+          if (pv.title && !isGenericVolTitle(pv.title)) {
             existingVol.title = pv.title;
-          } else if (isExistingRich && isPvBare) {
-            // Giữ nguyên tiêu đề phong phú đã có trong cơ sở dữ liệu
-          } else {
+          } else if (!existingVol.title || isGenericVolTitle(existingVol.title)) {
             existingVol.title = pv.title || existingVol.title;
           }
           existingVol.chapters = updatedChapters;
         } else {
           // 2. Mục lục mới (không trùng tên)
           const volumeId = "vol_" + Date.now() + "_" + vIdx + "_" + Math.random().toString(36).substring(2, 5);
-          const canonTitle = (pvFrom > 0 && pvTo > 0) ? findCanonArc(pvFrom, pvTo) : null;
-          const assignedTitle = (isPvBare && canonTitle) ? canonTitle : (pv.title || `Mục lục ${currentVolumes.length + 1}`);
+          const assignedTitle = pv.title || (pvFrom > 0 && pvTo > 0 ? `(${pvFrom}-${pvTo})` : `Mục lục ${currentVolumes.length + 1}`);
           const newVol: Volume = {
             id: volumeId,
             number: currentVolumes.length + 1,
