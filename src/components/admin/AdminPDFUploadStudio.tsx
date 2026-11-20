@@ -26,8 +26,16 @@ interface FileEntry {
   error?: string;
 }
 
+function isExtraVolume(title: string): boolean {
+  const norm = (title || "").normalize("NFKC");
+  return /phiên\s*ngoại|phien\s*ngoai|ngoại\s*truyện|ngoai\s*truyen|hậu\s*truyện|vĩ\s*thanh|lời\s*bạt/i.test(norm);
+}
+
 // Helper: lấy số chương bắt đầu của một Volume để sắp xếp tự nhiên
 function getVolumeStartChapter(vol: ParsedVolume): number {
+  if (isExtraVolume(vol.title || "")) {
+    return 999000;
+  }
   const chaps = vol.chapters.map((c) => c.number).filter((n) => typeof n === "number" && n > 0);
   if (chaps.length > 0) return Math.min(...chaps);
   const match = (vol.title || "").match(/\b(\d{1,5})\b/);
@@ -59,6 +67,16 @@ function consolidateAdjacentVolumes(vols: ParsedVolume[]): ParsedVolume[] {
     const nextRange = getVolumeRange(next);
     const curArc = extractArcName(current.title);
     const nextArc = extractArcName(next.title);
+
+    const isCurExtra = isExtraVolume(current.title || "");
+    const isNextExtra = isExtraVolume(next.title || "");
+    if (isCurExtra || isNextExtra) {
+      if (isCurExtra !== isNextExtra) {
+        result.push(current);
+        current = next;
+        continue;
+      }
+    }
 
     const isSameArc = !!(curArc && nextArc && curArc === nextArc && nextRange.min - curRange.max <= 3);
     const isOrphanMerge = (current.chapters.length <= 2 || next.chapters.length <= 2) && (nextRange.min - curRange.max <= 1);
@@ -1024,7 +1042,7 @@ export const AdminPDFUploadStudio: React.FC<AdminPDFUploadStudioProps> = ({ stor
                           <div className="flex items-center gap-2 min-w-0">
                             {/* Dải chương */}
                             <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono text-[11px] font-semibold flex-shrink-0">
-                              Ch. {minC}–{maxC}
+                              {isExtraVolume(volume.title) ? "Phiên ngoại" : `Ch. ${minC}–${maxC}`}
                             </span>
 
                             {/* Tên mục lục */}

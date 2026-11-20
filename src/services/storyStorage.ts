@@ -1072,9 +1072,20 @@ class StoryStorageService {
         const pvFrom = pvRange ? parseInt(pvRange[1], 10) : (pv.chapters.length > 0 ? Math.min(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
         const pvTo = pvRange ? parseInt(pvRange[2], 10) : (pv.chapters.length > 0 ? Math.max(...pv.chapters.map(c => c.number).filter(n => n > 0)) : 0);
 
+        const isExtra = (title: string) => {
+          const norm = (title || "").normalize("NFKC");
+          return /phiên\s*ngoại|phien\s*ngoai|ngoại\s*truyện|ngoai\s*truyen|hậu\s*truyện|vĩ\s*thanh|lời\s*bạt/i.test(norm);
+        };
+        const isPvExtra = isExtra(pv.title || "");
+
         const existingVolIndex = currentVolumes.findIndex((_v, idx) => {
           const meta = existingVolMeta[idx];
           if (!meta) return false;
+          const isMetaExtra = isExtra(meta.vNorm);
+
+          // Phân đoạn Phiên ngoại không bao giờ được gộp lẫn vào chính văn
+          if (isPvExtra !== isMetaExtra) return false;
+
           const isGenericTitle = /^mục\s*lục\s*\d+$/i.test(meta.vNorm) || /^mục\s*lục\s*\d+$/i.test(normalizedPvTitle);
           if (!isGenericTitle && meta.vNorm === normalizedPvTitle && normalizedPvTitle.length > 0) return true;
 
@@ -1083,8 +1094,8 @@ class StoryStorageService {
             if (meta.vFrom === pvFrom && meta.vTo === pvTo) return true;
           }
 
-          // Match by chapter overlap (> 50%)
-          if (meta.numSet.size > 0 && Array.isArray(pv.chapters) && pv.chapters.length > 0) {
+          // Match by chapter overlap (> 50%) - CHỈ áp dụng cho chính văn, không áp dụng cho Phiên ngoại
+          if (!isPvExtra && meta.numSet.size > 0 && Array.isArray(pv.chapters) && pv.chapters.length > 0) {
             let overlap = 0;
             for (const pc of pv.chapters) {
               if (pc.number > 0 && meta.numSet.has(pc.number)) overlap++;

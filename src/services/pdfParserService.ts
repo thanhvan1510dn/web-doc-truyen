@@ -1031,7 +1031,7 @@ export class DocumentParserService {
       vol.number = vIdx + 1;
 
       // Smart naming for volume if title is missing, empty, or generic fallback ("Mục lục X", bare "(min-max)")
-      const cleanBaseName = fileName.replace(/\.(pdf|docx|txt)$/i, "").trim();
+      const cleanBaseName = fileName.normalize("NFKC").replace(/\.(pdf|docx|txt)$/i, "").trim();
       const fileNameHasInfo = cleanBaseName && !/^(?:document|untitled|tài liệu|tệp|file)\b/i.test(cleanBaseName);
 
       if (vol.chapters.length > 0) {
@@ -1052,13 +1052,17 @@ export class DocumentParserService {
           // 2. Tên vị diện được người dùng đặt tường minh trong tên tệp (ví dụ "(3131-3144) Nhiệm vụ đặc thù.txt")
           } else if (fileNameArc && volumes.length === 1) {
             vol.title = `(${minCh}-${maxCh}) ${fileNameArc}`;
-          // 3. Nếu tệp hoặc mục lục chỉ thuần là số chương (ví dụ "(3078-3100)" hay "(2824-2838)"):
+          // 3. Nếu tên tệp thuần là số chương (ví dụ "(3078-3100)" hay "(2824-2838)"):
           // Tuyệt đối giữ nguyên định dạng số, KHÔNG tự ý gán tên vị diện từ điển vào!
-          } else if (isPureRangeFileName || isBare) {
+          } else if (isPureRangeFileName) {
             vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
-          // 4. Nếu tệp đơn lẻ có tiêu đề tùy chỉnh khác
+          // 4. Nếu tệp đơn lẻ có tiêu đề tùy chỉnh (ví dụ "(Phiên ngoại).txt", "Phiên ngoại.txt"):
+          // Ưu tiên sử dụng chính tên tệp do người dùng đặt!
           } else if (volumes.length === 1 && fileNameHasInfo) {
             vol.title = cleanBaseName;
+          // 5. Nếu mục lục không có tên / mang tên mặc định bare:
+          } else if (isBare) {
+            vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
           } else {
             vol.title = minCh === maxCh ? `Chương ${minCh}` : `(${minCh}-${maxCh})`;
           }
